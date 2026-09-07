@@ -46,7 +46,8 @@ if (location.protocol !== 'file:') {
 
 # ────────────────────────────────────────────────────────────────
 # CSS
-# 断点 760px：iPad 竖屏（768）以上保持桌面三栏，手机全部走这一套。
+# 断点 768px（吉吉 2026-09-07 定）：≤768 走移动端，≥769 走桌面。
+# iPad 竖屏正好 768，所以 iPad 竖着拿也是移动端版面 —— 这是他要的。
 # 本区必须是 <style> 的最后一段 —— 它要覆盖前面三个区（基础 / FQ-UI / WB-AI）的规则，
 # 靠的是「同优先级后来者胜」，不靠 !important 堆。
 # ────────────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ CSS = r'''
    这样转屏 / 改窗口宽度不需要重跑 JS，纯 CSS 切换。 */
 .wbm-top,.wbm-scrim{display:none}
 
-@media (max-width:760px){
+@media (max-width:768px){
 
 /* ── 文档改成整页滚动 ──
    桌面版是 .app 撑满 100vh、main 自己滚。手机上这么做有两个问题：
@@ -116,9 +117,7 @@ html:has(body.wbm-open){overflow:hidden}
 .col2{display:none!important}
 
 /* ── 版面 ── */
-.topr{position:static;display:flex;justify-content:flex-end;
-  padding:calc(52px + env(safe-area-inset-top) + 12px) 16px 0}
-.wrap{max-width:none;padding:12px 16px 44px}
+.wrap{max-width:none;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 44px}
 .page{max-width:none;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 44px}
 .runwrap{max-width:none;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 46px}
 
@@ -302,8 +301,6 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
    用 max() 而不是直接加，保证竖屏（安全区为 0）时还是原来的 16px。 */
 .wrap,.page,.runwrap{padding-left:max(16px,env(safe-area-inset-left));
   padding-right:max(16px,env(safe-area-inset-right))}
-.topr{padding-left:max(16px,env(safe-area-inset-left));
-  padding-right:max(16px,env(safe-area-inset-right))}
 .wbm-top{padding-left:max(6px,env(safe-area-inset-left));
   padding-right:max(6px,env(safe-area-inset-right))}
 .sb{padding-left:max(12px,env(safe-area-inset-left))}
@@ -318,11 +315,23 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 .wbm-back .fq{width:15px;height:15px}
 }
 
-/* 平板竖屏：左栏留着，只把内容网格收窄 */
-@media (min-width:761px) and (max-width:900px){
-  .cgrid{grid-template-columns:repeat(3,1fr)}
-  .wrap{padding:72px 24px 56px}
-  .page{padding:48px 24px}
+/* 桌面版面的最小节点就是 1024，再窄不做变化（吉吉 2026-09-07 定）。
+   「不做变化」用 min-width 落地：窗口窄过 1024 时版面原样保持、外面出横向滚动条，
+   而不是让三栏继续压缩 —— 继续压缩本身就是一种变化，而且 769~1023 这一段
+   没人为它画过稿，压出来的样子是没设计过的。
+   768 及以下由上面那个 media 接管，直接换成移动端，不经过这个中间态。 */
+@media (min-width:769px){
+  body{min-width:1024px}
+
+  /* 首页内容在视口里垂直居中（吉吉 2026-09-07：「现在有点向上移了」）。
+     原来是固定 padding-top:96px 顶在上面，内容不满一屏时下面空一大片，整体偏高。
+     🔴 用 margin:auto 而不是 justify-content:center —— 后者在内容比视口高的时候
+     会把溢出的顶部裁掉、而且滚不上去（flex 居中的经典坑）。margin:auto 在没有
+     富余空间时自动归零，退回普通的从上往下排。
+     只作用于首页 .wrap：资料库、技能这些是长列表，从顶部排才对；
+     回答页 .runwrap 是对话流，也必须顶部对齐。 */
+  main{display:flex;flex-direction:column}
+  .wrap{margin:auto;padding:40px 32px}
 }
 '''
 
@@ -338,7 +347,7 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 JS = r'''
 /* ══════════ 移动端布局层 ══════════ */
 (function(){
-  var MQ = '(max-width:760px)';
+  var MQ = '(max-width:768px)';
   function onPhone(){ return window.matchMedia(MQ).matches; }
 
   /* ── 顶栏 + 遮罩：插一次，之后靠 CSS 断点显隐 ── */
