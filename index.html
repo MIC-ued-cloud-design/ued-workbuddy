@@ -362,7 +362,7 @@ textarea::placeholder{color:var(--ink-3)}
 .ckh i{font-style:normal;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .ckh svg{width:14px;height:14px;color:var(--ink-3);transition:transform .15s}
 .ckh.open svg{transform:rotate(180deg)}
-.ckbody{border-top:1px solid var(--line);padding:4px 0}
+.ckbody{border-top:1px solid var(--line);padding:4px 15px 6px}
 .ckrow{display:flex;gap:11px;padding:10px 15px;align-items:flex-start}
 .ckrow:hover{background:var(--soft)}
 .ckbox{width:15px;height:15px;flex:none;margin-top:2px;border:1px solid var(--ink-3);border-radius:4px;background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
@@ -377,8 +377,14 @@ textarea::placeholder{color:var(--ink-3)}
 
 /* 重点标记：不引入新颜色（WorkBuddy 自己就不用底色块高亮），只用字重和深一档的文字色 */
 .hot{font-weight:700;color:var(--ink);margin-right:6px}
-.ckbody .kv{padding:0 15px 8px}
+/* 🔴 内边距要挂在 .ckbody 上，不能挂在 table 上 ——
+   这张表是 border-collapse:collapse，CSS 规范规定这种模式下
+   表格自身的 padding 被忽略。计算样式里查得到、实际没生效，
+   结果文档名比组标题少缩进 15px（量出来 580 vs 595）。 */
+.ckbody .kv{padding:0}
 .ckbody .kv td{font-size:12px}
+/* 最后一行不要底边框 —— 它会和折叠组自己的底边框贴成两条线 */
+.ckbody .kv tr:last-child td{border-bottom:0}
 
 /* 知识库更新提示卡：点过就收起。
    🔴 必须显式写 [hidden]{display:none} —— [hidden] 打不过元素自己的 display，
@@ -1831,7 +1837,14 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
   }
 
   function runQuery(q, keepTurns){
-    if(!keepTurns) R.turns=[];          // 不是追问就是新话题
+    /* 轮次在「开始新一轮」时收进历史，不是在「答完」时收 ——
+       答完就 push 会让 pastTurns() 和当前这一轮同时渲染同一条，界面上重复一遍。
+       这样 R.turns 永远只装「已经翻页过去的」，当前轮由 R.q / R.ans 单独渲染。 */
+    if(!keepTurns){ R.turns=[]; }
+    else if(R.q && R.ans){
+      R.turns.push({q:R.q, ans:R.ans});
+      if(R.turns.length>8) R.turns.shift();
+    }
     R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw='';
     S.view='run';
     if(!ready()){ R.state='needkey'; render(); return; }

@@ -583,7 +583,14 @@ JS = r'''
   }
 
   function runQuery(q, keepTurns){
-    if(!keepTurns) R.turns=[];          // 不是追问就是新话题
+    /* 轮次在「开始新一轮」时收进历史，不是在「答完」时收 ——
+       答完就 push 会让 pastTurns() 和当前这一轮同时渲染同一条，界面上重复一遍。
+       这样 R.turns 永远只装「已经翻页过去的」，当前轮由 R.q / R.ans 单独渲染。 */
+    if(!keepTurns){ R.turns=[]; }
+    else if(R.q && R.ans){
+      R.turns.push({q:R.q, ans:R.ans});
+      if(R.turns.length>8) R.turns.shift();
+    }
     R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw='';
     S.view='run';
     if(!ready()){ R.state='needkey'; render(); return; }
