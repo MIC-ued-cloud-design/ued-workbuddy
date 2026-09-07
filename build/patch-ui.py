@@ -93,6 +93,11 @@ CSS = r'''
 .ckbody .kv{padding:0 15px 8px}
 .ckbody .kv td{font-size:12px}
 
+/* 知识库更新提示卡：点过就收起。
+   🔴 必须显式写 [hidden]{display:none} —— [hidden] 打不过元素自己的 display，
+   本项目在 .col2 上已经栽过一次。 */
+.sb-card[hidden]{display:none!important}
+
 /* 复制提示 */
 #toast{position:fixed;left:50%;bottom:38px;transform:translateX(-50%) translateY(14px);background:var(--dark);color:#fff;font-size:12px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:99}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -375,6 +380,30 @@ JS = r'''
       + '<div class="fqsec-p">做过的项目留下来的判断：哪些做法有效、哪些地方出过问题、下次该怎么做。换一个项目仍然成立的才收进来。</div>'
       + (groups.length? foldGroups(groups, !!q) : '<div class="libempty"><b>没有匹配内容。</b><br>换个关键词，或者清空搜索框看全部。</div>');
   }
+
+  /* ── 知识库更新提示卡：点「查看更新」之后收起 ──
+     原来那个按钮只 go('libs')，提示一直挂着，下次打开还在 —— 等于按钮没意义。
+     记住的是「批次」而不是「点过了」：用知识库生成日期的年月，
+     所以下个月知识库真的更新了会再提示一次，而不是永久消失。 */
+  (function(){
+    var UKEY='wb.updSeen';
+    var card=document.querySelector('.sb-card');
+    if(!card) return;
+    var id=String((FQD.m&&FQD.m.gen)||'').slice(0,7) || 'x';
+    var seen='';
+    try{ seen=localStorage.getItem(UKEY)||''; }catch(e){}
+    if(seen===id){ card.hidden=true; return; }
+    var btn=card.querySelector('.b');
+    if(!btn) return;
+    btn.removeAttribute('onclick');
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      try{ localStorage.setItem(UKEY, id); }catch(e2){}
+      card.hidden=true;
+      go('libs');
+      fqToast('已收起。下次知识库更新会再提示');
+    });
+  })();
 
   /* ── 挂上去 ── */
   var LIB_BODY = window.LIB_BODY = {
