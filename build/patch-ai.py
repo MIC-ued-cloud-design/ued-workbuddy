@@ -47,6 +47,15 @@ CSS = r'''
 .rbtn.pri{background:var(--dark);color:#fff;border-color:var(--dark)}
 .rbtn.pri:hover{background:#000;color:#fff}
 
+/* 任务区折叠：原来那个箭头是纯装饰，taskHead 没绑任何事件 */
+.sb-sec-h{cursor:pointer;user-select:none}
+.sb-sec-h:hover{color:var(--ink)}
+.sb-sec-h svg{transition:transform .18s}
+.sb-sec-h.closed svg{transform:rotate(-90deg)}
+/* 🔴 显式写 —— [hidden] 打不过 .sb-list 自己的 display:flex，本项目栽过两次 */
+.sb-list[hidden]{display:none!important}
+.sb-sec.closed{flex:0 0 auto}
+
 /* 任务历史：选中态 + 清空入口 */
 .sb-item.on{background:var(--nav-on)}
 .sb-item.clr{text-align:left}
@@ -742,10 +751,35 @@ JS = r'''
     if(a && window.fqIcon) a.innerHTML = fqIcon('personal-f',15) || '';
   })();
 
+  /* 任务区折叠。状态存起来，下次打开保持 */
+  var FKEY='wb.taskFold';
+  function foldClosed(){ try{ return localStorage.getItem(FKEY)==='1'; }catch(e){ return false; } }
+  window.wbToggleTasks = function(){
+    var closed = !foldClosed();
+    try{ localStorage.setItem(FKEY, closed?'1':'0'); }catch(e){}
+    applyFold();
+  };
+  function applyFold(){
+    var h=document.getElementById('taskHead'), l=document.getElementById('taskList');
+    var sec=h&&h.parentNode;
+    if(!h||!l) return;
+    var closed=foldClosed();
+    h.classList.toggle('closed', closed);
+    l.hidden = closed;
+    if(sec) sec.classList.toggle('closed', closed);
+  }
+
   /* 任务列表补点击行为（原来那个 button 没绑任何事件），并从 localStorage 恢复 */
   var origRenderNav = renderNav;
   renderNav = function(){
     origRenderNav();
+    var head=document.getElementById('taskHead');
+    if(head && !head.getAttribute('data-bound')){
+      head.setAttribute('data-bound','1');
+      head.setAttribute('title','点一下收起或展开');
+      head.addEventListener('click', wbToggleTasks);
+    }
+    applyFold();
     var el=document.getElementById('taskList');
     if(!el || !S.tasks.length) return;
     el.innerHTML = S.tasks.map(function(t,x){
