@@ -12,7 +12,11 @@ CSS = r'''
 /* ── 跑任务：回答区 ── */
 .runwrap{max-width:824px;margin:0 auto;padding:34px 0 60px}
 .qbox{display:flex;gap:12px;align-items:flex-start;margin:0 0 22px}
-.qava{width:26px;height:26px;flex:none;border-radius:999px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+/* 统一身份：内部工具没有登录态，所以不显示某个人的名字和姓氏首字，
+   用飞鹊的 person 图标 + 「UED 设计师」这个中性称呼。 */
+.qava{width:26px;height:26px;flex:none;border-radius:999px;background:var(--accent);color:#fff;display:grid;place-items:center}
+.qava svg{width:14px;height:14px;display:block}
+.ava svg{width:15px;height:15px;display:block}
 .qtx{flex:1;font-size:15px;color:var(--ink);line-height:1.75;white-space:pre-wrap;word-break:break-word;padding-top:2px}
 .abox{border-top:1px solid var(--line);padding:22px 0 0}
 .ahead{display:flex;align-items:center;gap:9px;margin:0 0 14px}
@@ -38,7 +42,7 @@ CSS = r'''
 .srcchip{font-size:12px;color:var(--ink-2);background:var(--soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .srcchip:hover{background:var(--accent-fill);color:var(--accent-ink)}
 .runfoot{margin:30px 0 0;display:flex;gap:9px;flex-wrap:wrap}
-.rbtn{font:13px/1 inherit;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 16px;cursor:pointer}
+.rbtn{font:13px/1 inherit;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:999px;padding:10px 18px;cursor:pointer}
 .rbtn:hover{border-color:var(--accent-line);background:var(--accent-fill);color:var(--accent-ink)}
 .rbtn.pri{background:var(--dark);color:#fff;border-color:var(--dark)}
 .rbtn.pri:hover{background:#000;color:#fff}
@@ -466,7 +470,7 @@ JS = r'''
   window.viewRun = function(){
     var st=R.state;
     return '<div class="runwrap">'+
-      '<div class="qbox"><span class="qava">王</span><div class="qtx">'+
+      '<div class="qbox"><span class="qava">'+(window.fqIcon? fqIcon('personal-f',14)||'' : '')+'</span><div class="qtx">'+
         String(R.q).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];})+'</div></div>'+
       (st==='needkey' ? needKeyBox() :
        st==='error'   ? errBox() :
@@ -695,6 +699,15 @@ JS = r'''
     var anchor = '<div class="grp">';
     return html.indexOf(anchor)>0 ? html.replace(anchor, card + anchor) : html;
   };
+
+  /* 侧栏头像：静态 HTML 里拿不到 ic，在这里注入。
+     🔴 只能用 window.fqIcon —— svgOf 住在资料库那个 IIFE 里，这里取不到。
+     上一版我直接写 svgOf，抛 ReferenceError 把整个模块后半段（含 render 重载）
+     全带崩了，而且报错位置离真凶很远。跨模块只走 window 上暴露的那个。 */
+  (function(){
+    var a=document.getElementById('sbAva');
+    if(a && window.fqIcon) a.innerHTML = fqIcon('personal-f',15) || '';
+  })();
 
   /* 把路由和入口接上 */
   var lastModel = S.model;
