@@ -48,8 +48,8 @@ function lcOf(kb){
   return LC;
 }
 
-function retrieve(q, budget){
-  var kb=window.WBKB; if(!kb) return [];
+function retrieve(kb, q, budget){
+  if(!kb) return [];   // kb 由调用方传入 —— 这份代码也跑在 Worker 里，那里没有 window
   var TS=terms(q); if(!TS.length) return [];
 
   /* 先查实体字典：组件真名、中文常叫法、token 小节名这些有唯一答案的，
