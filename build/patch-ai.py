@@ -530,7 +530,7 @@ JS = r'''
     }
     return '<div class="nbox warn"><b>暂时问不了 —— 共享通道没配置</b>'+
       '<p>知识库已经装在页面里了（'+kb+'），但没有模型来读它、组织成答案。'+
-      '可以填自己的智谱密钥先用起来，密钥只存在你这台电脑的浏览器里。</p>'+
+      '可以填自己的智谱密钥先用起来，密钥只存在你这台设备的浏览器里。</p>'+
       '<p><button class="rbtn pri" onclick="wbSettings()">填自己的密钥</button> '+
       '<button class="rbtn" onclick="go(\'libs\')">先只看资料库</button></p></div>';
   }
@@ -664,7 +664,7 @@ JS = r'''
       '<h3>用自己的密钥（可选）</h3>'+
       '<p class="sub">这个页面默认走部门共享的通道，不填也能问。'+
       '填了就改走你自己的额度 —— 共享通道排队或者额度用完时，这是自救的办法。'+
-      '密钥只存在你这台电脑的浏览器里，不会上传，也不会跟同事共享。</p>'+
+      '密钥只存在你这台设备的浏览器里，不会上传，也不会跟同事共享。</p>'+
       '<div class="fld"><label>智谱 API 密钥</label><input id="wbk" type="password" placeholder="粘贴平台给你的 API 密钥" value="'+(c.key||'')+'">'+
         '<div class="hint">用的是智谱 GLM-4-Flash，官方标免费。'+
         '还没有密钥就去 open.bigmodel.cn 注册，在用户中心的「API 密钥」页新建一个。'+
@@ -695,7 +695,7 @@ JS = r'''
     document.getElementById('wbsave').onclick=function(){
       var o=collect();
       if(!o.key){ msg('先把密钥粘进来。'); return; }
-      saveCfg(o); close(); fqToast('已保存，密钥只在这台电脑上');
+      saveCfg(o); close(); fqToast('已保存，密钥只在这台设备上');
       if(S.view==='run' && R.state==='needkey') runQuery(R.q); else render();
     };
     function close(){ var m=document.getElementById('wbmask'); if(m) m.remove(); }

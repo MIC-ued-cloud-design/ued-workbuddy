@@ -35,7 +35,11 @@ UED 部门的 AI 设计工作台。
 |---|---|
 | `index.html` | 页面本体。资料库的数据内嵌在里面，双击就能打开，不联网也能查资料 |
 | `kb.js` | 供模型检索的知识库正文（7.2 MB）。只在你第一次提问时才加载，不影响打开速度 |
-| `build/` | 生成上面两个文件的脚本 |
+| `manifest.json` `icon-*.png` | 「添加到主屏幕」用的。存到手机主屏之后点开没有地址栏，跟 App 一样 |
+| `build/` | 生成上面几个文件的脚本 |
+
+手机上直接打开同一个网址就能用 —— 版面会自己换成手机版（左栏收成抽屉、宽表格摊成卡片、
+悬停出现的菜单改成点击）。**页面只有这一份，手机和电脑看到的内容永远一致。**
 
 ## 怎么更新
 
@@ -47,10 +51,12 @@ python3 build/gen-data.py    # 组件清册 / token / 自查表 / 目录 → 写
 python3 build/gen-kb.py      # 业务知识与方法论正文 → 写成 kb.js
 python3 build/patch-ui.py    # 资料库界面
 python3 build/patch-ai.py    # 检索与模型接入
+python3 build/patch-mobile.py # 手机版版面
 git commit -am "说明这次改了什么" && git push
 ```
 
-界面代码改 `build/patch-ui.py` 和 `build/patch-ai.py` 里的 CSS 与 JS，
+界面代码改 `build/patch-ui.py`、`build/patch-ai.py`、`build/patch-mobile.py` 里的 CSS 与 JS，
 不要直接改 `index.html` 里标记之间的内容 —— 重跑脚本会覆盖掉。
+每个脚本只替换自己那对标记之间的内容，互不干扰，顺序也不影响。
 
 推送之后 GitHub Pages 约一分钟自动更新。
