@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UED WorkBuddy</title>
+<style>
+:root{
+  /* 全部取自 WorkBuddy 截图像素采样，不是估的 */
+  --sb-bg:#F2F2F2; --canvas:#FFFFFF; --white:#fff; --soft:#F5F5F5;
+  --ink:#333333;        /* --cb-text-primary */
+  --ink-2:#666666;      /* --cb-text-secondary */
+  --ink-3:#A0A0A0;      /* --cb-text-tertiary */
+  --line:#EBEBEB; --line-2:#F0F0F0; --nav-on:#E6E6E6;
+  --dark:#1A1A1A;       /* --cb-button-dark-background */
+  --tab-on:#3B3B3B;
+  --accent:#3B9EFF;        /* 轻盈蓝 · 图形用：描边/勾/开关/进度条/头像 */
+  --accent-ink:#1682E8;    /* 文字用 · 深一档，12px 也读得清 */
+  --accent-line:#BDDCFF;   /* 选中描边＝主色浅版 */
+  --accent-fill:#E7F2FF;   /* 标签的浅实心底 */
+  --sel:#F2F2F2;        /* --cb-bg-primary-active · 列表选中用中性底 */
+  --r:12px; --r-lg:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--ink); background:var(--canvas); -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── 左栏 ────────────────────────────── */
+.sb{width:262px;flex:0 0 262px;background:var(--sb-bg);display:flex;flex-direction:column;padding:14px 12px 12px}
+.sb-head{display:flex;align-items:baseline;gap:7px;padding:6px 10px 16px}
+.sb-head b{font-size:15px;font-weight:600;letter-spacing:.2px}
+.sb-head span{font-size:12px;color:var(--ink-3)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;
+  font-size:14px;color:var(--ink);text-align:left;transition:background .12s}
+.nav button:hover{background:#E9E9E9}
+.nav button.on{background:var(--nav-on);font-weight:600}
+.nav .fq{width:18px;height:18px;flex:0 0 18px;opacity:.82}
+.nav button.on .fq{opacity:1}
+.nav .tail{margin-left:auto;font-size:12px;color:var(--ink-3);font-weight:400}
+
+.sb-sec{margin-top:24px;flex:1;min-height:0;display:flex;flex-direction:column}
+.sb-sec-h{display:flex;align-items:center;gap:5px;padding:0 10px 8px;font-size:12px;color:var(--ink-2)}
+.sb-list{overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.sb-item{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px}
+.sb-item:hover{background:#E9E9E9}
+.sb-item.on{background:var(--nav-on)}
+.sb-item .t{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-item .m{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-3);margin-top:2px}
+.sb-empty{margin:4px 6px;padding:12px;background:var(--white);border-radius:10px;
+  font-size:12px;line-height:1.7;color:var(--ink-2)}
+
+.sb-card{margin-top:12px;padding:12px;background:var(--white);border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.sb-card .k{font-size:12px;font-weight:600;margin-bottom:3px}
+.sb-card .d{font-size:12px;color:var(--ink-2);line-height:1.6}
+.sb-card .b{margin-top:9px;display:inline-block;padding:5px 12px;background:var(--dark);color:#fff;
+  border-radius:999px;font-size:12px}
+.sb-foot{display:flex;align-items:center;gap:9px;margin-top:12px;padding:8px 8px 2px}
+.ava{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;
+  font-size:12px;font-weight:600;flex:0 0 28px}
+.sb-foot .n{font-size:13px}
+.sb-foot .r{margin-left:auto;display:flex;gap:16px;opacity:.5}
+
+/* ── 第二栏（资料库专用 · 照 WorkBuddy 的三栏版式）── */
+.col2[hidden]{display:none}   /* 必须写 —— [hidden] 打不过下面的 display:flex */
+.col2{width:252px;flex:0 0 252px;background:#FAFAFA;border-right:1px solid var(--line);
+  display:flex;flex-direction:column;padding:16px 10px 10px}
+.col2-h{padding:2px 8px 14px;font-size:19px;font-weight:650}
+.c2search{display:flex;align-items:center;gap:7px;padding:7px 9px;margin:0 2px 10px;border-radius:8px;
+  background:var(--white);border:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
+.c2search .fq{width:14px;height:14px}
+.c2list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.c2item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 9px;border-radius:8px;text-align:left;font-size:13px}
+.c2item:hover{background:#F0F0F0}
+.c2item.on{background:var(--nav-on);font-weight:600}
+.c2item .fq{width:15px;height:15px;flex:0 0 15px;opacity:.7}
+.c2item.on .fq{opacity:1}
+.c2item .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c2item .cnt{margin-left:auto;font-size:12px;color:var(--ink-3);font-weight:400}
+.c2grp{padding:14px 9px 6px;font-size:12px;color:var(--ink-3)}
+
+/* 内容区表格（照 WorkBuddy 「最近」那张表）*/
+.tbl{width:100%;border-collapse:collapse;margin-top:4px}
+.tbl th{text-align:left;font-size:12px;font-weight:400;color:var(--ink-2);
+  padding:0 12px 10px 0;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px 12px 12px 0;border-bottom:1px solid var(--line-2);font-size:13.5px;vertical-align:middle;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
+.tbl tbody tr:hover{background:#FAFAFA}
+.tbl td.nm{font-weight:500}
+.tbl td.nm .f{display:flex;align-items:center;gap:9px}
+.tbl td.nm .fq{width:16px;height:16px;color:var(--ink-2);flex:0 0 16px}
+.tbl th{vertical-align:bottom}
+.tbl td.dim{color:var(--ink-2);font-size:12.5px}
+.libempty{margin-top:28px;padding:34px;text-align:center;background:#FAFAFA;border-radius:12px;
+  font-size:13px;color:var(--ink-2);line-height:1.85}
+
+/* ── 主区 ────────────────────────────── */
+main{flex:1;overflow-y:auto;position:relative;background:var(--canvas)}
+.topr{position:absolute;top:18px;right:24px;z-index:5}
+.topr button{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--white);
+  border:1px solid var(--line);border-radius:999px;font-size:12.5px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.wrap{max-width:824px;margin:0 auto;padding:96px 32px 64px}
+.page{max-width:920px;margin:0 auto;padding:64px 32px}
+
+h1{font-size:40px;line-height:1.25;font-weight:700;letter-spacing:-.5px;text-align:center;color:#000}
+.sub{text-align:center;font-size:14.5px;color:var(--ink-2);margin-top:12px}
+
+/* 场景 tab */
+.tabs{display:flex;justify-content:center;gap:4px;margin:38px auto 0;padding:4px;
+  background:#EBEBEB;border-radius:999px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.tabs button{display:flex;align-items:center;gap:6px;padding:8px 15px;border-radius:999px;font-size:13.5px;
+  color:var(--ink-2);white-space:nowrap;transition:.14s}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{background:var(--tab-on);color:#fff;font-weight:500}
+
+.scene-note{text-align:center;font-size:13px;color:var(--ink-2);margin-top:16px}
+
+/* 快捷卡 */
+.pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:20px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;background:var(--white);
+  border:1px solid var(--line);border-radius:999px;font-size:13.5px;transition:.13s}
+.pill:hover{border-color:#DADADA;background:#FAFAFA}
+.pill.on{background:var(--white);border-color:var(--accent-line);color:var(--accent-ink)}  /* 不填底色，只高亮 */
+.pill .fq{width:15px;height:15px}
+.pill .ar{font-size:12px;color:var(--ink-3);margin-left:1px}
+.pill.on .ar{color:var(--accent-ink);opacity:.7}
+.tile-h .ico .fq{width:17px;height:17px}
+.cbar .fq,.cfoot .fq,.topr .fq{width:16px;height:16px}
+.sb-foot .r .fq{width:17px;height:17px}
+#sbIcons{display:flex;align-items:center;gap:18px}   /* gap 要挂在 svg 的直接父元素上 */
+.mpop .fq{width:15px;height:15px}
+/* 输入框里的场景标签（照 WorkBuddy 那个绿标签）*/
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:14px 18px 0}
+.tagchip{display:inline-flex;align-items:center;gap:6px;padding:3px 7px 3px 8px;background:var(--accent-fill);
+  color:var(--ink);border-radius:6px;font-size:12.5px;font-weight:500}
+.tagchip .fq{width:14px;height:14px}
+/* 附件标签：× 在左侧，hover 出预览图（照 WorkBuddy）*/
+.filechip{position:relative;display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 7px;
+  background:#EDEDED;border-radius:8px;font-size:12.5px;color:var(--ink);max-width:270px}
+.filechip .x{display:grid;place-items:center;opacity:.55;border-radius:3px;flex:0 0 14px}
+.filechip .x:hover{opacity:1}
+.filechip .x .fq{width:12px;height:12px}
+.filechip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fprev{position:absolute;bottom:calc(100% + 9px);left:-2px;display:none;background:var(--white);
+  border:1px solid var(--line);border-radius:12px;padding:5px;box-shadow:0 12px 36px rgba(0,0,0,.18);z-index:40}
+.filechip:hover .fprev{display:block}
+.fprev img{display:block;max-width:320px;max-height:240px;border-radius:8px}
+.tagchip button{display:grid;place-items:center;opacity:.6;border-radius:3px}
+.tagchip button:hover{opacity:1}   /* hover 只提亮，不加底 */
+.tagchip button .fq{width:11px;height:11px}
+/* 最佳实践案例（照 WorkBuddy「不知道做什么，试试最佳实践案例」）*/
+.cases{margin-top:44px}
+.cases-h{display:flex;align-items:center;margin-bottom:12px}
+.cases-h b{font-size:14.5px;font-weight:600}
+.cases-h button{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink-2)}
+.cases-h button:hover{color:var(--ink)}
+.cases-h .fq{width:14px;height:14px}
+.cgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.case{text-align:left;background:var(--white);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px;transition:.13s;display:flex;flex-direction:column;gap:8px}
+.case:hover{border-color:#DADADA;box-shadow:0 2px 8px rgba(0,0,0,.06);transform:translateY(-1px)}
+.case .ico{width:30px;height:30px;background:#F2F2F2;border-radius:8px;display:grid;place-items:center;color:var(--ink)}
+.case .ico .fq{width:17px;height:17px}
+.case .t{font-size:13px;font-weight:600;line-height:1.45;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}  /* 标题固定一行 */
+.case .g{font-size:12px;color:var(--ink-2);line-height:1.6}
+.chip{font-size:12px;color:var(--ink-2);background:#F2F2F2;border-radius:4px;padding:2.5px 6px}
+
+/* 输入区 */
+.cwrap{margin-top:22px;background:var(--soft);border-radius:16px;padding:6px 6px 2px}
+.composer{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:0 2px 10px rgba(28,32,27,.05)}   /* 不能 overflow:hidden — 会剪掉向上展开的模型浮层 */
+.composer.focus{border-color:#D4D4D4;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+textarea{width:100%;border:none;outline:none;resize:none;padding:15px 18px 8px;
+  font-family:inherit;font-size:14.5px;line-height:1.7;   /* 不能写 font:14.5px/1.7 inherit —— 简写不收 inherit，整条会被丢 */
+  color:var(--ink);background:none;min-height:112px}
+textarea::placeholder{color:var(--ink-3)}
+.cbar{display:flex;align-items:center;gap:8px;padding:8px 12px 12px}
+.plusw{position:relative}
+.cbar .plus{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2)}
+.cbar .plus.open{background:#F2F2F2;color:var(--ink)}
+.ppop{position:absolute;bottom:calc(100% + 10px);left:0;width:198px;background:var(--white);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.14);padding:6px;z-index:20}
+.ppop .row{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 8px;border-radius:8px;
+  font-size:13px;color:var(--ink);text-align:left}   /* 只作用于 .row —— 写成 .ppop button 会连二级菜单的 .p2row 一起压成 32px */
+.ppop .row:hover{background:var(--soft)}
+.ppop .fq{width:16px;height:16px;color:var(--ink-2);flex:0 0 16px}
+.ppop hr{border:none;border-top:1px solid var(--line);margin:5px 0}
+/* 一级项 + 右侧二级菜单 */
+.pitem{position:relative}
+.pitem>.row{display:flex;align-items:center;gap:9px;width:100%;height:32px;padding:0 8px;
+  border-radius:8px;font-size:13px;color:var(--ink);text-align:left}
+.pitem>.row .ar{margin-left:auto;color:var(--ink-3);display:grid;place-items:center}
+.pitem>.row .ar .fq{width:13px;height:13px}
+.pitem:hover>.row{background:var(--soft)}
+.ppop2{position:absolute;left:calc(100% + 6px);top:-6px;display:none;width:322px;background:var(--white);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.16);padding:6px;z-index:50}
+.pitem:hover>.ppop2{display:block}
+.p2search{display:flex;align-items:center;gap:8px;margin:2px 2px 6px;padding:8px 10px;border-radius:8px;
+  background:var(--soft);font-size:12.5px;color:var(--ink-3)}
+.p2search .fq{width:14px;height:14px}
+.p2list{max-height:296px;overflow-y:auto}
+.p2row{display:flex;align-items:flex-start;gap:9px;width:100%;padding:7px 8px;border-radius:8px;text-align:left}
+.p2row:hover{background:var(--soft)}
+.p2row .av{width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:var(--accent-fill);
+  color:var(--accent-ink);font-size:12px;font-weight:600;display:grid;place-items:center;margin-top:1px}
+.p2row .tx{min-width:0;display:flex;flex-direction:column;gap:2px}   /* span 是 inline，不设 flex 会叠在一起 */
+.p2row .n{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p2row .d{font-size:12px;color:var(--ink-2);line-height:1.5;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cbar .plus:hover{background:#F2F2F2}
+.cbar .sp{flex:1}
+.model{position:relative}
+.model>button svg{width:16px;height:16px}
+.model>button{display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;font-size:12.5px;color:var(--ink-2)}
+.model>button:hover{background:#EDEDED}
+.model.open>button{background:#EDEDED;color:var(--ink)}
+.mpop{position:absolute;bottom:calc(100% + 10px);right:0;width:360px;background:var(--white);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.14);padding:6px;z-index:20;
+  max-height:436px;overflow-y:auto}
+.mpop .max{display:flex;align-items:center;gap:9px;padding:10px 10px 11px}
+.mpop .max .nm{font-size:14px;font-weight:600}
+.sw{margin-left:auto;width:38px;height:22px;border-radius:999px;background:#DEDEDE;position:relative;transition:.16s;flex:0 0 38px}
+.sw i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.16s;
+  box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on{background:var(--accent)}
+.sw.on i{left:18px}
+.mhr{height:1px;background:var(--line);margin:2px 0}
+.mpop .row{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 8px;border-radius:8px;text-align:left}
+.mpop .row:hover{background:var(--soft)}
+.mpop .row.on{background:var(--sel)}   /* 列表选中＝中性底 + 绿勾（WorkBuddy 自己的做法）*/
+.mpop .row .nm{font-size:13.5px;display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+.mpop .row .nm>span:first-child{white-space:nowrap}
+.mpop .badge{font-size:12px;padding:1.5px 6px;border-radius:4px;white-space:nowrap}
+.mpop .badge.free{background:#FDECEC;color:#D0463F}
+.mpop .badge.sub{background:#FBF1DE;color:#96702A}
+.mpop .badge.rec{background:var(--sel);color:var(--accent-ink)}
+.mpop .rate{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mpop .tick{color:var(--accent);flex:0 0 15px;visibility:hidden;display:grid;place-items:center}
+.mpop .row.on .tick{visibility:visible}
+.mpop .mfoot{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:8px;width:100%;font-size:12.5px;color:var(--ink-2);text-align:left}
+.mpop .mfoot:hover{background:var(--soft);color:var(--ink)}
+.mic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)}
+.mic:hover{background:#F2F2F2;color:var(--ink)}
+.mic .fq{width:17px;height:17px}
+.send .fq,.send svg{width:15px;height:15px}
+.send{width:34px;height:34px;border-radius:50%;background:var(--dark);color:#fff;display:grid;place-items:center;flex:0 0 34px}
+.send[disabled]{background:#C6C6C6;cursor:default}
+.cfoot{display:flex;gap:6px;padding:9px 10px 5px}
+.cfoot button{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-3);padding:5px 10px;border-radius:8px}
+.cfoot button:hover{color:var(--ink-2);background:#EDEDED}
+
+/* 通用页面 */
+.ph{margin-bottom:26px}
+.ph h2{font-size:26px;font-weight:650;letter-spacing:-.2px}
+.ph p{font-size:14px;color:var(--ink-2);margin-top:8px;max-width:620px;line-height:1.75}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-align:left}
+.tile-h{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.tile-h .ico{width:30px;height:30px;flex:0 0 30px;background:#F2F2F2;border-radius:8px;display:grid;place-items:center;color:var(--ink)}
+.tile-h b{font-size:14.5px;font-weight:600}
+.tag{font-size:12px;padding:2px 8px;border-radius:4px;background:var(--accent);color:#fff;margin-left:auto}
+.tag.soon{background:#EDEDED;color:#8C8C8C}
+.tile .cnt{font-size:12px;color:var(--ink);font-weight:500;margin-bottom:6px}
+.tile .ds{font-size:12.5px;color:var(--ink-2);line-height:1.7}
+.grp{margin-bottom:26px}
+.grp-t{font-size:12px;color:var(--ink-3);margin-bottom:9px;padding-left:2px}
+.srow{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--line);
+  border-radius:10px;padding:11px 14px;margin-bottom:6px}
+.srow .nm{font-size:13.5px;font-weight:500}
+.srow .code{font-size:12px;color:var(--ink-3);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.srow .ds{margin-left:auto;font-size:12px;color:var(--ink-2);text-align:right;max-width:44%}
+.prow{display:flex;align-items:center;gap:14px;background:var(--white);border:1px solid var(--line);
+  border-radius:var(--r);padding:15px 17px;margin-bottom:8px;text-align:left;width:100%}
+.prow .nm{font-size:14.5px;font-weight:600}
+.prow .m{font-size:12px;color:var(--ink-2);margin-top:4px}
+.prow .st{margin-left:auto;text-align:right;flex:0 0 auto}
+.prow .st .s{font-size:12.5px;font-weight:500}
+.prow .st .u{font-size:12px;color:var(--ink-3);margin-top:3px}
+.bar{display:flex;gap:3px;margin-top:9px}
+.bar i{height:3px;flex:1;background:#EBEBEB;border-radius:2px}
+.bar i.d{background:var(--accent)}
+.note{display:flex;gap:9px;align-items:flex-start;background:rgba(0,0,0,.045);border:none;
+  border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--ink-2);line-height:1.75;margin-top:20px}
+.note .fq{width:15px;height:15px;flex:0 0 15px;color:var(--ink-3);margin-top:3px}
+.note b{color:var(--ink);font-weight:600}
+.back{display:inline-flex;align-items:center;gap:6px;}
+.back .fq{width:15px;height:15px}
+.back{font-size:13px;color:var(--ink-2);margin-bottom:18px}
+.back:hover{color:var(--ink)}
+@media (max-width:1080px){.cards,.grid3{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<input type="file" id="fpick" multiple hidden onchange="onPick(this)">
+<input type="file" id="ipick" accept="image/*" multiple hidden onchange="onPick(this)">
+<div class="app">
+  <aside class="sb">
+    <div class="sb-head"><b>UED WorkBuddy</b><span>v0.1</span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sb-sec">
+      <div class="sb-sec-h" id="taskHead"></div>
+      <div class="sb-list" id="taskList"></div>
+    </div>
+    <div class="sb-card">
+      <div class="k">业务知识库 · 9 月更新</div>
+      <div class="d">本月新增 12 份需求文档解读，覆盖搜索与交易订单两条业务线。</div>
+      <button class="b" onclick="go('libs')">查看更新</button>
+    </div>
+    <div class="sb-foot">
+      <div class="ava">王</div><div class="n">王立翔</div>
+      <div class="r">
+        <span id="sbIcons"></span>
+      </div>
+    </div>
+  </aside>
+  <aside class="col2" id="col2" hidden></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ═══════════ 图标 ═══════════ */
+/* 飞鹊图标 · 31 个 · 从 assets/svg 内联 · fill 已改 currentColor */
+const FQ = (inner, s) => `<svg class="fq" width="${s||16}" height="${s||16}" viewBox="0 0 16 16" fill="none" aria-hidden="true">${inner}</svg>`;
+const ic = {
+  fq_setting: FQ('<path fill-rule="evenodd" clip-rule="evenodd" d="M6.08552 1.26853C6.31424 1.20528 6.5556 1.31119 6.66364 1.52243C6.8523 1.89205 7.21931 2.09665 7.21931 2.09665C7.56757 2.29108 7.98609 2.29484 7.99958 2.29489C8.42646 2.29489 8.78083 2.09665 8.78083 2.09665C9.1471 1.89206 9.33552 1.52243 9.33552 1.52243C9.4435 1.31099 9.68578 1.20521 9.91462 1.26853C11.5163 1.71176 12.7779 2.88376 12.7779 2.88376C12.9397 3.03419 12.984 3.2735 12.8863 3.47165C12.726 3.79678 12.7629 4.20545 12.7642 4.2197C12.8047 4.62941 13.0244 5.00907 13.0328 5.02341C13.2555 5.40015 13.5826 5.62039 13.5953 5.62888C13.9282 5.84858 14.2847 5.84372 14.2847 5.84372C14.5056 5.84073 14.7019 5.98356 14.7681 6.19431C15.2101 7.60117 14.7857 9.6957 14.7818 9.71482C14.7305 9.96563 14.4975 10.1372 14.2427 10.1123C13.7896 10.0678 13.3804 10.2881 13.3804 10.2881C12.9891 10.4991 12.7535 10.8818 12.7535 10.8818C12.5221 11.2569 12.5308 11.6533 12.5308 11.6533C12.54 12.0648 12.8199 12.3965 12.8199 12.3965C12.9849 12.5922 12.975 12.8809 12.7974 13.0654C12.199 13.6869 11.4943 14.0868 11.4752 14.0976C10.8323 14.4587 9.92341 14.7295 9.92341 14.7295C9.66267 14.8068 9.38814 14.6614 9.30525 14.4023C9.15641 13.937 8.79471 13.6775 8.77985 13.667C8.43429 13.4258 7.99958 13.4258 7.99958 13.4258C7.56574 13.4259 7.22028 13.667 7.22028 13.667C6.84853 13.9266 6.69614 14.3984 6.69489 14.4023C6.61198 14.6616 6.33663 14.8071 6.07575 14.7295C5.16766 14.4592 4.52497 14.0976 4.52497 14.0976C3.81531 13.699 3.21333 13.0764 3.20271 13.0654C3.02507 12.8809 3.01514 12.5922 3.18025 12.3965C3.45567 12.0702 3.47101 11.6618 3.47126 11.6543C3.48332 11.258 3.25973 10.8847 3.25739 10.8808C3.02836 10.501 2.64325 10.2913 2.63728 10.2881C2.22596 10.066 1.75642 10.1123 1.75642 10.1123C1.50169 10.1372 1.26967 9.96558 1.21833 9.71482C0.790781 7.62543 1.22348 6.21857 1.23103 6.19431C1.29725 5.98359 1.49361 5.84078 1.71443 5.84372C2.07029 5.8488 2.40388 5.62888 2.40388 5.62888C2.73906 5.40761 2.96638 5.02341 2.96638 5.02341C3.19455 4.63755 3.23591 4.2197 3.23591 4.2197C3.27637 3.80919 3.1193 3.48286 3.11384 3.47165C3.0161 3.27348 3.06038 3.03419 3.22224 2.88376C4.48375 1.71139 6.08552 1.26853 6.08552 1.26853ZM9.9986 2.34079C9.70695 2.72471 9.26814 2.9697 9.26814 2.9697C8.68686 3.29427 7.99958 3.29489 7.99958 3.29489C7.31256 3.29479 6.73103 2.9697 6.73103 2.9697C6.29243 2.72462 6.00056 2.34079 6.00056 2.34079C4.99581 2.68841 4.1529 3.39548 4.1529 3.39548C4.27813 3.82635 4.23163 4.31216 4.23103 4.31833C4.16798 4.95627 3.82673 5.53317 3.82673 5.53317C3.48469 6.11115 2.96282 6.45843 2.95466 6.46384C2.54578 6.73364 2.10114 6.81149 2.10114 6.81149C1.89758 7.764 2.12263 9.11228 2.12263 9.11228C2.63298 9.15302 3.09968 9.40163 3.11189 9.40817C3.73081 9.74231 4.10078 10.3444 4.11286 10.3642C4.48973 10.9892 4.47042 11.6798 4.47028 11.6845C4.45439 12.2068 4.21247 12.6513 4.21247 12.6513C4.59197 12.9889 5.01521 13.2265 5.01521 13.2265C5.41043 13.4484 5.94001 13.6347 5.94001 13.6347C6.1984 13.1631 6.64122 12.8514 6.64802 12.8467C7.24405 12.4306 7.98158 12.4258 7.99958 12.4258C8.74805 12.4258 9.35212 12.8467 9.35212 12.8467C9.79993 13.1593 10.0601 13.6347 10.0601 13.6347C10.581 13.4515 10.9721 13.2337 10.9849 13.2265C11.4023 12.9921 11.7777 12.6593 11.7867 12.6513C11.5426 12.2029 11.5309 11.6774 11.5308 11.6748C11.5158 10.986 11.8988 10.3615 11.9019 10.3564C12.2757 9.7506 12.8967 9.4131 12.9058 9.40817C13.3722 9.15665 13.8765 9.11325 13.8765 9.11325C14.1018 7.76492 13.898 6.81149 13.898 6.81149C13.4537 6.7332 13.0445 6.46384 13.0445 6.46384C12.5169 6.11553 12.1724 5.5322 12.1724 5.5322C11.8337 4.95902 11.7698 4.32521 11.7691 4.31833C11.7217 3.83814 11.8416 3.41172 11.8463 3.39548C11.0035 2.68906 9.9986 2.34079 9.9986 2.34079ZM7.99958 4.99997C9.65642 4.99997 10.9996 6.34314 10.9996 7.99997C10.9996 9.65683 9.65644 11 7.99958 11C6.3429 10.9998 4.99958 9.6567 4.99958 7.99997C4.99961 6.34327 6.34291 5.00017 7.99958 4.99997ZM7.99958 5.99997C6.8952 6.00017 5.99961 6.89555 5.99958 7.99997C5.99958 9.10442 6.89518 9.99977 7.99958 9.99997C9.10415 9.99997 9.99958 9.10454 9.99958 7.99997C9.99955 6.89543 9.10413 5.99997 7.99958 5.99997Z" fill="currentColor"/>'), // 飞鹊 setting.svg
+  fq_person: FQ('<path d="M8 9C10.721 9 13.4424 10.2344 13.4424 10.2344C13.7871 10.3909 14 10.7396 14 11.1182V13.5C14 13.7761 13.7761 14 13.5 14H2.5C2.22386 14 2 13.7761 2 13.5V11.1182C2 10.7396 2.21294 10.3909 2.55762 10.2344C5.27862 9.0004 8 9 8 9ZM8 10C5.50954 10 3 11.1318 3 11.1318V13H13V11.1318C10.4905 10.0002 8 10 8 10ZM8 2C9.65685 2 11 3.34315 11 5C11 6.65685 9.65685 8 8 8C6.34315 8 5 6.65685 5 5C5 3.34315 6.34315 2 8 2ZM8 3C6.89543 3 6 3.89543 6 5C6 6.10457 6.89543 7 8 7C9.10457 7 10 6.10457 10 5C10 3.89543 9.10457 3 8 3Z" fill="currentColor"/>'), // 飞鹊 personal.svg
+  fq_upload: FQ('<path d="M3 10.9971V12.4985C3 12.4985 3.00008 12.7058 3.14648 12.8524C3.14648 12.8524 3.29289 12.999 3.5 12.999H12.5C12.5 12.999 12.7071 12.999 12.8535 12.8524C12.8563 12.8496 13 12.7038 13 12.4985V10.9971H14V12.4985C14 12.4985 13.9998 13.1203 13.5605 13.5601C13.5605 13.5601 13.1213 14 12.5 14H3.5C3.5 14 2.8786 13.9997 2.43945 13.5601C2.43455 13.5552 2 13.117 2 12.4985V10.9971H3ZM12.3535 6.35777L11.6465 7.06549L8.5 3.91593V10.9971H7.5V3.91593L4.35352 7.06549L3.64648 6.35777L8 2L12.3535 6.35777Z" fill="currentColor"/>'), // 飞鹊 upload.svg
+  fq_search: FQ('<path d="M7.375 2C10.3435 2 12.75 4.40647 12.75 7.375C12.75 8.67922 12.2853 9.87485 11.5127 10.8057L13.9883 13.2812L13.2812 13.9883L10.8057 11.5127C9.87485 12.2853 8.67922 12.75 7.375 12.75C4.40647 12.75 2 10.3435 2 7.375C2 4.40647 4.40647 2 7.375 2ZM7.375 3C4.95875 3 3 4.95875 3 7.375C3 9.79125 4.95875 11.75 7.375 11.75C9.79125 11.75 11.75 9.79125 11.75 7.375C11.75 4.95875 9.79125 3 7.375 3Z" fill="currentColor"/>'), // 飞鹊 search.svg
+  fq_info: FQ('<path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1ZM8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2ZM8.5 7V12H7.5V7H8.5ZM8.5 4V5H7.5V4H8.5Z" fill="currentColor"/>'), // 飞鹊 info.svg
+  fq_attach: FQ('<path d="M5.87968 10.7138L9.8439 6.74955C10.0544 6.53904 10.0544 6.24132 10.0544 6.24132C10.0544 5.9436 9.8439 5.73309 9.8439 5.73309C9.63338 5.52257 9.33566 5.52257 9.33566 5.52257C9.03795 5.52257 8.82743 5.73309 8.82743 5.73309L4.86321 9.6973C4.29573 10.2648 4.29573 11.0673 4.29573 11.0673C4.29573 11.8699 4.86321 12.4373 4.86321 12.4373C5.43069 13.0048 6.23323 13.0048 6.23323 13.0048C7.03577 13.0048 7.60325 12.4373 7.60325 12.4373L11.6536 8.38695C12.1079 7.93266 12.347 7.3431 12.347 7.3431C12.5781 6.77327 12.5781 6.15515 12.5781 6.15515C12.5781 5.53702 12.347 4.96719 12.347 4.96719C12.1079 4.37763 11.6536 3.92334 11.6536 3.92334C11.1994 3.46904 10.6098 3.22997 10.6098 3.22997C10.04 2.99889 9.42184 2.99889 9.42184 2.99889C8.80371 2.99889 8.23389 3.22997 8.23389 3.22997C7.64433 3.46904 7.19003 3.92334 7.19003 3.92334L3.13964 7.97373L2.43253 7.26662L6.48293 3.21623C7.08061 2.61855 7.85809 2.30326 7.85809 2.30326C8.60866 1.99889 9.42184 1.99889 9.42184 1.99889C10.235 1.99889 10.9856 2.30326 10.9856 2.30326C11.7631 2.61854 12.3608 3.21623 12.3608 3.21623C12.9584 3.81392 13.2737 4.5914 13.2737 4.5914C13.5781 5.34197 13.5781 6.15515 13.5781 6.15515C13.5781 6.96832 13.2737 7.71889 13.2737 7.71889C12.9584 8.49637 12.3608 9.09406 12.3608 9.09406L8.31036 13.1444C7.888 13.5668 7.33836 13.7897 7.33836 13.7897C6.80785 14.0048 6.23323 14.0048 6.23323 14.0048C5.65861 14.0048 5.1281 13.7897 5.1281 13.7897C4.57846 13.5668 4.15611 13.1444 4.15611 13.1444C3.73375 12.7221 3.51086 12.1725 3.51086 12.1725C3.29573 11.6419 3.29573 11.0673 3.29573 11.0673C3.29573 10.4927 3.51086 9.96219 3.51086 9.96219C3.73375 9.41255 4.15611 8.9902 4.15611 8.9902L8.12032 5.02598C8.62373 4.52257 9.33566 4.52257 9.33566 4.52257C10.0476 4.52257 10.551 5.02598 10.551 5.02598C11.0544 5.52939 11.0544 6.24132 11.0544 6.24132C11.0544 6.95325 10.551 7.45666 10.551 7.45666L6.58679 11.4209L5.87968 10.7138Z" fill="currentColor"/>'), // 飞鹊 attachment.svg
+  fq_link: FQ('<path d="M9.41397 6.58577C9.78086 6.95265 10.0615 7.39664 10.2357 7.88535L9.41466 8.7064C9.41329 8.69685 9.36539 8.37345 9.23305 8.06766C9.2288 8.05788 9.04022 7.62623 8.70687 7.29288C8.70687 7.29288 8.36946 6.95602 7.93209 6.76669C7.93209 6.76669 7.45687 6.56091 6.9391 6.56091C6.93441 6.56091 6.41912 6.56198 5.94611 6.76669C5.93493 6.77156 5.50412 6.96009 5.17133 7.29288L3.75712 8.70709C3.75334 8.71088 3.41927 9.04678 3.23093 9.48187C3.23093 9.48187 3.02515 9.95709 3.02515 10.4749C3.02516 10.4795 3.02622 10.9948 3.23093 11.4678C3.23554 11.4784 3.42409 11.9096 3.75712 12.2426C3.75712 12.2426 4.09436 12.5794 4.5319 12.7688C4.5319 12.7688 5.00713 12.9746 5.52489 12.9746C5.52489 12.9746 6.0427 12.9745 6.51787 12.7688C6.52696 12.7649 6.95903 12.5762 7.29265 12.2426L8.35331 11.182L9.06042 11.8891L7.99976 12.9497C6.63292 14.3165 4.41684 14.3166 3.05001 12.9497C1.68319 11.5829 1.68321 9.36682 3.05001 7.99998L4.46423 6.58577C5.83106 5.21894 8.04714 5.21894 9.41397 6.58577ZM12.9495 3.05024C14.3163 4.41707 14.3163 6.63315 12.9495 7.99998L11.5353 9.4142C10.1685 10.781 7.95238 10.781 6.58555 9.4142C6.21868 9.04732 5.93805 8.60331 5.76381 8.11461L6.58486 7.29357C6.58616 7.30267 6.63403 7.6263 6.76647 7.93231C6.77024 7.94099 6.95889 8.3733 7.29265 8.70709C7.29265 8.70709 7.62991 9.04386 8.06743 9.23328C8.06743 9.23328 8.54267 9.43904 9.06042 9.43906C9.06042 9.43906 9.57823 9.43892 10.0534 9.23328C10.063 9.2291 10.4948 9.04051 10.8282 8.70709L12.2424 7.29288C12.2424 7.29288 12.5792 6.95565 12.7686 6.5181C12.7686 6.5181 12.9744 6.04288 12.9744 5.52511C12.9744 5.51974 12.9732 5.00482 12.7686 4.53212C12.7636 4.52064 12.5751 4.09001 12.2424 3.75734C12.2381 3.75301 11.9023 3.41933 11.4676 3.23116C11.4676 3.23116 10.9924 3.02538 10.4746 3.02538C10.4692 3.02538 9.95431 3.0266 9.48165 3.23116C9.4709 3.23584 9.03983 3.42438 8.70687 3.75734L7.64621 4.818L6.9391 4.1109L7.99976 3.05024C9.36658 1.68342 11.5827 1.68344 12.9495 3.05024Z" fill="currentColor"/>'), // 飞鹊 link.svg
+  fq_close: FQ('<path d="M8.00043 8.70755L12.5898 13.2969L13.2969 12.5898L8.70753 8.00044L13.3017 3.40627L12.5946 2.69916L8.00043 7.29333L3.41022 2.70312L2.70312 3.41023L7.29332 8.00044L2.70398 12.5898L3.4111 13.2969L8.00043 8.70755Z" fill="currentColor"/>'), // 飞鹊 delete.svg（纯 × · X.svg 是推特 logo 不是关闭）
+  fq_refresh: FQ('<path d="M14.2939 4.93262C14.7461 5.85882 15 6.89991 15 8C15 11.866 11.866 15 8 15C6.5097 15 5.12832 14.5341 3.99316 13.7402L3.99023 14.4932L2.99023 14.4902L3 11.8652L5.625 11.875L5.62109 12.875L4.49512 12.8701C5.48109 13.5808 6.69175 14 8 14C11.3137 14 14 11.3137 14 8C14 7.08219 13.7942 6.21237 13.4258 5.43457L14.2939 4.93262ZM8 1C9.48894 1 10.8693 1.46529 12.0039 2.25781L12 1.49219L13 1.48633L13.0137 4.11133L10.3887 4.125L10.3828 3.125L11.4912 3.11914C10.5078 2.41452 9.30209 2 8 2C4.68629 2 2 4.68629 2 8C2 8.91129 2.2029 9.77526 2.56641 10.5488L1.69824 11.0508C1.25109 10.1287 1 9.09355 1 8C1 4.13401 4.13401 1 8 1Z" fill="currentColor"/>'), // 飞鹊 refresh.svg
+  fq_filltext: FQ('<path d="M11.8838 6.92871C12.2743 6.53842 12.9074 6.53831 13.2979 6.92871L14.7119 8.34277C15.1024 8.7333 15.1024 9.36729 14.7119 9.75781L10.2734 14.1953C10.149 14.3197 9.9942 14.4097 9.82422 14.4551L7.89551 14.9688C7.15274 15.1668 6.4738 14.4879 6.67188 13.7451L7.18555 11.8164C7.2309 11.6465 7.32096 11.4915 7.44531 11.3672L11.8838 6.92871ZM8.15234 12.0742L7.6377 14.0029L9.56641 13.4883L12.5908 10.4648L11.1768 9.0498L8.15234 12.0742ZM12 2C12.5523 2 13 2.44772 13 3V5H12V3H3V13H4.96875V14H3C2.44772 14 2 13.5523 2 13V3C2 2.44772 2.44772 2 3 2H12ZM6.96875 10H4.96875V9H6.96875V10ZM11.8838 8.34277L13.2979 9.75781L14.0049 9.0498L12.5908 7.63574L11.8838 8.34277ZM9.96875 8H4.96875V7H9.96875V8ZM9.96875 6H4.96875V5H9.96875V6Z" fill="currentColor"/>'), // 飞鹊 fill-text.svg
+  fq_left: FQ('<path d="M9.14647 11.3536L5.79292 8.00001L9.14647 4.64645L9.85358 5.35356L7.20713 8.00001L9.85358 10.6465L9.14647 11.3536Z" fill="currentColor"/>'), // 飞鹊 left.svg
+  fq_picture: FQ('<path d="M13 2C13.5523 2 14 2.44772 14 3V13C14 13.5523 13.5523 14 13 14H3C2.44772 14 2 13.5523 2 13V3C2 2.44772 2.44772 2 3 2H13ZM5.58691 8.23242C5.42814 8.25118 5.31002 8.35831 5.30566 8.3623L3 10.5V13H13V12.292L5.89062 8.29297C5.75171 8.21483 5.59371 8.23166 5.58691 8.23242ZM3 9.13574L4.62598 7.62891C4.98438 7.29682 5.46973 7.23926 5.46973 7.23926C5.95496 7.18208 6.38086 7.42188 6.38086 7.42188L13 11.1445V3H3V9.13574ZM10.25 4C11.2165 4 12 4.7835 12 5.75C12 6.7165 11.2165 7.5 10.25 7.5C9.2835 7.5 8.5 6.7165 8.5 5.75C8.5 4.7835 9.2835 4 10.25 4ZM10.25 5C9.83579 5 9.5 5.33579 9.5 5.75C9.5 6.16421 9.83579 6.5 10.25 6.5C10.6642 6.5 11 6.16421 11 5.75C11 5.33579 10.6642 5 10.25 5Z" fill="currentColor"/>'), // 飞鹊 picture.svg
+  fq_preview: FQ('<path d="M11.9688 2C12.521 2 12.9688 2.44772 12.9688 3V5H11.9688V3H2.96875V13H7.96875V14H2.96875C2.41647 14 1.96875 13.5523 1.96875 13V3C1.96875 2.44772 2.41647 2 2.96875 2H11.9688ZM11.0312 7C12.6881 7 14.0312 8.34315 14.0312 10C14.0312 10.6233 13.8369 11.2313 13.4756 11.7393L15.0312 13.2949L14.3262 14L12.7705 12.4443C12.2626 12.8057 11.6546 13 11.0312 13C9.3744 13 8.03125 11.6569 8.03125 10C8.03125 8.34315 9.3744 7 11.0312 7ZM11.0312 8C9.92668 8 9.03125 8.89543 9.03125 10C9.03125 11.1046 9.92668 12 11.0312 12C12.1358 12 13.0312 11.1046 13.0312 10C13.0312 8.89543 12.1358 8 11.0312 8ZM6.96875 10H4.96875V9H6.96875V10ZM6.96875 8H4.96875V7H6.96875V8ZM9.96875 6H4.96875V5H9.96875V6Z" fill="currentColor"/>'), // 飞鹊 preview.svg
+  fq_history: FQ('<path d="M4 1V2.25488C5.13383 1.46401 6.51275 1 8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.134 15 1 11.866 1 8C1 7.61025 1.03153 7.22788 1.09277 6.85547L2.08008 7.01367C2.07824 7.02489 2 7.50353 2 8C2 8 1.99974 9.22124 2.4707 10.335C2.4707 10.335 2.9269 11.4113 3.75781 12.2422C3.75787 12.2422 4.58851 13.074 5.66504 13.5293C5.68639 13.5383 6.79051 14 8 14C8 14 9.22124 14.0003 10.335 13.5293C10.335 13.5293 11.4113 13.0731 12.2422 12.2422C12.2429 12.2414 13.0742 11.411 13.5293 10.335C13.5383 10.3136 14 9.20949 14 8C14 8 14.0003 6.77876 13.5293 5.66504C13.5293 5.66504 13.0731 4.58872 12.2422 3.75781C12.2418 3.75742 11.4113 2.92594 10.335 2.4707C10.3136 2.46173 9.2095 2 8 2C8 2 6.77876 1.99974 5.66504 2.4707C5.66504 2.4707 5.04132 2.7351 4.5 3.125H6.125V4.125H3V1H4ZM8.5 3.5V7.5H11V8.5H7.5V3.5H8.5Z" fill="currentColor"/>'), // 飞鹊 history.svg
+  fq_alignright: FQ('<path d="M14 12V13H6V12H14ZM14 10H2V9H14V10ZM14 7H6V6H14V7ZM14 4H2V3H14V4Z" fill="currentColor"/>'), // 飞鹊 align-right.svg
+  fq_bookmark: FQ('<path d="M13 2C13.5523 2 14 2.44772 14 3V13C14 13.5523 13.5523 14 13 14H3C2.44772 14 2 13.5523 2 13V3C2 2.44772 2.44772 2 3 2H13ZM3 13H13V3H10.5V7.12012C10.4997 7.50792 10.0773 7.74749 9.74414 7.54883L7.98438 6.5L6.22461 7.54883C5.89144 7.74749 5.46903 7.50792 5.46875 7.12012V3H3V13ZM10.5 10.5V11.5H5.5V10.5H10.5ZM10.5 9.5H5.5V8.5H10.5V9.5ZM6.46875 6.23926L7.98438 5.33594L9.5 6.23926V3H6.46875V6.23926Z" fill="currentColor"/>'), // 飞鹊 bookmark.svg
+  fq_add: FQ('<path d="M7.5 8.5V14H8.5V8.5H14V7.5H8.5V2H7.5V7.5H2V8.5H7.5Z" fill="currentColor"/>'), // 飞鹊 add.svg
+  fq_batch: FQ('<path d="M10.3213 4C10.5423 4 10.7549 4.08786 10.9111 4.24414L13.7559 7.08887C13.9121 7.24515 14 7.4577 14 7.67871V9H13V8.00684H10.833C10.373 8.00667 10.0001 7.63385 10 7.17383V5H5V13H10V14H4.83301C4.37303 13.9998 4.00017 13.627 4 13.167V4.83301C4.00017 4.37303 4.37303 4.00017 4.83301 4H10.3213ZM13.5 11.5H15V12.5H13.5V14H12.5V12.5H11V11.5H12.5V10H13.5V11.5ZM9 2C9.55228 2 10 2.44772 10 3H3V12C2.44772 12 2 11.5523 2 11V3C2 2.44772 2.44772 2 3 2H9ZM11 7.00684H12.2598L11 5.74707V7.00684Z" fill="currentColor"/>'), // 飞鹊 batch.svg
+  fq_bell: FQ('<path d="M7.40039 13.5225C7.40067 13.8162 7.61345 14.0668 7.90332 14.1143L8 14.1221C8.34016 14.1223 8.61208 13.8399 8.59961 13.5H9.5C9.4996 14.3 8.87136 14.9585 8.07227 14.9971C7.27308 15.0355 6.58405 14.4399 6.50684 13.6436L6.5 13.5H7.40234L7.40039 13.5225ZM8.51953 2.02734C11.0657 2.29354 13 4.43978 13 7V11.999L14 12V13L13 12.999L2 13V12L3 11.999V7C2.99981 4.43321 4.9433 2.28361 7.49707 2.02539L7.49805 1H8.51953V2.02734ZM8 3C5.79086 3 4 4.79086 4 7V11.999H12V7C12 4.79086 10.2091 3 8 3Z" fill="currentColor"/>'), // 飞鹊 bell.svg
+  fq_category: FQ('<path d="M3.5 13H2V12H3.5V13ZM14 13H5V12H14V13ZM3.5 8.5H2V7.5H3.5V8.5ZM14 8.5H5V7.5H14V8.5ZM3.5 4H2V3H3.5V4ZM14 4H5V3H14V4Z" fill="currentColor"/>'), // 飞鹊 category.svg
+  fq_chart: FQ('<path d="M12 2C12.5523 2 13 2.44772 13 3V13H14V14H2V13H3V10.5C3 9.94772 3.44772 9.5 4 9.5H6V7C6 6.44772 6.44772 6 7 6H9V3C9 2.44772 9.44772 2 10 2H12ZM4 13H6V10.5H4V13ZM7 13H9V7H7V13ZM10 13H12V3H10V13Z" fill="currentColor"/>'), // 飞鹊 chart.svg
+  fq_compass: FQ('<path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1ZM8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2ZM10.4326 4.4668C11.1035 4.27637 11.7236 4.89653 11.5332 5.56738L10.3516 9.72852C10.2676 10.0244 10.036 10.2555 9.74023 10.3398L5.57129 11.5293C4.8997 11.7209 4.27913 11.1003 4.4707 10.4287L5.66016 6.25977C5.74451 5.96404 5.97565 5.73241 6.27148 5.64844L10.4326 4.4668ZM6.60449 6.59375L5.48633 10.5137L9.40625 9.39551L10.5176 5.48242L6.60449 6.59375ZM8 7.25C8.41421 7.25 8.75 7.58579 8.75 8C8.75 8.41421 8.41421 8.75 8 8.75C7.58579 8.75 7.25 8.41421 7.25 8C7.25 7.58579 7.58579 7.25 8 7.25Z" fill="currentColor"/>'), // 飞鹊 compass.svg
+  fq_copy: FQ('<path d="M13 4C13.5523 4 14 4.44772 14 5V13C14 13.5523 13.5523 14 13 14H5C4.44772 14 4 13.5523 4 13V5C4 4.44772 4.44772 4 5 4H13ZM5 13H13V5H5V13ZM11 2C11.5523 2 12 2.44772 12 3H3V12C2.44772 12 2 11.5523 2 11V3C2 2.44772 2.44772 2 3 2H11ZM9.5 7V8.5H11V9.5H9.5V11H8.5V9.5H7V8.5H8.5V7H9.5Z" fill="currentColor"/>'), // 飞鹊 copy.svg
+  fq_distribution: FQ('<path d="M9.6875 1C10.2398 1 10.6875 1.44772 10.6875 2V4.65625C10.6875 5.20853 10.2398 5.65625 9.6875 5.65625H8.5V7.65625H10.3125C10.3125 7.65625 10.9337 7.65636 11.373 8.0957C11.373 8.0957 11.8125 8.53493 11.8125 9.15625V10.3438H13C13.5523 10.3438 14 10.7915 14 11.3438V14C14 14.5523 13.5523 15 13 15H9.625C9.07272 15 8.625 14.5523 8.625 14V11.3438C8.625 10.7915 9.07272 10.3438 9.625 10.3438H10.8125V9.15625C10.8125 9.15625 10.8125 8.94918 10.666 8.80273C10.666 8.80273 10.5195 8.65625 10.3125 8.65625H5.6875C5.6875 8.65625 5.48043 8.65629 5.33398 8.80273C5.33398 8.80273 5.1875 8.94915 5.1875 9.15625V10.3438H6.375C6.92728 10.3438 7.375 10.7915 7.375 11.3438V14C7.375 14.5523 6.92728 15 6.375 15H3C2.44772 15 2 14.5523 2 14V11.3438C2 10.7915 2.44772 10.3438 3 10.3438H4.1875V9.15625C4.1875 9.15625 4.18761 8.53504 4.62695 8.0957C4.62695 8.0957 5.06618 7.65625 5.6875 7.65625H7.5V5.65625H6.3125C5.76022 5.65625 5.3125 5.20853 5.3125 4.65625V2C5.3125 1.44772 5.76022 1 6.3125 1H9.6875ZM3 14H6.375V11.3438H3V14ZM9.625 11.3438V14H13V11.3438H9.625ZM6.3125 4.65625H9.6875V2H6.3125V4.65625Z" fill="currentColor"/>'), // 飞鹊 distribution.svg
+  fq_down: FQ('<path d="M11.3535 6.85356L7.99998 10.2071L4.64642 6.85356L5.35353 6.14645L7.99998 8.7929L10.6464 6.14645L11.3535 6.85356Z" fill="currentColor"/>'), // 飞鹊 down.svg
+  fq_eye: FQ('<path d="M8 3C8 3 11.9375 3 15 8C15 8 11.9375 13 8 13C8 13 4.0625 13 1 8C1 8 4.0625 3 8 3ZM8 4C8 4 4.82362 4 2.18457 8C2.18457 8 4.82369 12 8 12C8 12 11.1764 12 13.8154 8C13.8154 8 11.1763 4 8 4ZM8 5.5C9.38071 5.5 10.5 6.61929 10.5 8C10.5 9.38071 9.38071 10.5 8 10.5C6.61929 10.5 5.5 9.38071 5.5 8C5.5 6.61929 6.61929 5.5 8 5.5ZM8 6.5C7.17157 6.5 6.5 7.17157 6.5 8C6.5 8.82843 7.17157 9.5 8 9.5C8.82843 9.5 9.5 8.82843 9.5 8C9.5 7.17157 8.82843 6.5 8 6.5Z" fill="currentColor"/>'), // 飞鹊 eye.svg
+  fq_file: FQ('<path d="M9.58594 2C9.8511 2.00004 10.1055 2.10547 10.293 2.29297L13.707 5.70703C13.8945 5.89453 14 6.1489 14 6.41406V13C14 13.5523 13.5523 14 13 14H3C2.44772 14 2 13.5523 2 13V3C2 2.44772 2.44772 2 3 2H9.58594ZM3 13H13V7H10C9.44772 7 9 6.55228 9 6V3H3V13ZM10 6H12.5859L10 3.41406V6Z" fill="currentColor"/>'), // 飞鹊 file.svg
+  fq_folder: FQ('<path d="M5.58594 2C5.8511 2.00004 6.10547 2.10547 6.29297 2.29297L7.70703 3.70703C7.89453 3.89453 8.1489 3.99996 8.41406 4H12C12.5523 4 13 4.44772 13 5V6H14.0088C14.6759 6.00003 15.1563 6.64101 14.9688 7.28125L13.2109 13.2812C13.0861 13.7073 12.695 14 12.251 14H3C2.44772 14 2 13.5523 2 13V3C2 2.44772 2.44772 2 3 2H5.58594ZM3.33496 13H12.251L14.0088 7H5.09277L3.33496 13ZM3 10.5869L4.13281 6.71875C4.25764 6.29267 4.64879 6.00002 5.09277 6H12V5H8.41406C7.58571 4.99993 7 4.41406 7 4.41406L5.58594 3H3V10.5869Z" fill="currentColor"/>'), // 飞鹊 folder.svg
+  fq_gallery: FQ('<path d="M13 4C13.5523 4 14 4.44772 14 5V13C14 13.5523 13.5523 14 13 14H5C4.44772 14 4 13.5523 4 13V5C4 4.44772 4.44772 4 5 4H13ZM5 11.7246V13H12.9521L7.09277 9.39453L5 11.7246ZM11 2C11.5523 2 12 2.44772 12 3H3V12C2.44772 12 2 11.5523 2 11V3C2 2.44772 2.44772 2 3 2H11ZM5 10.2285L6.34961 8.72656C6.34961 8.72656 6.59157 8.45616 6.9502 8.4043C6.95938 8.40301 7.31262 8.35554 7.61719 8.54297L13 11.8555V5H5V10.2285ZM10.6875 5.875C11.5504 5.875 12.25 6.57456 12.25 7.4375C12.25 8.30045 11.5504 9 10.6875 9C9.82455 9 9.125 8.30045 9.125 7.4375C9.125 6.57456 9.82455 5.875 10.6875 5.875ZM10.6875 6.875C10.3768 6.875 10.125 7.12684 10.125 7.4375C10.125 7.74816 10.3768 8 10.6875 8C10.9982 8 11.25 7.74816 11.25 7.4375C11.25 7.12684 10.9982 6.875 10.6875 6.875Z" fill="currentColor"/>'), // 飞鹊 picture-gallery.svg
+  fq_keyboard: FQ('<path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1ZM8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2ZM9.5 10.3125V11.8125H6.5V10.3125H9.5ZM5.375 7.65625V9.15625H3.875V7.65625H5.375ZM7.625 7.65625V9.15625H6.125V7.65625H7.625ZM9.875 7.65625V9.15625H8.375V7.65625H9.875ZM12.125 7.65625V9.15625H10.625V7.65625H12.125ZM5.375 5.40625V6.90625H3.875V5.40625H5.375ZM7.625 5.40625V6.90625H6.125V5.40625H7.625ZM9.875 5.40625V6.90625H8.375V5.40625H9.875ZM12.125 5.40625V6.90625H10.625V5.40625H12.125Z" fill="currentColor"/>'), // 飞鹊 keyboard.svg
+  fq_voice: FQ('<path d="M4 8C4 8.81052 4.31169 9.55009 4.31445 9.55664C4.61803 10.2744 5.17188 10.8281 5.17188 10.8281C5.72574 11.382 6.44336 11.6855 6.44336 11.6855C7.18604 11.9997 8 12 8 12C8.8105 12 9.55007 11.6883 9.55664 11.6855C10.274 11.3821 10.8275 10.8287 10.8281 10.8281C11.382 10.2743 11.6855 9.55664 11.6855 9.55664C11.9997 8.81395 12 8 12 8V7H13V8C13 9.01692 12.6064 9.94629 12.6064 9.94629C12.2269 10.8436 11.5352 11.5351 11.5352 11.5352C10.8471 12.2233 9.95577 12.6024 9.94629 12.6064C9.24951 12.9012 8.50366 12.9752 8.5 12.9756V15H7.5V12.9756C6.75212 12.9022 6.05371 12.6064 6.05371 12.6064C5.1564 12.2269 4.46489 11.5352 4.46484 11.5352C3.77676 10.8471 3.39758 9.95579 3.39355 9.94629C3.00042 9.01683 3 8 3 8V7H4V8ZM8.01562 1C9.7674 1 11.1875 2.4201 11.1875 4.17188V7.82812C11.1875 9.5799 9.7674 11 8.01562 11C6.26385 11 4.84375 9.5799 4.84375 7.82812V4.17188C4.84375 2.4201 6.26385 1 8.01562 1ZM8.01562 2C7.116 2 6.47949 2.63574 6.47949 2.63574C5.84336 3.27187 5.84375 4.17188 5.84375 4.17188V7.82812C5.84375 8.72775 6.47949 9.36426 6.47949 9.36426C7.11562 10.0004 8.01562 10 8.01562 10C8.91525 10 9.55176 9.36426 9.55176 9.36426C10.1879 8.72813 10.1875 7.82812 10.1875 7.82812V4.17188C10.1875 3.27225 9.55176 2.63574 9.55176 2.63574C8.91563 1.99961 8.01562 2 8.01562 2Z" fill="currentColor"/>'), // 飞鹊 voice.svg
+  fq_medal: FQ('<path fill-rule="evenodd" clip-rule="evenodd" d="M8.00479 1C11.1963 1 13.7841 3.58573 13.7841 6.77539C13.7841 7.94379 13.4289 9.08507 12.7665 10.0479L13.9325 12.0654C14.1011 12.3576 13.9377 12.7292 13.6083 12.8027L11.5243 13.2676L10.081 14.8379C9.85254 15.0864 9.44809 15.0422 9.2792 14.75L8.00869 12.5508H7.99111L6.72061 14.75C6.55173 15.0423 6.14729 15.0864 5.91885 14.8379L4.47451 13.2676L2.3915 12.8027C2.06201 12.7293 1.89859 12.3577 2.06729 12.0654L3.23721 10.0391C2.57863 9.07804 2.22647 7.94022 2.22647 6.77539C2.22648 3.58581 4.81343 1.00014 8.00479 1ZM3.27432 11.9756L4.99893 12.3594L6.19522 13.6602L6.89834 12.4443C5.7697 12.2242 4.732 11.672 3.91885 10.8594L3.27432 11.9756ZM12.0849 10.8662C11.2704 11.6776 10.2315 12.227 9.10244 12.4453L9.80459 13.6602L11.0009 12.3594L12.7255 11.9756L12.0849 10.8662ZM8.00479 2C7.98749 2.00003 7.08535 2.00294 6.246 2.33496C6.246 2.33496 5.32569 2.7 4.62588 3.39941C4.61284 3.4125 3.92223 4.10679 3.56143 5.01758C3.56143 5.01758 3.22647 5.86464 3.22647 6.77539C3.22647 6.77539 3.22598 7.68637 3.56143 8.5332C3.56393 8.53951 3.92855 9.45541 4.62588 10.1523C4.64149 10.1679 5.33617 10.8558 6.246 11.2158C6.26329 11.2226 7.10271 11.5507 8.00479 11.5508C8.00479 11.5508 8.91696 11.5512 9.76455 11.2158C9.77726 11.2108 10.6897 10.8469 11.3847 10.1523C11.3847 10.1523 12.0839 9.45264 12.4481 8.5332C12.4481 8.5332 12.7841 7.68616 12.7841 6.77539C12.7841 6.76912 12.7824 5.86148 12.4481 5.01758C12.4411 4.99985 12.0773 4.09186 11.3847 3.39941C11.3847 3.39941 10.6847 2.69908 9.76455 2.33496C9.76455 2.33496 8.9164 2 8.00479 2ZM8.00479 3.77832C9.6609 3.77832 11.0038 5.12022 11.0038 6.77539C11.0038 8.43057 9.66091 9.77246 8.00479 9.77246C6.34878 9.77232 5.00674 8.43049 5.00674 6.77539C5.00676 5.12031 6.34879 3.77846 8.00479 3.77832ZM8.00479 4.77832C7.98807 4.77838 7.17111 4.78441 6.5917 5.36328C6.5917 5.36328 6.00675 5.94843 6.00674 6.77539C6.00674 6.77539 6.00652 7.60265 6.5917 8.1875C6.60394 8.19964 7.18564 8.77234 8.00479 8.77246C8.00479 8.77246 8.83341 8.7726 9.41885 8.1875C9.42367 8.18267 10.0038 7.59894 10.0038 6.77539C10.0038 6.7695 10.0019 5.94604 9.41885 5.36328C9.41885 5.36328 8.83221 4.77832 8.00479 4.77832Z" fill="currentColor"/>'), // 飞鹊 medal.svg
+  fq_right: FQ('<path d="M6.85353 4.64644L10.2071 7.99999L6.85353 11.3535L6.14642 10.6464L8.79287 7.99999L6.14642 5.35355L6.85353 4.64644Z" fill="currentColor"/>'), // 飞鹊 right.svg
+  fq_safeguard: FQ('<path d="M7.99988 1C9.68992 2.04132 11.5273 2.76997 13.5819 2.96582C13.8296 2.98959 14.0192 3.2018 14.0048 3.4502L13.7264 8.21387C13.5346 11.4959 11.2029 14.259 7.99988 15C4.79689 14.2589 2.46518 11.4959 2.27332 8.21387L1.99402 3.42969C1.97997 3.1892 2.15652 2.98048 2.39539 2.94922C4.49461 2.67446 6.3635 2.02606 7.99988 1ZM7.49988 2.43359C5.46783 3.47447 3.04239 3.86576 3.02136 3.86914L3.27136 8.15527C3.33201 9.19293 3.71506 10.1538 3.72546 10.1797C4.10701 11.1247 4.76453 11.9069 4.77136 11.915C5.42639 12.6913 6.2869 13.2258 6.30554 13.2373C6.87001 13.5855 7.48838 13.8084 7.49988 13.8125V2.43359ZM8.49988 13.8125C9.12415 13.5886 9.69421 13.2373 9.69421 13.2373C10.5636 12.701 11.2247 11.9195 11.2284 11.915C11.8906 11.1303 12.2743 10.1797 12.2743 10.1797C12.6669 9.20706 12.7284 8.15527 12.7284 8.15527L12.9764 3.90234C10.708 3.59069 8.49988 2.43457 8.49988 2.43457V13.8125Z" fill="currentColor"/>'), // 飞鹊 safeguard.svg
+  fq_similarity: FQ('<path d="M3 13H5.25V14H3C2.44772 14 2 13.5523 2 13V10.75H3V13ZM14 10.75V13C14 13.5523 13.5523 14 13 14H10.75V13H13V10.75H14ZM7.71875 4.3125C9.51368 4.3125 10.9688 5.76757 10.9688 7.5625C10.9688 8.32063 10.7096 9.01845 10.2744 9.57129L11.4805 10.7891L10.7695 11.4922L9.54199 10.2529C9.02206 10.606 8.39457 10.8125 7.71875 10.8125C5.92382 10.8125 4.46875 9.35743 4.46875 7.5625C4.46875 5.76757 5.92382 4.3125 7.71875 4.3125ZM7.71875 5.3125C6.47611 5.3125 5.46875 6.31986 5.46875 7.5625C5.46875 8.80514 6.47611 9.8125 7.71875 9.8125C8.96139 9.8125 9.96875 8.80514 9.96875 7.5625C9.96875 6.31986 8.96139 5.3125 7.71875 5.3125ZM5.25 3H3V5.25H2V3C2 2.44772 2.44772 2 3 2H5.25V3ZM13 2C13.5523 2 14 2.44772 14 3V5.25H13V3H10.75V2H13Z" fill="currentColor"/>'), // 飞鹊 similarity.svg
+  fq_survey: FQ('<path d="M11.8838 6.92871C12.2743 6.53844 12.9074 6.53834 13.2979 6.92871L14.7119 8.34277C15.1024 8.7333 15.1024 9.36729 14.7119 9.75781L10.2734 14.1953C10.149 14.3197 9.99421 14.4097 9.82422 14.4551L7.89551 14.9688C7.15274 15.1668 6.4738 14.4879 6.67188 13.7451L7.18555 11.8164C7.2309 11.6465 7.32096 11.4915 7.44531 11.3672L11.8838 6.92871ZM8.15234 12.0742L7.6377 14.0029L9.56641 13.4883L12.5908 10.4648L11.1768 9.0498L8.15234 12.0742ZM12 2C12.5523 2 13 2.44771 13 3V5H12V3H3V13H5V14H3C2.44772 14 2 13.5523 2 13V3C2 2.44771 2.44772 2 3 2H12ZM8 10.3125H7V9.3125H8V10.3125ZM11.8838 8.34277L13.2979 9.75781L14.0049 9.0498L12.5908 7.63574L11.8838 8.34277ZM7.5 4.5C7.5 4.5 8.25777 4.50044 8.81641 4.9375C8.83727 4.95405 9.53125 5.51215 9.53125 6.5127C9.53121 6.52453 9.52757 7.07265 9.18066 7.50098C9.17649 7.50611 8.99225 7.73118 8.56348 8.04883C8.56348 8.04883 8.23155 8.29491 8.12793 8.42285C8.12275 8.42934 8 8.58446 8 8.78125H7C7 8.78125 6.9999 8.22598 7.35059 7.79297C7.35059 7.79297 7.53408 7.56642 7.96777 7.24512C7.96777 7.24512 8.2997 6.99903 8.40332 6.87109C8.40677 6.86679 8.53117 6.71085 8.53125 6.5127C8.53125 6.5127 8.53143 5.98402 8.2002 5.72461C8.2002 5.72461 7.91263 5.5 7.5 5.5C7.5 5.5 7.08695 5.49995 6.7998 5.72461C6.78983 5.73254 6.46875 5.9924 6.46875 6.5127H5.46875C5.46875 6.5127 5.4688 5.4972 6.18359 4.9375C6.18359 4.9375 6.74266 4.5 7.5 4.5Z" fill="currentColor"/>'), // 飞鹊 survey.svg
+  fq_table: FQ('<path d="M13 2C13.5523 2 14 2.44772 14 3V13C14 13.5523 13.5523 14 13 14H3C2.44772 14 2 13.5523 2 13V3C2 2.44772 2.44772 2 3 2H13ZM3 13H5.625V10.4375H3V13ZM6.625 13H9.375V10.4375H6.625V13ZM10.375 13H13V10.4375H10.375V13ZM3 9.4375H5.625V6.6875H3V9.4375ZM6.625 9.4375H9.375V6.6875H6.625V9.4375ZM10.375 9.4375H13V6.6875H10.375V9.4375ZM3 5.6875H5.625V3H3V5.6875ZM6.625 5.6875H9.375V3H6.625V5.6875ZM10.375 5.6875H13V3H10.375V5.6875Z" fill="currentColor"/>'), // 飞鹊 table.svg
+  fq_talk: FQ('<path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C6.7653 15 5.5521 14.6737 4.48438 14.0537L2.6748 14.5449C1.93132 14.7469 1.24844 14.0678 1.44629 13.3232L1.93359 11.4922C1.32215 10.4299 1 9.22565 1 8C1 4.13401 4.13401 1 8 1ZM8 2C8 2 6.85512 1.99963 5.79102 2.4209C5.77235 2.42832 4.6293 2.88632 3.75781 3.75781C3.75741 3.75822 2.87823 4.636 2.4209 5.79102C2.4209 5.79102 2 6.85554 2 8C2 8 1.99992 9.60347 2.7998 10.9932L3.00586 11.3506L2.41211 13.5801L4.62598 12.9785L4.9873 13.1885C5.00416 13.1982 6.39409 14 8 14C8 14 9.14488 14.0004 10.209 13.5791C10.2276 13.5717 11.3707 13.1137 12.2422 12.2422C12.2422 12.2421 13.1217 11.3642 13.5791 10.209C13.5791 10.209 14 9.14446 14 8C14 8 14.0004 6.85512 13.5791 5.79102C13.5717 5.77234 13.1137 4.6293 12.2422 3.75781C12.2422 3.75781 11.3643 2.87833 10.209 2.4209C10.209 2.4209 9.14446 2 8 2ZM8 8V9H5V8H8ZM11 6V7H5V6H11Z" fill="currentColor"/>'), // 飞鹊 talk.svg
+  wb_auto: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.93 12.38A5.35 5.35 0 0 0 13.17 6.62" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M11.07 3.62A5.35 5.35 0 0 0 2.83 9.38" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M5.75 10.75 8 5.35l2.25 5.4M6.62 9.35h2.76" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg>',  // 1:1 摹自 WorkBuddy 的 Auto 图标（缺口圆环 + A）
+  wb_send: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">'
+    + '<path d="M8 2.6C8.36 2.6 8.68 2.8 8.84 3.12L13.88 12.88C14.1 13.3 13.72 13.76 13.28 13.6'
+    + 'L8.32 11.86C8.11 11.79 7.89 11.79 7.68 11.86L2.72 13.6C2.28 13.76 1.9 13.3 2.12 12.88'
+    + 'L7.16 3.12C7.32 2.8 7.64 2.6 8 2.6Z" fill="currentColor"/></svg>',  // 1:1 摹自 WorkBuddy 发送键
+  fq_vs: FQ('<path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1ZM8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2ZM10.5078 5.375C11.3591 5.375 11.8584 5.75627 11.873 5.76758C12.3744 6.16014 12.375 6.79624 12.375 6.79688C12.375 6.9196 12.3661 6.9796 12.3652 6.98535C12.3553 7.03507 12.3203 7.07031 12.3203 7.07031C12.2873 7.10333 12.2409 7.10539 12.2363 7.10547H11.2031C11.1558 7.10547 11.1267 7.07327 11.124 7.07031C11.0942 7.03551 11.1035 6.98535 11.1035 6.98535C11.1231 6.76683 10.9297 6.61816 10.9297 6.61816C10.7388 6.47115 10.3889 6.46878 10.3789 6.46875C10.0437 6.46875 9.82069 6.59575 9.81738 6.59766C9.59391 6.72692 9.59375 6.95605 9.59375 6.95605C9.59381 7.13498 9.7832 7.22949 9.7832 7.22949C9.9713 7.32351 10.3948 7.43267 10.3984 7.43359C10.756 7.52308 10.9053 7.57227 10.9053 7.57227C11.5056 7.75949 11.8522 8.04949 11.8584 8.05469C12.206 8.348 12.2061 8.87498 12.2061 8.875C12.2061 8.9888 12.1971 9.05738 12.1963 9.06348C12.0985 9.78808 11.4996 10.1996 11.4814 10.2119C10.8683 10.6228 9.93002 10.625 9.92188 10.625C9.00814 10.625 8.48145 10.2617 8.48145 10.2617C7.96063 9.90238 7.95513 9.3144 7.95508 9.30273C7.95508 9.20617 7.9643 9.14689 7.96484 9.14355L7.97559 9.04395C7.98495 8.99739 8.01572 8.96392 8.01953 8.95996C8.05429 8.92516 8.10449 8.9248 8.10449 8.9248H9.17676C9.22642 8.9248 9.25684 8.95996 9.25684 8.95996C9.28534 8.99379 9.27685 9.04138 9.27637 9.04395V9.05371C9.24697 9.26955 9.45918 9.42272 9.46484 9.42676C9.68335 9.58088 10.041 9.58105 10.041 9.58105C10.3787 9.58105 10.6025 9.43652 10.6025 9.43652C10.8204 9.29574 10.8251 9.08411 10.8252 9.07422C10.8252 8.9189 10.6649 8.83399 10.6572 8.83008C10.4912 8.74696 10.1518 8.65913 10.1406 8.65625C9.70891 8.52855 9.461 8.4301 9.45508 8.42773C8.91876 8.22887 8.60059 7.9502 8.60059 7.9502C8.2872 7.67545 8.28326 7.1782 8.2832 7.16504C8.2832 6.62811 8.57129 6.21973 8.57129 6.21973C8.85505 5.8184 9.35048 5.60019 9.36523 5.59375C9.87176 5.375 10.5078 5.375 10.5078 5.375ZM4.98535 5.43457C5.0946 5.43457 5.10449 5.53418 5.10449 5.53418L5.53223 8.54688C5.53223 8.57558 5.55491 8.57711 5.55664 8.57715C5.58147 8.57715 5.5918 8.54688 5.5918 8.54688L6.74316 5.53418C6.78262 5.43543 6.89109 5.43458 6.89258 5.43457L8.13379 5.4541C8.19338 5.4541 8.21875 5.48926 8.21875 5.48926C8.24291 5.52324 8.21521 5.59055 8.21387 5.59375L6.08789 10.4561C6.0394 10.553 5.95331 10.5556 5.94922 10.5557H4.6875C4.59923 10.5555 4.56899 10.4581 4.56836 10.4561L3.625 5.57422V5.55371C3.62518 5.43595 3.74161 5.43458 3.74414 5.43457H4.98535Z" fill="currentColor"/>'), // 飞鹊 vs.svg
+  fq_yes: FQ('<path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1ZM8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2ZM11.3535 6.35352L7 10.707L4.64648 8.35352L5.35352 7.64648L7 9.29297L10.6465 5.64648L11.3535 6.35352Z" fill="currentColor"/>'), // 飞鹊 yes.svg
+};
+
+/* ═══════════ 场景与卡片 ═══════════ */
+const SCENES = [
+  { id:'research', name:'前期调研',
+    note:'先确认业务、竞品和设计目标，再开始画稿。',
+    cards:[
+      { i:ic.fq_vs, n:'竞品分析', out:'→ <em>竞品对比表</em>，以及可以借鉴的做法清单。',
+        uses:[['竞品库',1],['竞品分析方法',0]],
+        tpl:'分析阿里国际站的商品列表页，跟 MIC 的搜索结果页做对比。\n我关心的是筛选项多的时候怎么收纳。' },
+      { i:ic.fq_file, n:'业务知识查询', out:'→ 这条业务线的<em>现有规则、常用术语、买家痛点占比</em>。',
+        uses:[['MIC 业务知识库',0],['用户研究',0]],
+        tpl:'我要做询盘提醒相关的需求。\n先给我这条业务线的现有规则、MIC 内部的常用叫法，以及买家在这一步的主要痛点。' },
+      { i:ic.fq_compass, n:'设计目标（GSSM）', out:'→ <em>GSSM 设计目标表</em>，五列从业务目标推到可量化指标。',
+        uses:[['GSSM 模型',0],['MIC 业务知识库',0]],
+        tpl:'需求背景是搜索结果页的发询盘率偏低，业务方给的目标是提升询盘转化。\n帮我写 GSSM 设计目标表，并确认旧版数据现在取不取得到。' },
+      { i:ic.fq_bookmark, n:'设计案例参考', out:'→ 同类场景的<em>优秀设计案例</em>与可借鉴的模式。',
+        uses:[['设计案例库',1]],
+        tpl:'我在做搜索结果页的筛选区，想看同类的优秀设计案例。\n我关心的是移动端怎么放得下这么多筛选项。' },
+    ]},
+  { id:'design', name:'设计稿',
+    note:'交互稿与视觉稿都用飞鹊真组件，交付时前端可以直接对应。',
+    cards:[
+      { i:ic.fq_category, n:'交互稿', out:'→ <em>真实场景叠层的交互稿</em>，含完整流程、状态与异常分支说明。',
+        uses:[['交互经验库',0],['飞鹊组件库',0],['UED 交互自查表',0]],
+        tpl:'做询盘发送页的交互稿。\n需求文档：【贴 PRD 链接，或把文件拖进来】\n要覆盖的流程：从商品详情页点 Contact Now 到询盘发送成功。' },
+      { i:ic.fq_picture, n:'视觉稿', out:'→ <em>飞鹊组件搭的视觉稿</em>，每个状态都有独立画布。',
+        uses:[['飞鹊组件库',0],['视觉与交付规范',0]],
+        tpl:'出 MIC 搜索结果页的视觉稿。\n参考的线上页面：www.made-in-china.com/productSearch?word=led\n要画的状态：空态、满态、加载中、报错。' },
+      { i:ic.fq_distribution, n:'设计策略与提案', out:'→ <em>几个不同方向的提案</em>，各自的取舍写清楚。',
+        uses:[['设计案例库',1],['MIC 业务知识库',0],['平台设计原则',0]],
+        tpl:'针对买家挑不出合适供应商这个问题，给我几个不同方向的提案。\n已知的约束是不能动搜索算法，只能改前端呈现。' },
+    ]},
+  { id:'demo', name:'制作 Demo',
+    note:'把设计稿变成可交互的网页，评审和用户测试都能用。',
+    cards:[
+      { i:ic.fq_preview, n:'设计稿还原成网页', out:'→ <em>双击就能打开的单文件网页</em>，跟设计稿逐项对齐。',
+        uses:[['飞鹊组件库',0],['还原检查',0]],
+        tpl:'把这个 Figma 节点还原成网页：【贴 Figma 链接】\n需要响应式：1440 和 1024 两档。' },
+      { i:ic.fq_copy, n:'线上页面克隆成底板', out:'→ <em>线上真页面的离线副本</em>，可以直接在上面改方案。',
+        uses:[['页面克隆',0],['MIC 线上页面清单',0]],
+        tpl:'把 MIC 搜索结果页克隆成可离线打开的底板。\n我要在上面改的是筛选区的收纳方式。' },
+      { i:ic.fq_table, n:'飞鹊组件查询', out:'→ <em>组件真名、可选状态、绑定的样式</em>。',
+        uses:[['飞鹊组件库',0]],
+        tpl:'飞鹊有没有分页器这个组件？\n我要用在 Web 端。' },
+    ]},
+  { id:'deliver', name:'交付验收',
+    note:'交付前自己先检查一遍，避免前端反馈规范问题。',
+    cards:[
+      { i:ic.fq_safeguard, n:'交付前检查', out:'→ <em>检查报告</em>，逐项列出图层命名、组件真名、状态是否画齐。',
+        uses:[['视觉与交付规范',0]],
+        tpl:'检查这份稿能不能交给前端：【贴 Figma 链接】' },
+      { i:ic.fq_similarity, n:'设计稿与线上页面对比', out:'→ <em>差异清单</em>，每条带精确数值，可以回填飞书表格。',
+        uses:[['验收 13 个维度',0],['MIC 线上页面清单',0]],
+        tpl:'对比 MIC 搜索结果页和【贴 Figma 链接】，列出所有差异。' },
+    ]},
+  { id:'review', name:'走查复盘',
+    note:'上线之后回过头看：用户实际的使用方式，跟设计时的预期一致吗。',
+    cards:[
+      { i:ic.fq_eye, n:'线上页面体验走查', out:'→ <em>走查报告</em>，标出用户会卡住和犹豫的地方。',
+        uses:[['交互经验库',0],['UED 交互自查表',0]],
+        tpl:'走查 MIC 搜索结果页的筛选流程。\n我关心的是筛选项一多，买家会不会直接放弃。' },
+      { i:ic.fq_chart, n:'用户行为分析', out:'→ <em>会话走查表</em>，真实用户在这个功能上怎么操作。',
+        uses:[['Clarity 通道',0],['全站页面清单',0]],
+        tpl:'看搜索结果页的真实用户行为。\n我想知道买家点了筛选之后，有多少人继续往下翻。' },
+      { i:ic.fq_history, n:'项目数据复盘', out:'→ <em>符合 UED 标准的复盘文档</em>，从设计动作追到数据变化。',
+        uses:[['复盘方法论',0],['GSSM 模型',0]],
+        tpl:'这个项目上线前后的数据是【贴数据表或截图】。\n设计上做的改动是筛选区从平铺改成收纳，帮我写复盘文档。' },
+    ]},
+  { id:'ops', name:'运营专项',
+    note:'坑位图、多语言版本、应用市场图片，这三类工作量大、重复度高。',
+    cards:[
+      { i:ic.fq_gallery, n:'运营坑位图', out:'→ <em>母版加实例结构的坑位图</em>，改一处全套跟着变。',
+        uses:[['运营组件',0],['坑位图规范',0]],
+        tpl:'做 9 月大促的坑位图。\n尺寸 1200×400，需要英语、西语、阿语三个版本。' },
+      { i:ic.fq_alignright, n:'阿语与 RTL 版本', out:'→ <em>阿语版本</em>，整段镜像加字体规范都处理好。',
+        uses:[['阿语规范',0]],
+        tpl:'把 9 月大促这套图出阿语版本。' },
+      { i:ic.fq_batch, n:'应用市场图片处理', out:'→ <em>各个尺寸规格的成品图</em>。',
+        uses:[['图片批量处理',0]],
+        tpl:'把买家 App 首页的截图处理成应用市场需要的各个尺寸。' },
+    ]},
+];
+
+/* ═══════════ 最佳实践案例（跨场景 · 给不知道从哪开始的人）═══════════ */
+const CASES = [
+  { sc:'design',   ci:1, t:'出页面视觉稿',   g:'飞鹊组件搭的稿，每个状态都有画布' },
+  { sc:'demo',     ci:0, t:'设计稿转网页',   g:'双击就能打开的单文件网页' },
+  { sc:'deliver',  ci:1, t:'设计稿验收',     g:'跟线上逐项对比，差异带精确数值' },
+  { sc:'research', ci:1, t:'查业务线规则',   g:'现有规则、常用叫法、买家痛点占比' },
+  { sc:'review',   ci:2, t:'写项目复盘',     g:'符合 UED 标准的复盘文档' },
+  { sc:'design',   ci:0, t:'出交互稿',       g:'完整流程、状态与异常分支说明' },
+  { sc:'research', ci:0, t:'分析竞品做法',   g:'竞品对比表和可借鉴的清单' },
+  { sc:'ops',      ci:0, t:'做运营坑位图',   g:'母版加实例，改一处全套跟着变' },
+  { sc:'review',   ci:1, t:'看真实用户行为', g:'会话走查表，真实用户怎么操作这个功能' },
+  { sc:'demo',     ci:1, t:'克隆线上页面',   g:'线上真页面的离线副本，可以直接改' },
+];
+
+/* ═══════════ 模型 ═══════════ */
+const MODELS = [
+  { id:'auto',    n:'Auto',            badge:['rec','推荐'], good:'按任务自动挑' },
+  { id:'opus',    n:'Claude Opus 5',   good:'出稿 · 写代码' },
+  { id:'sonnet',  n:'Claude Sonnet 5', good:'日常任务' },
+  { id:'gpt',     n:'GPT',             good:'生成图片' },
+  { id:'doubao',  n:'豆包',            good:'中文长文本' },
+  { id:'hunyuan', n:'混元',            good:'—' },
+  { id:'glm',     n:'GLM',             good:'—' },
+];
+// 🔴 待吉吉确认：图 9 那列是 WorkBuddy 的积分倍率（0.79x）。我们这边真实倍率我不知道，
+// 没有编数字 —— 先用「擅长什么」占这一列。要显示倍率就把 good 换成真实值。
+
+/* ═══════════ 资料库 ═══════════ */
+const LIBS = [
+  { i:ic.fq_table, n:'飞鹊组件库', short:'组件真名、状态、绑定的样式', ready:1, cnt:'Web 端 44 页 · 移动端 45 页',
+    d:'组件的真实名称、可选状态、绑定了哪个样式都在这里。Web 端和移动端是两套，编号不通用，开工前先确认用哪套。' },
+  { i:ic.fq_survey, n:'MIC 业务知识库', short:'八条业务线的规则与术语', ready:1, cnt:'8 条业务线',
+    d:'搜索、询盘、交易订单、TM、商机融合、会员成长、运营、广告变现。每条业务线的规则、MIC 内部叫法、买家痛点占比。' },
+  { i:ic.fq_category, n:'交互经验库', short:'交互稿怎么出、状态怎么枚举', ready:1, cnt:'交互自查表 80 余条',
+    d:'交互稿怎么出、状态怎么枚举、交互专家的 7 个判断维度，以及 UED 交互自查表。' },
+  { i:ic.fq_folder, n:'MIC 项目经验', short:'做过的项目留下的判断', ready:1, cnt:'覆盖搜索、询盘、交易等主要项目',
+    d:'做过的项目留下的判断：哪些做法有效、哪些地方出过问题、下次该怎么做。' },
+  { i:ic.fq_safeguard, n:'视觉与交付规范', short:'视觉规范与交付文档结构', ready:1, cnt:'验收 13 个维度',
+    d:'飞鹊视觉规范、交付给前端的文档结构、线上与设计稿对比验收的判断标准。' },
+  { i:ic.fq_bookmark, n:'设计案例库', short:'优秀设计案例与视觉参考', ready:0, cnt:'暂无收录',
+    d:'优秀设计案例、交互与视觉参考、美学素材。目前还在收集，欢迎提供你认为值得参考的案例。' },
+  { i:ic.fq_vs, n:'竞品库', short:'竞品网址与分析方法', ready:0, cnt:'暂无收录',
+    d:'竞品网址、分析方法、对比流程。计划先覆盖阿里国际站和几家海外 B2B 平台。' },
+];
+
+/* 每个资料库里有什么（预置内容 · 名字用真实的）*/
+const LIB_ITEMS = {
+ '飞鹊组件库':[
+   ['Web 端组件清册','组件清单','44 页','9 月 3 日'],
+   ['移动端组件清册','组件清单','45 页','9 月 3 日'],
+   ['设计变量与文字样式','设计变量','一套','8 月 21 日'],
+   ['图标库','图标','295 个','8 月 21 日']],
+ 'MIC 业务知识库':[
+   ['搜索业务线','业务规则','11 类搜索页','9 月 1 日'],
+   ['询盘业务线','业务规则','含多语与触屏','9 月 1 日'],
+   ['交易订单系统','业务规则','24 份文档','8 月 28 日'],
+   ['TM 与商机融合','业务规则','含 RFQ','8 月 28 日'],
+   ['会员与成长体系','业务规则','买家与供应商双侧','8 月 20 日'],
+   ['运营与广告变现','业务规则','含 SEM','8 月 20 日'],
+   ['用户研究痛点库','用研数据','按业务线分','9 月 1 日']],
+ '交互经验库':[
+   ['UED 交互自查表','检查清单','80 余条 / 14 个范围','8 月 17 日'],
+   ['交互专家 7 个判断维度','方法','7 维','8 月 5 日'],
+   ['状态与极限值枚举清单','检查清单','11 种状态','8 月 5 日'],
+   ['跨场景交互经验','经验','11 条','7 月 30 日']],
+ 'MIC 项目经验':[
+   ['主搜全量接入 AI Mode','项目','三版 demo','9 月 5 日'],
+   ['结构化产品详情编辑器','项目','进行中','9 月 7 日'],
+   ['采购助手规则版','项目','六场景','8 月 18 日'],
+   ['询盘页改版','项目','已交付','8 月 24 日'],
+   ['PPC 营销助手','项目','进行中','8 月 13 日']],
+ '视觉与交付规范':[
+   ['飞鹊视觉规范','规范','色彩 / 字号 / 间距','8 月 21 日'],
+   ['交付给前端的文档结构','规范','四段骨架','7 月 28 日'],
+   ['线上与设计稿对比验收','检查清单','13 个维度','8 月 10 日'],
+   ['图层命名规则','规范','含组件真名回写','7 月 28 日']],
+ '设计案例库':[], '竞品库':[],
+};
+
+/* ═══════════ 技能 ═══════════ */
+const SKILLS = [
+  ['设计与出稿', [
+    ['交互判断与业务规则','MIC-交互','交互层的判断、业务规则、需求文档反向审视'],
+    ['飞鹊视觉稿','figma-feique-first','用飞鹊真组件出视觉稿，绑定设计变量'],
+    ['运营坑位','MIC-运营','母版加实例的坑位图做法'],
+    ['静态图片改造成组件','SVG-figma-feique','把 SVG 图片换成可维护的飞鹊组件'],
+  ]],
+  ['做 Demo 与还原', [
+    ['设计稿还原成网页','figma-to-html-feique','Figma 稿转成单文件网页'],
+    ['线上页面还原到 Figma','live-to-figma','把线上页面测量后重建到 Figma'],
+    ['Claude Design 稿还原','CD-CC-figma','设计工具生成的稿转到 Figma'],
+    ['交互稿转说明文档','UX-Figma-MD','带旁注的交互稿转成结构化文档'],
+  ]],
+  ['检查与验收', [
+    ['视觉规范自检','MIC-视觉自检','检查设计稿是否符合飞鹊规范'],
+    ['线上与设计稿对比','MIC-验收','13 个维度逐项对比找差异'],
+    ['交付给前端','MIC-交付规范','交付文档结构与行为契约'],
+  ]],
+  ['分析与表达', [
+    ['用户行为分析','CC-clarity','查看真实用户如何使用这个功能'],
+    ['对外材料表达','MIC-表达','提案、汇报、文档怎么写才能让人一眼看懂'],
+  ]],
+  ['其他', [
+    ['飞鹊图标查找','feique-mobile-icon-lookup','按造型和用途找图标'],
+    ['动效制作与判断','CC-animation','动效怎么做、不流畅怎么诊断'],
+    ['3D 建模与渲染','CC-3D','Blender 建模、打光、渲染导出'],
+    ['在微信里用 Claude','AI-日常应用','把能力接到日常使用的应用里'],
+  ]],
+];
+
+/* ═══════════ 示例项目 ═══════════ */
+const PROJECTS = [
+  { n:'MIC 询盘页改版', stage:2, out:4, upd:'2 天前', mem:'王立翔' },
+  { n:'主搜全量接入 AI Mode', stage:4, out:7, upd:'昨天', mem:'王立翔' },
+  { n:'结构化产品详情编辑器', stage:5, out:12, upd:'今天 14:20', mem:'王立翔' },
+];
+const STAGE_NAMES = ['','前期调研','设计稿','制作 Demo','交付验收','走查复盘'];
+
+/* ═══════════ + 的两级菜单（照 WorkBuddy · 去掉连接器）═══════════ */
+const SKILL_FLAT = SKILLS.flatMap(([g,rows])=>rows.map(([n,code,d])=>({n,code,d,g})));
+const PLUS_MENU = [
+  { k:'file', n:'添加文件', i:()=>ic.fq_attach, items:[
+      {n:'上传文件',       d:'需求文档 / PRD / PDF', act:"document.getElementById('fpick').click()"},
+      {n:'上传截图或图片', d:'页面截图 / 设计稿导出', act:"document.getElementById('ipick').click()"},
+      {n:'贴链接',         d:'Figma / 线上页面网址', act:'pasteLink()'}]},
+  { k:'mode', n:'模式', i:()=>ic.fq_setting, items:[
+      {n:'完整流程', d:'查知识库、跑全套检查，出正式交付物'},
+      {n:'点状修改', d:'改个字号、挪个间距，只跑必要检查'},
+      {n:'只是问问', d:'查术语、找图标、看一眼某页长什么样'}]},
+  { k:'expert', n:'专家', i:()=>ic.fq_person, items:[
+      {n:'交互设计', d:'流程、状态、异常分支'},
+      {n:'视觉设计', d:'飞鹊组件、规范、还原'},
+      {n:'业务分析', d:'业务规则、用研痛点、竞品'},
+      {n:'数据复盘', d:'GSSM、用户行为、上线效果'}]},
+  { k:'skill', n:'技能', i:()=>ic.fq_medal, search:'搜索技能',
+      items:SKILL_FLAT.map(x=>({n:x.n, d:x.code+' · '+x.d, av:x.n[0]})),
+      foot:[{n:'从本地添加技能', i:()=>ic.fq_upload},{n:'管理技能', i:()=>ic.fq_setting}]},
+];
+
+/* ═══════════ 状态 ═══════════ */
+const S = { view:'new', scene:'research', model:'auto', mopen:false, sel:null, text:'', tasks:[], lib:null,
+            chips:[], files:[], caseOff:0, maxMode:false, popen:false };
+
+/* ═══════════ 渲染 ═══════════ */
+const NAV = [
+  ['new','新建任务',ic.fq_add],
+  ['projects','我的项目',ic.fq_folder],
+  ['libs','资料库',ic.fq_file],
+  ['skills','技能与规范',ic.fq_medal],
+];
+
+function renderNav(){
+  document.getElementById('nav').innerHTML = NAV.map(([id,n,i])=>
+    `<button class="${S.view===id||(id==='libs'&&S.view==='lib')?'on':''}" onclick="go('${id}')">${i}<span>${n}</span>${
+      id==='libs' ? '<span class="tail">7</span>' : id==='skills' ? '<span class="tail">17</span>' : ''}</button>`).join('');
+
+  document.getElementById('taskHead').innerHTML =
+    `${ic.fq_down}<span>任务${S.tasks.length?' ('+S.tasks.length+')':''}</span>`;
+  document.getElementById('taskList').innerHTML = S.tasks.length
+    ? S.tasks.map((t,x)=>`<button class="sb-item">
+        <div class="t">${t.n}</div><div class="m"><span>${t.scene}</span><span>·</span><span>${t.time}</span></div></button>`).join('')
+    : `<div class="sb-empty">还没有任务记录。<br>在右侧选一个工作场景开始，每个场景都会给你一句填空模板。</div>`;
+}
+
+function sceneById(id){ return SCENES.find(s=>s.id===id); }
+
+function viewNew(){
+  const sc = sceneById(S.scene);
+  return `
+  <div class="topr"><button>${ic.fq_talk}<span>提个建议</span>${ic.fq_right}</button></div>
+  <div class="wrap">
+    <h1>UED WorkBuddy，我帮你</h1>
+    <div class="tabs">${SCENES.map(s=>
+      `<button class="${s.id===S.scene?'on':''}" onclick="setScene('${s.id}')"><span>${s.name}</span></button>`
+      ).join('')}</div>
+    <div class="scene-note">${sc.note}</div>
+    <div class="pills">${sc.cards.map((c,x)=>
+      `<button class="pill ${S.sel===x?'on':''}" onclick="pick(${x})">${c.i}<span>${c.n}</span><span class="ar">↘</span></button>`
+      ).join('')}</div>
+
+    <div class="cwrap">
+    <div class="composer" id="comp">
+      ${(S.chips.length||S.files.length)?`<div class="chips">${S.chips.map((c,i)=>
+        `<span class="tagchip">${c.i}<span>${c.n}</span><button onclick="dropChip(${i})">${ic.fq_close}</button></span>`).join('')
+        }${S.files.map((f,i)=>
+        `<span class="filechip"><button class="x" onclick="dropFile(${i})">${ic.fq_close}</button><span class="nm">${f.n}</span>${
+          f.u?`<span class="fprev"><img src="${f.u}" alt=""></span>`:''}</span>`).join('')}</div>`:''}
+      <textarea id="ta" placeholder="描述这次要做的事，或者先点上面一个场景…"
+        oninput="S.text=this.value;syncSend()"
+        onfocus="document.getElementById('comp').classList.add('focus')"
+        onblur="document.getElementById('comp').classList.remove('focus')">${S.text}</textarea>
+      <div class="cbar">
+        <div class="plusw">
+          <button class="plus ${S.popen?'open':''}" onclick="event.stopPropagation();S.popen=!S.popen;S.mopen=false;render()">${ic.fq_add}</button>
+          ${S.popen?`<div class="ppop">${PLUS_MENU.map((g,gi)=>`
+            ${gi===1?'<hr>':''}
+            <div class="pitem">
+              <button class="row">${g.i()}<span>${g.n}</span><span class="ar">${ic.fq_right}</span></button>
+              <div class="ppop2">
+                ${g.search?`<div class="p2search">${ic.fq_search}<span>${g.search}</span></div>`:''}
+                <div class="p2list">${g.items.map(it=>`
+                  <button class="p2row" ${it.act?`onclick="${it.act}"`:''}>
+                    ${it.av?`<span class="av">${it.av}</span>`:''}
+                    <span class="tx"><span class="n">${it.n}</span><span class="d">${it.d}</span></span>
+                  </button>`).join('')}</div>
+                ${g.foot?'<hr>'+g.foot.map(ft=>`<button class="row">${ft.i()}<span>${ft.n}</span></button>`).join(''):''}
+              </div>
+            </div>`).join('')}
+          </div>`:''}
+        </div>
+        <div class="sp"></div>
+        <div class="model ${S.mopen?'open':''}">
+          <button onclick="S.mopen=!S.mopen;render()">${ic.wb_auto}<span>${MODELS.find(m=>m.id===S.model).n}</span>${ic.fq_down}</button>
+          ${S.mopen?`<div class="mpop">
+            <div class="max">${ic.fq_medal}<span class="nm">Max 模式</span>
+              <span class="sw ${S.maxMode?'on':''}" onclick="event.stopPropagation();S.maxMode=!S.maxMode;render()"><i></i></span></div>
+            <div class="mhr"></div>
+            ${MODELS.map(m=>`<button class="row ${m.id===S.model?'on':''}" onclick="S.model='${m.id}';S.mopen=false;render()">
+              <span class="nm"><span>${m.n}</span>${m.badge?`<span class="badge ${m.badge[0]}">${m.badge[1]}</span>`:''}</span>
+              <span class="rate">${m.good}</span><span class="tick">${ic.fq_yes}</span></button>`).join('')}
+            <div class="mhr"></div>
+            <button class="mfoot">${ic.fq_filltext}<span>配置自定义模型</span></button>
+          </div>`:''}
+        </div>
+        <button class="mic">${ic.fq_voice}</button>
+        <button class="send" id="send" onclick="submitTask()" ${(S.text.trim()||S.files.length)?'':'disabled'}>${ic.wb_send}</button>
+      </div>
+    </div>
+    <div class="cfoot">
+      <button>${ic.fq_folder}<span>归到项目</span>${ic.fq_down}</button>
+      <button onclick="go('libs')">${ic.fq_file}<span>${
+        S.sel!=null ? '这次会查：' + sc.cards[S.sel].uses.map(([u,soon])=>u+(soon?'（筹备中）':'')).join(' · ')
+                    : '要查的资料库'}</span>${ic.fq_down}</button>
+    </div>
+    </div>
+
+    <div class="cases">
+      <div class="cases-h"><b>不知道从哪开始，看看这些例子</b>
+        <button onclick="S.caseOff=(S.caseOff+5)%CASES.length;render()">${ic.fq_refresh}<span>换一批</span></button></div>
+      <div class="cgrid">${[0,1,2,3,4].map(k=>{
+        const c = CASES[(S.caseOff+k)%CASES.length], sce = sceneById(c.sc), cd = sce.cards[c.ci];
+        return `<button class="case" onclick="pickCase('${c.sc}',${c.ci})">
+          <span class="ico">${cd.i}</span><div class="t">${c.t}</div><div class="g">${c.g}</div></button>`;}).join('')}</div>
+    </div>
+  </div>`;
+}
+
+function renderCol2(){
+  const cur = S.lib!=null ? LIBS[S.lib].n : null;
+  const grp = (rd,title)=>{
+    const rows = LIBS.map((l,x)=>[l,x]).filter(([l])=>!!l.ready===!!rd);
+    if(!rows.length) return '';
+    return `<div class="c2grp">${title}</div>` + rows.map(([l,x])=>
+      `<button class="c2item ${cur===l.n?'on':''}" onclick="openLib(${x})">${l.i}<span class="n">${l.n}</span>
+        <span class="cnt">${(LIB_ITEMS[l.n]||[]).length||''}</span></button>`).join('');
+  };
+  return `<div class="col2-h">资料库</div>
+    <div class="c2search">${ic.fq_search}<span>搜索资料</span></div>
+    <div class="c2list">
+      <button class="c2item ${S.lib==null?'on':''}" onclick="S.lib=null;go('libs')">${ic.fq_file}<span class="n">全部资料</span>
+        <span class="cnt">${LIBS.length}</span></button>
+      ${grp(1,'现在就能用')}${grp(0,'还在筹备')}
+    </div>
+`;
+}
+
+function viewLibs(){
+  return `<div class="page">
+    <div class="ph"><h2>全部资料</h2>
+      <p>这些是 WorkBuddy 执行任务时会查阅的资料。左边选一个可以直接翻，不一定要先建任务。</p></div>
+    <table class="tbl"><thead><tr>
+      <th style="width:25%">名称</th><th style="width:11%">状态</th><th style="width:28%">收录</th><th>说明</th>
+    </tr></thead><tbody>
+    ${LIBS.map((l,x)=>`<tr onclick="openLib(${x})" style="cursor:pointer">
+      <td class="nm"><span class="f">${l.i}<span>${l.n}</span></span></td>
+      <td><span class="tag${l.ready?'':' soon'}" style="margin:0">${l.ready?'已就绪':'筹备中'}</span></td>
+      <td class="dim">${l.cnt}</td>
+      <td class="dim">${l.short}</td></tr>`).join('')}
+    </tbody></table>
+  </div>`;
+}
+
+function viewLib(){
+  const l = LIBS[S.lib], items = LIB_ITEMS[l.n] || [];
+  return `<div class="page">
+    <div class="ph"><h2>${l.n}<span class="tag${l.ready?'':' soon'}" style="margin-left:10px;vertical-align:3px">${l.ready?'已就绪':'筹备中'}</span></h2>
+      <p>${l.d}</p></div>
+    ${items.length ? `<table class="tbl"><thead><tr>
+        <th style="width:38%">名称</th><th style="width:20%">类型</th><th style="width:24%">收录</th><th>更新</th>
+      </tr></thead><tbody>
+      ${items.map(([n,t,c,u])=>`<tr>
+        <td class="nm"><span class="f">${ic.fq_file}<span>${n}</span></span></td>
+        <td class="dim">${t}</td><td class="dim">${c}</td><td class="dim">${u}</td></tr>`).join('')}
+      </tbody></table>`
+      : `<div class="libempty"><b>这个库还在筹备，暂时没有内容。</b><br>
+         相关的场景卡片仍然可以使用，只是查不到本库资料。有素材可以提供给我们。</div>`}
+  </div>`;
+}
+
+function viewSkills(){
+  return `<div class="page">
+    <div class="ph"><h2>技能与规范</h2>
+      <p>每一项技能是一套做事方法，包含判断标准和检查步骤。建任务时按场景自动调用，不用自己记名字 —— 这一页只是让你知道现在有哪些能力。</p></div>
+    ${SKILLS.map(([g,rows])=>`<div class="grp"><div class="grp-t">${g}</div>
+      ${rows.map(([n,code,d])=>`<div class="srow"><div><div class="nm">${n}</div><div class="code">${code}</div></div>
+        <div class="ds">${d}</div></div>`).join('')}</div>`).join('')}
+  </div>`;
+}
+
+function viewProjects(){
+  return `<div class="page">
+    <div class="ph"><h2>我的项目</h2>
+      <p>一个需求从调研到复盘的产出物都收在这里，继续上次的进度不用重新说明背景。</p></div>
+    ${PROJECTS.map(p=>`<button class="prow">
+      <div><div class="nm">${p.n}</div><div class="m">${p.out} 项产出 · 负责人 ${p.mem}</div>
+        <div class="bar">${[1,2,3,4,5].map(i=>`<i class="${i<=p.stage?'d':''}"></i>`).join('')}</div></div>
+      <div class="st"><div class="s">${STAGE_NAMES[p.stage]}</div><div class="u">${p.upd}</div></div>
+    </button>`).join('')}
+    <div class="note">${ic.fq_info}<div><b>示例项目用的是真实项目名，内容是预置的。</b>这一版用于确认形态，尚未接入真实数据。</div></div>
+  </div>`;
+}
+
+function render(){
+  renderNav();
+  const c2 = document.getElementById('col2'), inLibs = (S.view==='libs'||S.view==='lib');
+  c2.hidden = !inLibs;
+  if(inLibs) c2.innerHTML = renderCol2();
+  const v = { new:viewNew, libs:viewLibs, lib:viewLib, skills:viewSkills, projects:viewProjects }[S.view];
+  document.getElementById('main').innerHTML = v();
+  if(S.view==='new'){ const ta=document.getElementById('ta'); if(ta&&S.focusEnd){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); S.focusEnd=false; } }
+}
+
+/* ═══════════ 交互 ═══════════ */
+function go(v){ S.view=v; S.mopen=false; render(); document.getElementById('main').scrollTop=0; }
+function openLib(x){ S.lib=x; go('lib'); }
+function setScene(id){ S.scene=id; S.sel=null; S.mopen=false; render(); }
+function pick(x){
+  const c = sceneById(S.scene).cards[x];
+  S.sel=x; S.text=c.tpl; S.chips=[{n:c.n, i:c.i}]; S.focusEnd=true; S.mopen=false; render();
+}
+function pasteLink(){
+  S.popen=false; const ta=document.getElementById('ta');
+  S.text = (S.text ? S.text.replace(/\n?$/,'\n') : '') + '参考链接：';
+  render(); const t=document.getElementById('ta'); if(t){ t.focus(); t.setSelectionRange(t.value.length,t.value.length); }
+}
+function onPick(el){
+  S.popen=false;
+  [...el.files].forEach(f=>S.files.push({ n:f.name,
+    u: f.type.startsWith('image/') ? URL.createObjectURL(f) : null }));   // 图片才有预览
+  el.value=''; render();
+}
+function dropFile(i){
+  const f=S.files[i]; if(f.u) URL.revokeObjectURL(f.u);
+  S.files.splice(i,1); render();
+}
+function dropChip(i){ S.chips.splice(i,1); if(!S.chips.length) S.sel=null; render(); }
+function pickCase(sc, ci){ S.scene=sc; S.mopen=false; pick(ci);
+  document.getElementById('main').scrollTo({top:0,behavior:'smooth'}); }
+function syncSend(){ const b=document.getElementById('send'); if(b) b.disabled=!(S.text.trim()||S.files.length); }
+function submitTask(){
+  if(!S.text.trim()) return;
+  const sc = sceneById(S.scene);
+  const card = S.sel!=null ? sc.cards[S.sel] : null;
+  const raw = S.text.trim().split('\n')[0];
+  const unfilled = /【[^】]*】/.test(S.text);   // 模板改成具体案例后，占位符是【】不是下划线
+  const name = (unfilled && card) ? card.n : raw.replace(/【[^】]*】/g,'…').slice(0,24) || sc.name;
+  S.tasks.unshift({ n:name, scene:sc.name, time:'刚刚' });
+  S.text=''; S.sel=null; S.chips=[]; S.files=[]; render();
+}
+document.addEventListener('click',e=>{
+  let ch=false;
+  if(S.mopen && !e.target.closest('.model')){ S.mopen=false; ch=true; }
+  if(S.popen && !e.target.closest('.plusw')){ S.popen=false; ch=true; }
+  if(ch) render();
+});
+render();  // 启动渲染
+document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
+</script>
+</body>
+</html>
