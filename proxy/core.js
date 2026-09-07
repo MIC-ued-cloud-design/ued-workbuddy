@@ -25,7 +25,8 @@ const ALLOW = [
 ];
 
 const MODEL     = 'glm-4-flash';   // 只放行这一个模型，免得代理被拿去跑别的
-const RATE_N    = 8;               // 同一个 IP 每窗口最多几次
+const RATE_N    = 30;              // 同一个 IP 每窗口最多几次。🔴 公司出口通常是一个公网 IP，
+                                   // 全办公室共享这个配额，所以不能按「一个人」来定（8 次/分钟就是我第一版的错）。
 const RATE_MS   = 60000;           // 窗口长度
 const MAX_CHARS = 60000;           // 请求体上限，挡住拿它当通用推理服务用的
 const MAX_TOKENS_CAP = 4096;
