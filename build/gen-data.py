@@ -93,6 +93,48 @@ def s(v, lim=None):
     return t[:lim] if lim else t
 
 
+# ─────────── 组件字段归一化 ───────────
+# 🔴 Web 端和移动端两份清册的字段名完全不同：
+#   Web:  page / nodeId / variantCount / defaultVariant / sample / criticalNote
+#   移动: 页   / id     / v            / props(字符串)  / 「🔴🔴 最要紧的一条」(emoji 当键名)
+# 原来只认 Web 那套，导致移动端 72/72 个组件的 variant 数和坑注解全部丢失。
+# 所以不再挑字段 —— 认几个别名，其余一律「键名: 值」原样带上，
+# 下次再来一份新格式的清册也不会静默丢数据。
+ALIAS = {
+    'page':   ['page', '页', '所在页'],
+    'node':   ['nodeId', 'id', '节点', 'node'],
+    'key':    ['key', 'componentKey'],
+    'vcount': ['variantCount', 'v', 'variants', '变体数'],
+    'defv':   ['defaultVariant', 'default', '默认'],
+    'props':  ['props', '属性'],
+    'sample': ['sample', '尺寸', 'size'],
+}
+SKIP_KEYS = {'__note', '_note'}
+
+
+def pick(c, slot):
+    for k in ALIAS[slot]:
+        if k in c and c[k] not in (None, '', [], {}):
+            return c[k]
+    return None
+
+
+def rest_fields(c):
+    """除了别名认走的，其余字段一律带上（键名清洗掉 emoji）"""
+    taken = set()
+    for names in ALIAS.values():
+        taken.update(names)
+    out = []
+    for k, v in c.items():
+        if k in taken or k in SKIP_KEYS or str(k).startswith('__'):
+            continue
+        kk, _ = clean(str(k))
+        if not kk:
+            continue
+        out.append((kk, v))
+    return out
+
+
 def build_comps(path, label):
     d = load(path)
     comps = d.get('components') or {}
@@ -103,18 +145,28 @@ def build_comps(path, label):
         if not isinstance(c, dict):
             rows.append({'n': name, 'note': s(c)})
             continue
-        props = c.get('props') or {}
+        pr = pick(c, 'props')
+        # 坑注解：移动端用的是「🔴🔴 最要紧的一条」这种 emoji 键名，
+        # 所以从「其余字段」里把带 🔴 的挑出来当注解，而不是只认 criticalNote
+        note_src = c.get('criticalNote') or c.get('note') or ''
+        extra = []
+        for kk, vv in rest_fields(c):
+            extra.append(kk + '：' + s(vv, 400))
+        raw_note = str(note_src) + ' ' + ' '.join(
+            str(k) + str(v) for k, v in c.items()
+            if str(k).startswith('🔴') or '🔴' in str(k))
         rows.append({
             'n':  name,
-            'p':  s(c.get('page')),
-            'k':  s(c.get('key')),
-            'id': s(c.get('nodeId')),
-            'vc': c.get('variantCount') or c.get('variants') or '',
-            'pr': [{'n': k, 'v': s(v, 400)} for k, v in props.items()] if isinstance(props, dict) else [],
-            'dv': s(c.get('defaultVariant')),
-            'sm': s(c.get('sample')),
-            'note': s(c.get('criticalNote') or c.get('note')),
-            'hi': clean(str(c.get('criticalNote') or c.get('note') or ''))[1],
+            'p':  s(pick(c, 'page')),
+            'k':  s(pick(c, 'key')),
+            'id': s(pick(c, 'node')),
+            'vc': s(pick(c, 'vcount')) or '',
+            'pr': ([{'n': k, 'v': s(v, 400)} for k, v in pr.items()] if isinstance(pr, dict)
+                   else ([{'n': '属性', 'v': s(pr, 400)}] if pr else [])),
+            'dv': s(pick(c, 'defv')),
+            'sm': s(pick(c, 'sample'), 400),
+            'note': s(note_src) or (' · '.join(extra)[:400] if extra else ''),
+            'hi': clean(raw_note)[1],
         })
     extras = {
         'lookup': [{'k': k, 'v': s(v)} for k, v in (d.get('nameLookup') or {}).items()],

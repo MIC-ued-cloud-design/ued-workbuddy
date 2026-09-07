@@ -114,6 +114,48 @@ def split_doc(name, text, src):
     return [{'d': name, 't': t, 'x': b, 's': src} for t, b in merged if b.strip()]
 
 
+# ─────────── 组件字段归一化 ───────────
+# 🔴 Web 端和移动端两份清册的字段名完全不同：
+#   Web:  page / nodeId / variantCount / defaultVariant / sample / criticalNote
+#   移动: 页   / id     / v            / props(字符串)  / 「🔴🔴 最要紧的一条」(emoji 当键名)
+# 原来只认 Web 那套，导致移动端 72/72 个组件的 variant 数和坑注解全部丢失。
+# 所以不再挑字段 —— 认几个别名，其余一律「键名: 值」原样带上，
+# 下次再来一份新格式的清册也不会静默丢数据。
+ALIAS = {
+    'page':   ['page', '页', '所在页'],
+    'node':   ['nodeId', 'id', '节点', 'node'],
+    'key':    ['key', 'componentKey'],
+    'vcount': ['variantCount', 'v', 'variants', '变体数'],
+    'defv':   ['defaultVariant', 'default', '默认'],
+    'props':  ['props', '属性'],
+    'sample': ['sample', '尺寸', 'size'],
+}
+SKIP_KEYS = {'__note', '_note'}
+
+
+def pick(c, slot):
+    for k in ALIAS[slot]:
+        if k in c and c[k] not in (None, '', [], {}):
+            return c[k]
+    return None
+
+
+def rest_fields(c):
+    """除了别名认走的，其余字段一律带上（键名清洗掉 emoji）"""
+    taken = set()
+    for names in ALIAS.values():
+        taken.update(names)
+    out = []
+    for k, v in c.items():
+        if k in taken or k in SKIP_KEYS or str(k).startswith('__'):
+            continue
+        kk = EMOJI.sub('', str(k)).strip(' ·—-')   # gen-kb 里没有 clean()，两边都有 EMOJI
+        if not kk:
+            continue
+        out.append((kk, v))
+    return out
+
+
 # ─────────── 结构化资产也要能被检索到 ───────────
 # 组件真名 / key / 状态数 / token 值 / 自查表 —— 这些是同事最常问的，
 # 但它们是 JSON 不是 md，之前只进了资料库界面、没进检索语料，
@@ -144,7 +186,6 @@ def json_chunks():
         for cname, c in (d.get('components') or {}).items():
             if cname.startswith('_') or not isinstance(c, dict):
                 continue
-            props = c.get('props') or {}
             lines = ['组件真名：' + cname]
             al = alias.get(cname.strip().strip('*')) or []
             if al:
@@ -153,18 +194,21 @@ def json_chunks():
                     if a not in seen_al:
                         seen_al.append(a)
                 lines.append('中文常叫法：' + ' / '.join(seen_al))
-            if c.get('page'):          lines.append('所在页：' + s(c['page']))
-            if c.get('variantCount'):  lines.append('状态（variant）总数：' + str(c['variantCount']))
-            if c.get('defaultVariant'):lines.append('默认状态：' + s(c['defaultVariant']))
-            if c.get('key'):           lines.append('组件 key（import 用）：' + s(c['key']))
-            if c.get('nodeId'):        lines.append('节点 id：' + s(c['nodeId']))
-            if isinstance(props, dict) and props:
+            if pick(c, 'page'):   lines.append('所在页：' + s(pick(c, 'page')))
+            if pick(c, 'vcount'): lines.append('状态（variant）总数：' + s(pick(c, 'vcount')))
+            if pick(c, 'defv'):   lines.append('默认状态：' + s(pick(c, 'defv')))
+            if pick(c, 'key'):    lines.append('组件 key（import 用）：' + s(pick(c, 'key')))
+            if pick(c, 'node'):   lines.append('节点 id：' + s(pick(c, 'node')))
+            pr = pick(c, 'props')
+            if isinstance(pr, dict) and pr:
                 lines.append('可选属性：')
-                for k, v in props.items():
+                for k, v in pr.items():
                     lines.append('  - ' + k + '：' + s(v, 500))
-            if c.get('sample'):        lines.append('尺寸与构造：' + s(c['sample']))
-            note = c.get('criticalNote') or c.get('note')
-            if note:                   lines.append('要注意的地方：' + s(note))
+            elif pr:
+                lines.append('可选属性：' + s(pr, 900))
+            if pick(c, 'sample'): lines.append('尺寸与构造：' + s(pick(c, 'sample'), 900))
+            for kk, vv in rest_fields(c):
+                lines.append(kk + '：' + s(vv, 900))
             one(label, cname, '\n'.join(lines))
 
         for key, label2 in [('nameLookup', '名字对照（想找的东西在飞鹊叫什么）'),
