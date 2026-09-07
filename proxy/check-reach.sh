@@ -16,7 +16,10 @@ echo
 echo "── 这几个是真正要通的边缘域名（部署后的地址长这样）──"
 t "*.deno.dev"      "https://example.deno.dev/"
 t "*.netlify.app"   "https://example.netlify.app/"
-t "*.workers.dev"   "https://example.workers.dev/"
+# 🔴 workers.dev 没法这样测：worker 地址是三级的 <worker>.<子域名>.workers.dev，
+# 两级的 example.workers.dev 本来就不该解析，测了也是无效结论（我犯过这个错）。
+# 要测就得先部署一个真的 worker，拿真实地址来测。
+echo "  ⏸  *.workers.dev     没法预测（需先部署真 worker 再拿真实地址测）"
 echo
 echo "── 对照：智谱本身通不通（页面现在直连它）──"
 t "智谱 API" "https://open.bigmodel.cn/"

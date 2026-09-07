@@ -1,5 +1,9 @@
 /**
- * UED WorkBuddy · 模型代理
+ * UED WorkBuddy · 模型代理 · 共用核心
+ *
+ * 平台入口分开放（各家的函数签名不一样，核心逻辑不重复写）：
+ *   netlify/edge-functions/chat.js   Netlify Edge Functions（Deno 运行时，支持流式）
+ *   proxy/cf-worker.js               Cloudflare Workers
  *
  * 存在的唯一理由：让同事零配置就能用，同时密钥不进公开仓库。
  * 密钥从环境变量读，代码里没有明文 —— 这份文件本身可以公开。
@@ -63,24 +67,29 @@ function err(msg, status, origin) {
   });
 }
 
-async function handle(req, env) {
+export async function handle(req, getEnv) {
   const origin = req.headers.get('Origin') || '';
-  const g = (n) => (env && env[n]) ||
-    (typeof Deno !== 'undefined' && Deno.env && Deno.env.get ? Deno.env.get(n) : '');
+  const g = (n) => (getEnv ? getEnv(n) : '') || '';
 
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
 
   const url = new URL(req.url);
 
-  // 健康检查：不泄露任何配置，只说活着
-  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/health')) {
-    return new Response(JSON.stringify({ ok: true, model: MODEL }), {
-      headers: { ...cors(origin), 'Content-Type': 'application/json' },
-    });
+  /* 健康检查：GET /chat。
+     🔴 只能挂在 /chat 上 —— Netlify 的 config.path 只把这一个路径路由进函数，
+     写在 / 或 /health 上是死代码（我第一版就写错在这，部署完根本没法验证它活没活）。
+     只报「密钥配没配」这个布尔值，不回显任何密钥内容。 */
+  if (req.method === 'GET' && url.pathname === '/chat') {
+    return new Response(JSON.stringify({
+      ok: true, model: MODEL,
+      keyConfigured: !!g('ZHIPU_KEY'),
+      passRequired: !!g('WB_PASS'),
+      rate: RATE_N + ' 次 / ' + (RATE_MS / 1000) + ' 秒',
+    }, null, 1), { headers: { ...cors(origin), 'Content-Type': 'application/json; charset=utf-8' } });
   }
 
   if (req.method !== 'POST' || url.pathname !== '/chat')
-    return err('这个代理只接受 POST /chat', 404, origin);
+    return err('这个代理只接受 POST /chat（GET /chat 是健康检查）', 404, origin);
 
   if (!ALLOW.includes(origin))
     return err('这个来源不在允许名单里', 403, origin);
@@ -137,12 +146,4 @@ async function handle(req, env) {
       'Cache-Control': 'no-store',
     },
   });
-}
-
-/* ── 入口 ── */
-// Cloudflare Workers
-export default { fetch: (req, env) => handle(req, env) };
-// Deno Deploy（老版本没有 export default 约定时靠这个）
-if (typeof Deno !== 'undefined' && typeof Deno.serve === 'function' && !Deno.env.get('WB_NO_SERVE')) {
-  try { Deno.serve((req) => handle(req, null)); } catch (_) { /* 新版 Deno Deploy 走 export default */ }
 }

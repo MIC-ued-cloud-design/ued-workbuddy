@@ -1,0 +1,8 @@
+# 这个站点只为了跑 /chat 这个边缘函数（模型代理）。
+# 页面本体在 GitHub Pages 上，不从这里发布 —— 所以不设 build 命令。
+[build]
+  command = ""
+  publish = "."
+
+# 边缘函数的路径写在 netlify/edge-functions/chat.js 里的 config.path，
+# 这里不用重复声明（重复声明就成了两个维护源）。
