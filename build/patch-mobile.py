@@ -331,7 +331,12 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
      只作用于首页 .wrap：资料库、技能这些是长列表，从顶部排才对；
      回答页 .runwrap 是对话流，也必须顶部对齐。 */
   main{display:flex;flex-direction:column}
-  .wrap{margin:auto;padding:40px 32px}
+  /* 上移 30px：视觉重心比几何中心高一点才不显得坠（吉吉 2026-09-07「视觉点有点靠下」）。
+     做法是底部多留 60 —— margin:auto 把剩余空间上下均分，元素高 60，
+     上下就各少分 30，内容整体正好上移 30px。
+     🔴 不用 transform:translateY(-30px)：那个不参与布局，内容比视口高的时候
+     会把顶部推到可视区外面、还滚不回去。 */
+  .wrap{margin:auto;padding:40px 32px 100px}
 }
 '''
 
