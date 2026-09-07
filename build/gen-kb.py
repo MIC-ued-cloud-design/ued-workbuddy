@@ -371,8 +371,12 @@ def main():
         'dict': build_dict(chunks),
         'c': chunks,
     }
+    # 🔴 用 self 不用 window —— 这份文件会被 Worker 的 importScripts 加载，
+    #    Worker 里没有 window（全局叫 self），写 window 会抛 ReferenceError，
+    #    表现是「Worker 静默回退到主线程」，1.7 秒的冻结照旧存在。
+    #    主线程里 self === window，所以一处写法两边都对。
     js = ('/* MIC WorkBuddy 知识库 · 由 build/gen-kb.py 生成，勿手改 */\n'
-          'window.WBKB=' + json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + ';\n')
+          'self.WBKB=' + json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + ';\n')
     open(OUT, 'w', encoding='utf-8').write(js)
 
     print(f'\n══ 完成 ══')

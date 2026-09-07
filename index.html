@@ -1379,13 +1379,14 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
       var settled=false;
       function toMain(why){
         if(settled) return; settled=true;
+        KB.why = why;                       // 记下来 —— 原来只收参数不用，出问题查不出原因
         if(KB.worker){ try{ KB.worker.terminate(); }catch(e){} KB.worker=null; }
         loadMain().then(res, rej);
       }
       if(location.protocol==='file:' || !window.Worker){ toMain('本地文件或不支持 Worker'); return; }
       var w;
       try{ w=new Worker('kb-worker.js'); }
-      catch(e){ toMain('Worker 建不起来'); return; }
+      catch(e){ toMain('Worker 建不起来：'+(e&&e.message||e)); return; }
       w.onmessage=function(e){
         var d=e.data||{};
         if(d.type==='ready'){
@@ -1396,14 +1397,14 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
         if(d.type==='result'){ var f=KB.waits[d.id]; if(f){ delete KB.waits[d.id]; f.res(d.chunks||[]); } return; }
         if(d.type==='error'){ var g=KB.waits[d.id]; if(g){ delete KB.waits[d.id]; g.rej(new Error(d.message||'Worker 出错')); } return; }
       };
-      w.onerror=function(){ toMain('Worker 报错'); };
+      w.onerror=function(ev){ toMain('Worker 报错：'+((ev&&(ev.message||ev.filename))||'没给信息')); };
       w.postMessage({type:'ping'});
       setTimeout(function(){ toMain('Worker 20 秒没应答'); }, 20000);
     });
     return KB.p;
   }
   window.wbLoadKB = loadKB;
-  window.wbKBInfo = function(){ return {mode:KB.mode, meta:KB.meta}; };
+  window.wbKBInfo = function(){ return {mode:KB.mode, meta:KB.meta, why:KB.why||null}; };
 
   /* 检索现在是异步的（Worker 要跨线程来回一趟） */
   function retrieveAsync(q, budget){
@@ -1905,6 +1906,8 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
     }).join('') + '<button class="sb-item clr" onclick="wbClearTasks()"><div class="m">清空记录</div></button>';
   };
   S.tasks = loadTasks();          // 刷新之后任务还在
+  renderNav();                    // 🔴 恢复了数据必须重渲染 —— 脚本末尾那次 render() 跑在本模块之前，
+                                  //    那时 S.tasks 还是空的，所以侧栏显示的是空态。
 
   /* 把路由和入口接上 */
   var lastModel = S.model;
