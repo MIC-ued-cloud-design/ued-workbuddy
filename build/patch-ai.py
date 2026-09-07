@@ -52,6 +52,19 @@ CSS = r'''
 .sb-item.clr{text-align:left}
 .sb-item.clr .m{color:var(--ink-3)}
 
+/* 接着问 */
+.askmore{margin:26px 0 0;border:1px solid var(--line);border-radius:14px;background:var(--soft);padding:8px}
+.askmore.focus{border-color:var(--accent-line)}
+.askin{background:var(--white);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-end;gap:10px}
+.askin textarea{flex:1;border:0;outline:0;resize:none;font:14px/1.65 inherit;color:var(--ink);background:none;min-height:24px;max-height:180px}
+.askin textarea::placeholder{color:var(--ink-3)}
+.asksend{flex:none;width:30px;height:30px;border-radius:999px;border:0;background:var(--dark);color:#fff;display:grid;place-items:center;cursor:pointer}
+.asksend:disabled{background:#E0E0E0;cursor:default}
+.asksend svg{width:14px;height:14px}
+.asksend svg path{fill:currentColor}
+.askhint{font-size:12px;color:var(--ink-3);padding:7px 14px 3px}
+.turn{border-top:1px solid var(--line);padding:22px 0 0;margin:22px 0 0}
+
 /* 提示条 / 报错 */
 .nbox{border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:0 0 20px;background:var(--white)}
 .nbox b{display:block;font-size:13px;color:var(--ink);margin:0 0 6px}
@@ -248,9 +261,17 @@ JS = r'''
     var head = {'Content-Type':'application/json'};
     if(m==='own') head['Authorization'] = 'Bearer '+c.key;
     else if(PROXY.pass) head['X-WB-Pass'] = PROXY.pass;
-    var body={ model:mdl, stream:true, temperature:0.1,   // 低温：这类问答要准不要花
-      messages:[ {role:'system', content:SYS},
-                 {role:'user', content:'参考资料：\n\n'+ctxOf(chunks)+'\n\n──────────\n\n我的问题：'+q} ] };
+    /* 多轮：历史只带问答文本，不重复带资料——资料每轮重新检索，
+       否则几轮下来上下文会被十几段资料撑爆，而且旧资料会干扰新问题。
+       只留最近 4 轮，每条截到 1200 字。 */
+    var msgs=[{role:'system', content:SYS}];
+    (R.turns||[]).slice(-4).forEach(function(t){
+      if(!t.q || !t.ans) return;
+      msgs.push({role:'user',      content:String(t.q).slice(0,1200)});
+      msgs.push({role:'assistant', content:String(t.ans).slice(0,1200)});
+    });
+    msgs.push({role:'user', content:'参考资料：\n\n'+ctxOf(chunks)+'\n\n──────────\n\n我的问题：'+q});
+    var body={ model:mdl, stream:true, temperature:0.1, messages:msgs };   // 低温：这类问答要准不要花
     return fetch(url,{ method:'POST', signal:signal, headers:head, body:JSON.stringify(body) })
       .then(function(res){
         if(!res.ok){
@@ -332,7 +353,7 @@ JS = r'''
   };
 
   /* ── 跑任务视图 ── */
-  var R = { q:'', ans:'', srcs:[], state:'idle', err:null, ctl:null, task:'' };
+  var R = { q:'', ans:'', srcs:[], state:'idle', err:null, ctl:null, task:'', turns:[] };
   window.WBRUN = R;
 
   /* 🔴 小模型不听格式类指令 —— prompt 里写了「中英之间加空格」「不要 emoji」，
@@ -419,11 +440,43 @@ JS = r'''
     return out.join('');
   }
 
+  function qblock(q){
+    return '<div class="qbox"><span class="qava">'+(window.fqIcon? fqIcon('personal-f',14)||'' : '')+
+      '</span><div class="qtx">'+esc(q)+'</div></div>';
+  }
+  function pastTurns(){
+    /* 已经答完的前几轮，让人看得见对话是连着的 */
+    return (R.turns||[]).map(function(t){
+      return '<div class="turn">'+qblock(t.q)+
+        '<div class="ahead"><b>WorkBuddy</b></div><div class="atx">'+mdToHtml(t.ans)+'</div></div>';
+    }).join('');
+  }
+  function askMoreBox(){
+    if(R.state==='run'||R.state==='search'||R.state==='loadkb') return '';
+    return '<div class="askmore" id="am"><div class="askin">'+
+      '<textarea id="ta2" rows="1" placeholder="接着问 —— 它记得上面聊过什么"'+
+        ' oninput="wbAmInput(this)"></textarea>'+
+      '<button class="asksend" id="am-send" onclick="wbAskMore()" disabled>'+
+        (typeof ic!=='undefined' && ic.wb_send ? ic.wb_send : '↑')+'</button></div>'+
+      '<div class="askhint">回车发送，Shift + 回车换行</div></div>';
+  }
+
+  window.wbAmInput = function(el){
+    el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,180)+'px';
+    var b=document.getElementById('am-send'); if(b) b.disabled = !el.value.trim();
+  };
+  window.wbAskMore = function(){
+    var el=document.getElementById('ta2'); if(!el) return;
+    var v=(el.value||'').trim(); if(!v) return;
+    el.value=''; runQuery(v, true);
+  };
+
   window.viewRun = function(){
     var st=R.state;
     return '<div class="runwrap">'+
-      '<div class="qbox"><span class="qava">'+(window.fqIcon? fqIcon('personal-f',14)||'' : '')+'</span><div class="qtx">'+
-        String(R.q).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];})+'</div></div>'+
+      pastTurns()+
+      (R.turns&&R.turns.length? '<div class="turn">':'')+
+      qblock(R.q)+
       (st==='needkey' ? needKeyBox() :
        st==='error'   ? errBox() :
       '<div class="abox"><div class="ahead">'+
@@ -442,10 +495,12 @@ JS = r'''
           '</div></div>' : '')+
         '<div class="runfoot">'+
           (st==='run'? '<button class="rbtn" onclick="wbStop()">停止</button>'
-                     : '<button class="rbtn pri" onclick="go(\'new\')">再问一个</button>'+
+                     : '<button class="rbtn pri" onclick="go(\'new\')">开个新话题</button>'+
                        (R.ans? '<button class="rbtn" onclick="copyTx(WBRUN.ans,\'回答\')">复制回答</button>'+
                                '<button class="rbtn" onclick="wbRetry()">重新回答</button>' : ''))+
         '</div></div>')+
+      (R.turns&&R.turns.length? '</div>':'')+
+      askMoreBox()+
     '</div>';
   };
   function PROVN(){
@@ -527,7 +582,8 @@ JS = r'''
     txtEl=null; shown=0;
   }
 
-  function runQuery(q){
+  function runQuery(q, keepTurns){
+    if(!keepTurns) R.turns=[];          // 不是追问就是新话题
     R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw='';
     S.view='run';
     if(!ready()){ R.state='needkey'; render(); return; }
@@ -567,6 +623,13 @@ JS = r'''
     });
   }
   window.wbRun = runQuery;
+
+  /* 首页输入框补一句回车提示（原来的 placeholder 没说） */
+  (function(){
+    var el=document.getElementById('ta');
+    if(el && el.placeholder && el.placeholder.indexOf('回车')<0)
+      el.placeholder = el.placeholder.replace(/…$/,'') + '（回车发送，Shift + 回车换行）';
+  })();
 
   /* 接到已有的发送按钮上 */
   window.submitTask = function(){
@@ -689,6 +752,32 @@ JS = r'''
   S.tasks = loadTasks();          // 刷新之后任务还在
   renderNav();                    // 🔴 恢复了数据必须重渲染 —— 脚本末尾那次 render() 跑在本模块之前，
                                   //    那时 S.tasks 还是空的，所以侧栏显示的是空态。
+
+  /* 回车发送、Shift + 回车换行。
+     🔴 必须判 e.isComposing —— 中文输入法拼字时按回车是「确认候选词」，
+     不判的话你打「筛选」按回车选词，消息就被发出去了，句子还只写了一半。
+     用事件委托，不去改原始 HTML 里那个 textarea 的属性。 */
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Enter' || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+    if(e.isComposing || e.keyCode===229) return;      // 229 是老浏览器的输入法组合态
+    var t=e.target;
+    if(!t || t.tagName!=='TEXTAREA') return;
+    if(t.id==='ta'){                                   // 首页输入框
+      if(!(S.text||'').trim()) return;
+      e.preventDefault(); submitTask();
+    } else if(t.id==='ta2'){                            // 回答页的追问框
+      if(!(t.value||'').trim()) return;
+      e.preventDefault(); wbAskMore();
+    }
+  });
+
+  /* 追问框渲染出来之后自动聚焦，省一次点击 */
+  var origPaint2 = paint;
+  paint = function(){
+    origPaint2();
+    var el=document.getElementById('ta2');
+    if(el && R.state==='done' && document.activeElement!==el) el.focus();
+  };
 
   /* 把路由和入口接上 */
   var lastModel = S.model;
