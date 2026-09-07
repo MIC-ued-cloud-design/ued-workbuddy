@@ -396,7 +396,7 @@ textarea::placeholder{color:var(--ink-3)}
 .qtx{flex:1;font-size:15px;color:var(--ink);line-height:1.75;white-space:pre-wrap;word-break:break-word;padding-top:2px}
 .abox{border-top:1px solid var(--line);padding:22px 0 0}
 .ahead{display:flex;align-items:center;gap:9px;margin:0 0 14px}
-.ahead b{font-size:13px;color:var(--ink)}
+.ahead b{font-size:13px;color:var(--accent-ink)}   /* 主题色。用 accent-ink 不用 accent —— 后者 13px 加粗在白底偏浅，token 里也标了 ink 那档是文字用 */
 .ahead span{font-size:12px;color:var(--ink-3)}
 .atx{font-size:15px;color:var(--ink);line-height:1.85;word-break:break-word}
 .atx h3{font-size:15px;margin:22px 0 8px;color:var(--ink)}
@@ -422,6 +422,11 @@ textarea::placeholder{color:var(--ink-3)}
 .rbtn:hover{border-color:var(--accent-line);background:var(--accent-fill);color:var(--accent-ink)}
 .rbtn.pri{background:var(--dark);color:#fff;border-color:var(--dark)}
 .rbtn.pri:hover{background:#000;color:#fff}
+
+/* 任务历史：选中态 + 清空入口 */
+.sb-item.on{background:var(--nav-on)}
+.sb-item.clr{text-align:left}
+.sb-item.clr .m{color:var(--ink-3)}
 
 /* 提示条 / 报错 */
 .nbox{border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:0 0 20px;background:var(--white)}
@@ -1343,160 +1348,77 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
   function modelName(){ var c=cfg(); return c.model || (PROV[c.prov]||{}).m || ''; }
   window.wbReady = ready;
 
-  /* ── 知识库懒加载（script 标签，不是 fetch —— file:// 下 fetch 会被 CORS 拦） ── */
-  var kbP=null;
-  function loadKB(){
-    if(window.WBKB) return Promise.resolve(window.WBKB);
-    if(kbP) return kbP;
-    kbP=new Promise(function(res,rej){
-      var el=document.createElement('script');
-      el.src='kb.js';
-      el.onload=function(){ window.WBKB? res(window.WBKB) : rej(new Error('kb.js 载入了但没有数据')); };
-      el.onerror=function(){ rej(new Error('kb.js 载不到')); };
-      document.head.appendChild(el);
+  /* ── 知识库：优先放进 Web Worker ──
+     kb.js 有 7.2 MB，在主线程解析要 1686ms（实测），界面会冻住；
+     语料对象加上小写缓存还会把主线程堆推到 18MB。放进 Worker 后主线程既不解析也不持有。
+     🔴 file:// 本地打开时浏览器不允许建 Worker，所以留了主线程兜底那条路；
+        两条路共用 kb-search.js 这一份检索代码，不写两份。 */
+  var KB = { p:null, mode:null, worker:null, meta:null, seq:0, waits:{} };
+
+  function loadMain(){
+    /* 兜底：把检索代码和语料都拉进主线程。
+       用 <script src> 不用 fetch —— file:// 下 fetch 会被 CORS 拦，script 标签不会。 */
+    function inject(src){
+      return new Promise(function(res,rej){
+        var el=document.createElement('script'); el.src=src;
+        el.onload=function(){ res(); };
+        el.onerror=function(){ rej(new Error(src+' 载不到')); };
+        document.head.appendChild(el);
+      });
+    }
+    return inject('kb-search.js').then(function(){ return inject('kb.js'); }).then(function(){
+      if(!window.WBKB || !window.WBSearch) throw new Error('语料或检索代码没就位');
+      KB.mode='main'; KB.meta={docs:WBKB.docs, chunks:WBKB.chunks, chars:WBKB.chars, by:WBKB.by, gen:WBKB.gen};
+      return KB.meta;
     });
-    return kbP;
+  }
+
+  function loadKB(){
+    if(KB.p) return KB.p;
+    KB.p = new Promise(function(res, rej){
+      var settled=false;
+      function toMain(why){
+        if(settled) return; settled=true;
+        if(KB.worker){ try{ KB.worker.terminate(); }catch(e){} KB.worker=null; }
+        loadMain().then(res, rej);
+      }
+      if(location.protocol==='file:' || !window.Worker){ toMain('本地文件或不支持 Worker'); return; }
+      var w;
+      try{ w=new Worker('kb-worker.js'); }
+      catch(e){ toMain('Worker 建不起来'); return; }
+      w.onmessage=function(e){
+        var d=e.data||{};
+        if(d.type==='ready'){
+          if(!d.meta){ toMain('Worker 里没拿到语料'); return; }
+          if(settled) return; settled=true;
+          KB.mode='worker'; KB.worker=w; KB.meta=d.meta; res(d.meta); return;
+        }
+        if(d.type==='result'){ var f=KB.waits[d.id]; if(f){ delete KB.waits[d.id]; f.res(d.chunks||[]); } return; }
+        if(d.type==='error'){ var g=KB.waits[d.id]; if(g){ delete KB.waits[d.id]; g.rej(new Error(d.message||'Worker 出错')); } return; }
+      };
+      w.onerror=function(){ toMain('Worker 报错'); };
+      w.postMessage({type:'ping'});
+      setTimeout(function(){ toMain('Worker 20 秒没应答'); }, 20000);
+    });
+    return KB.p;
   }
   window.wbLoadKB = loadKB;
+  window.wbKBInfo = function(){ return {mode:KB.mode, meta:KB.meta}; };
 
-  /* ── 检索 ──
-     中文没有空格，所以切 2/3/4 字的滑窗当检索词。长的词更能区分意思
-     （「痛点」「退款流程」有信息量，「是什」「大的」没有），所以按长度加权。
-     再按词的稀有程度加权，并要求命中至少两个稀有词——否则「今天天气怎么样」
-     这种问题会靠噪音词捞回一万字无关资料，反过来诱导模型编答案。 */
-  /* 中文虚词字。全部由虚词组成的滑窗（「能用多少」「是什么」）稀有但没有意思，
-     不过滤掉的话会把无关文档捞上来——实测「飞鹊正文字号最大能用多少」曾命中「红包组合」。 */
-  var STOPCH = {};
-  '的了是在有和就都而及与或一个什么怎么哪些多少最大最小可以需要能不能是不是我你他她它们这那些么呢吧啊把被给让对从向到于为以及其此该等再又还只也很太更如果因为所以但然后先前后上下里外中间时候样子事情东西地方问题办法开始结束现在已经正要会想做用去来看说讲写读点条份个次种类些边�`'
-    .split('').forEach(function(c){ STOPCH[c]=1; });
-  function allStop(g){
-    for(var i=0;i<g.length;i++) if(!STOPCH[g[i]]) return false;
-    return true;
-  }
-
-  function terms(q){
-    var map={}, str=String(q||'').toLowerCase();
-    (str.match(/[a-z0-9][a-z0-9_\-\.\/]{1,}/g)||[]).forEach(function(w){
-      if(w.length>=2) map[w]=Math.min(w.length+1,6);   // 英文词一般是专名，比同长中文更可信
-    });
-    str.replace(/[^一-龥]+/g,' ').split(/\s+/).forEach(function(seg){
-      if(!seg) return;
-      if(seg.length===1){ map[seg]=1; return; }
-      for(var L=2;L<=3;L++)          // 只切 2/3 字：4 字窗几乎全是跨虚词的噪音
-        for(var i=0;i+L<=seg.length;i++){
-          var g=seg.slice(i,i+L);
-          if(allStop(g)) continue;
-          if(!map[g] || map[g]<L) map[g]=L;
-        }
-    });
-    var ks=Object.keys(map);
-    ks.sort(function(a,b){ return map[b]-map[a]; });      // 长词优先，被截断也先留长的
-    return ks.slice(0,140).map(function(t){ return {t:t, L:map[t]}; });
-  }
-
-  var LC=null;   // 小写正文缓存，只算一次
-  function lcOf(kb){
-    if(LC) return LC;
-    LC=kb.c.map(function(c){ return [c.x.toLowerCase(), ((c.t||'')+' '+(c.d||'')).toLowerCase()]; });
-    return LC;
-  }
-
-  function retrieve(q, budget){
-    var kb=window.WBKB; if(!kb) return [];
-    var TS=terms(q); if(!TS.length) return [];
-
-    /* 先查实体字典：组件真名、中文常叫法、token 小节名这些有唯一答案的，
-       直接把对应的块钉在最前面，不参与模糊打分。 */
-    var pinned=[], pinSet={};
-    if(kb.dict){
-      var ql=String(q||'').toLowerCase();
-      var keys=Object.keys(kb.dict);
-      keys.sort(function(a,b){ return b.length-a.length; });   // 长词优先，「输入框」赢过「输入」
-      for(var pk=0; pk<keys.length && pinned.length<6; pk++){
-        if(ql.indexOf(keys[pk])<0) continue;
-        kb.dict[keys[pk]].forEach(function(ix){
-          if(!pinSet[ix] && pinned.length<6 && kb.c[ix]){ pinSet[ix]=1; pinned.push(kb.c[ix]); }
-        });
-      }
+  /* 检索现在是异步的（Worker 要跨线程来回一趟） */
+  function retrieveAsync(q, budget){
+    if(KB.mode==='worker'){
+      return new Promise(function(res,rej){
+        var id=++KB.seq;
+        KB.waits[id]={res:res,rej:rej};
+        KB.worker.postMessage({type:'query', id:id, q:q, budget:budget});
+        setTimeout(function(){ if(KB.waits[id]){ delete KB.waits[id]; res([]); } }, 15000);
+      });
     }
-    var C=kb.c, N=C.length, lc=lcOf(kb);
-
-    // 一遍扫完：同时拿到每个词的 df 和每块命中了哪些词
-    var df=new Array(TS.length).fill(0), hits=new Array(N);
-    for(var i=0;i<N;i++){
-      var body=lc[i][0], head=lc[i][1], rec=null;
-      for(var j=0;j<TS.length;j++){
-        var t=TS[j].t;
-        var inB=body.indexOf(t)>=0, inH=head.indexOf(t)>=0;
-        if(!inB && !inH) continue;
-        df[j]++;
-        var tf=0;
-        if(inB){ var p=body.indexOf(t); while(p>=0 && tf<3){ tf++; p=body.indexOf(t,p+t.length); } }
-        (rec||(rec=[])).push([j, tf, inH?1:0]);
-      }
-      hits[i]=rec;
-    }
-
-    // 出现在超过 12% 的块里的词当停用词处理，权重归零
-    var STOP=N*0.12, RARE=N*0.02;
-    var w=[], rareIdx=[];
-    for(j=0;j<TS.length;j++){
-      if(!df[j] || df[j]>STOP){ w[j]=0; continue; }
-      w[j] = Math.pow(TS[j].L, 1.6) * Math.log(N/(1+df[j]));
-      if(df[j]<=RARE) rareIdx.push(j);
-    }
-    var needRare = Math.min(2, rareIdx.length);
-    if(!rareIdx.length) return out_pinnedOnly(pinned);   // 没有稀有词，只靠字典
-
-    var scored=[];
-    for(i=0;i<N;i++){
-      var r=hits[i]; if(!r) continue;
-      var sc=0, distinct=0, rareHit=0;
-      for(var k=0;k<r.length;k++){
-        var idx=r[k][0]; if(!w[idx]) continue;
-        sc += w[idx] * (1 + 0.4*Math.min(r[k][1],3)) + w[idx]*r[k][2]*4;
-        distinct++;
-        if(rareIdx.indexOf(idx)>=0) rareHit++;
-      }
-      if(!sc || rareHit<needRare) continue;              // 相关性下限
-      sc *= Math.sqrt(distinct);                          // 覆盖到的不同词越多越可信
-      /* 不做长度归一化：试过 BM25 那套（除以块长），结果长块的偏置换成了短块的偏置，
-         「字号」「按钮」两题都变差。长块的问题改由「实体字典钉住正确块」来治。 */
-      scored.push([sc, i]);
-    }
-    if(!scored.length) return out_pinnedOnly(pinned);
-    scored.sort(function(a,b){ return b[0]-a[0]; });
-
-    // 去重：同一份文档同一节只取一次，同一份文档最多 3 段
-    var seen={}, perDoc={}, out=[], used=0;
-    budget=budget||11000;
-    pinned.forEach(function(c){
-      var sig=c.d+'|'+(c.t||'');
-      if(seen[sig]) return;
-      seen[sig]=1; perDoc[c.d]=(perDoc[c.d]||0)+1;
-      var x = c.x.length>2600? {d:c.d,t:c.t,s:c.s,x:c.x.slice(0,2600)+'\n…（这一段更长，只取了前面部分）'} : c;
-      out.push(x); used += Math.min(c.x.length,2600);
-    });
-    var CAP=2600;              // 单块进上下文的上限，长表格取前半段就够定位
-    for(k=0;k<scored.length;k++){
-      if(out.length>=14) break;
-      var c=C[scored[k][1]], sig=c.d+'|'+(c.t||'');
-      if(seen[sig]) continue;
-      if((perDoc[c.d]||0)>=3) continue;
-      var take=Math.min(c.x.length, CAP);
-      if(used+take>budget && out.length>=4) continue;   // 装不下就跳过，别撑爆上下文
-      seen[sig]=1; perDoc[c.d]=(perDoc[c.d]||0)+1;
-      out.push(take<c.x.length? {d:c.d,t:c.t,s:c.s,x:c.x.slice(0,CAP)+'\n…（这一段更长，只取了前面部分）'} : c);
-      used+=take;
-      if(used>=budget) break;
-    }
-    return out;
+    try{ return Promise.resolve(window.WBSearch.retrieve(window.WBKB, q, budget)); }
+    catch(e){ return Promise.resolve([]); }
   }
-  function out_pinnedOnly(pinned){
-    return pinned.slice(0,6).map(function(c){
-      return c.x.length>2600? {d:c.d,t:c.t,s:c.s,x:c.x.slice(0,2600)+'\n…（这一段更长，只取了前面部分）'} : c; });
-  }
-  window.wbRetrieve = retrieve;
+  window.wbRetrieve = retrieveAsync;
 
   /* ── system prompt：这里是「结合 fullstack skill 的能力」的落地处 ── */
   var SYS = [
@@ -1597,6 +1519,35 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
             + '智谱、硅基流动、DeepSeek 都是国内服务，一般直连可达，但公司代理可能有自己的名单。'
             + '换手机热点试一次就能分清是网络策略还是别的问题。'];
   }
+
+  /* ── 任务历史 ──
+     原来三层都不对：条目没绑点击（点了没反应）、只存了标题不存问答内容、
+     只在内存里刷新就丢。这三条一起修。 */
+  var TKEY='wb.tasks', TMAX=20;
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function loadTasks(){
+    try{ var a=JSON.parse(localStorage.getItem(TKEY)||'[]'); return Array.isArray(a)? a : []; }
+    catch(e){ return []; }
+  }
+  function saveTasks(a){
+    /* localStorage 有 5MB 上限，所以只留最近 TMAX 条，
+       而且参考资料只存文档名不存正文（正文在 kb.js 里，要用再检索）。 */
+    try{ localStorage.setItem(TKEY, JSON.stringify(a.slice(0,TMAX))); }catch(e){}
+  }
+  window.wbOpenTask = function(x){
+    var t=(S.tasks||[])[x]; if(!t) return;
+    R.q=t.q||t.n||''; R.ans=t.ans||''; R.err=null; R.raw='';
+    R.srcs=(t.docs||[]).map(function(d){ return {d:d, t:'', x:'', s:t.srcKind&&t.srcKind[d]||'biz'}; });
+    R.state = t.ans? 'done' : 'error';
+    if(!t.ans) R.err=['这条没有存下回答','它是在加回放功能之前问的，或者当时没答完。重新问一次就会存了。'];
+    R.taskIdx=x; S.view='run'; render();
+    document.getElementById('main').scrollTop=0;
+  };
+  window.wbClearTasks = function(){
+    S.tasks=[]; saveTasks([]); fqToast('任务记录已清空'); renderNav();
+    if(S.view==='run') go('new');
+  };
 
   /* ── 跑任务视图 ── */
   var R = { q:'', ans:'', srcs:[], state:'idle', err:null, ctl:null, task:'' };
@@ -1722,7 +1673,7 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
   function dedupSrc(){ var o=[],s=R.srcs; s.forEach(function(c){ if(o.indexOf(c.d)<0) o.push(c.d); }); return o; }
 
   function needKeyBox(){
-    var kb = window.WBKB? (WBKB.docs+' 份文档、'+WBKB.chunks+' 段') : '482 份文档';
+    var kb = KB.meta? (KB.meta.docs+' 份文档、'+KB.meta.chunks+' 段') : '482 份文档';
     if(localFile()){
       return '<div class="nbox warn"><b>这是本地打开的文件，问答要用线上地址</b>'+
         '<p>部门共享的模型通道只认线上那个地址，本地文件打开时浏览器不带来源信息，会被挡掉。'+
@@ -1748,8 +1699,9 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
   }
 
   window.wbOpenSrc = function(d){
-    var kb=window.WBKB; if(!kb) return;
-    var c=kb.c.filter(function(x){ return x.d===d; })[0];
+    /* 🔴 不能查 window.WBKB —— Worker 模式下主线程没有语料。
+       用这次返回的块自带的来源标记就够了。 */
+    var c=(R.srcs||[]).filter(function(x){ return x.d===d; })[0];
     var src=c? c.s : 'biz';
     var target = src==='biz'? 'MIC 业务知识库' : src==='method'? 'MIC 项目经验' : '技能与规范';
     if(target==='技能与规范'){ go('skills'); return; }
@@ -1800,9 +1752,9 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
     R.state='loadkb'; render();
     loadKB().then(function(){
       R.state='search'; paint();
-      return new Promise(function(res){ setTimeout(res,10); });
-    }).then(function(){
-      R.srcs = retrieve(q);
+      return retrieveAsync(q);
+    }).then(function(chunks){
+      R.srcs = chunks || [];
       R.state='run'; paint();
       R.ctl = (window.AbortController? new AbortController() : null);
       return callModel(q, R.srcs, function(full){ R.ans=full; paintStream(); }, R.ctl?R.ctl.signal:undefined);
@@ -1811,9 +1763,19 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
       R.state='done';
       if(!R.ans){ R.state='error'; R.err=['没收到内容','平台接受了请求但没返回文字。换个模型或稍后再试。']; }
       paint();
-      S.tasks.unshift({ n:q.slice(0,40), scene:(sceneById(S.scene)||{}).name||'任务',
-                        time:new Date().toTimeString().slice(0,5) });
-      if(S.tasks.length>12) S.tasks.pop();
+      var kinds={};
+      (R.srcs||[]).forEach(function(c){ kinds[c.d]=c.s; });
+      S.tasks.unshift({
+        q: q, n: q.slice(0,40), ans: R.ans,
+        docs: [].concat.apply([], [[]].concat((R.srcs||[]).map(function(c){ return c.d; })))
+                .filter(function(d,i,a){ return d && a.indexOf(d)===i; }),
+        srcKind: kinds,
+        scene: (sceneById(S.scene)||{}).name||'任务',
+        time: new Date().toTimeString().slice(0,5)
+      });
+      if(S.tasks.length>TMAX) S.tasks.length=TMAX;
+      saveTasks(S.tasks);
+      R.taskIdx=0;
       renderNav();
     }).catch(function(e){
       stopStream();
@@ -1927,6 +1889,22 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
     var a=document.getElementById('sbAva');
     if(a && window.fqIcon) a.innerHTML = fqIcon('personal-f',15) || '';
   })();
+
+  /* 任务列表补点击行为（原来那个 button 没绑任何事件），并从 localStorage 恢复 */
+  var origRenderNav = renderNav;
+  renderNav = function(){
+    origRenderNav();
+    var el=document.getElementById('taskList');
+    if(!el || !S.tasks.length) return;
+    el.innerHTML = S.tasks.map(function(t,x){
+      var on = (S.view==='run' && R.taskIdx===x);
+      return '<button class="sb-item'+(on?' on':'')+'" onclick="wbOpenTask('+x+')" title="点开看这次的问答">'+
+        '<div class="t">'+esc(t.q||t.n||'')+'</div>'+
+        '<div class="m"><span>'+esc(t.scene||'')+'</span><span>·</span><span>'+esc(t.time||'')+'</span></div>'+
+        '</button>';
+    }).join('') + '<button class="sb-item clr" onclick="wbClearTasks()"><div class="m">清空记录</div></button>';
+  };
+  S.tasks = loadTasks();          // 刷新之后任务还在
 
   /* 把路由和入口接上 */
   var lastModel = S.model;
