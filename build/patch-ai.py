@@ -445,6 +445,24 @@ JS = r'''
   /* ── 主流程 ── */
   function paint(){ if(S.view==='run') document.getElementById('main').innerHTML = viewRun(); }
 
+  /* 流式输出时只重画回答那一块，并且限流到约 8 帧/秒。
+     🔴 别在每个 token 上重画整个视图 —— mdToHtml 每次都重解析全文，
+     500 个 token 就是 500 次全量解析（O(n²)），实测把页面卡死到超过 3 分钟没响应。 */
+  var streamTimer=null, lastPaint=0;
+  function paintStream(){
+    if(S.view!=='run') return;
+    var now=Date.now(), gap=now-lastPaint;
+    if(gap<120){
+      if(!streamTimer) streamTimer=setTimeout(function(){ streamTimer=null; paintStream(); }, 130-gap);
+      return;
+    }
+    lastPaint=now;
+    var el=document.querySelector('#main .atx');
+    if(el) el.innerHTML = mdToHtml(R.ans) + '<span class="caret"></span>';
+    else paint();
+  }
+  function stopStream(){ if(streamTimer){ clearTimeout(streamTimer); streamTimer=null; } }
+
   function runQuery(q){
     R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw='';
     S.view='run';
@@ -457,8 +475,9 @@ JS = r'''
       R.srcs = retrieve(q);
       R.state='run'; paint();
       R.ctl = (window.AbortController? new AbortController() : null);
-      return callModel(q, R.srcs, function(full){ R.ans=full; paint(); }, R.ctl?R.ctl.signal:undefined);
+      return callModel(q, R.srcs, function(full){ R.ans=full; paintStream(); }, R.ctl?R.ctl.signal:undefined);
     }).then(function(){
+      stopStream();
       R.state='done';
       if(!R.ans){ R.state='error'; R.err=['没收到内容','平台接受了请求但没返回文字。换个模型或稍后再试。']; }
       paint();
@@ -467,6 +486,7 @@ JS = r'''
       if(S.tasks.length>12) S.tasks.pop();
       renderNav();
     }).catch(function(e){
+      stopStream();
       R.state = (e&&e.name==='AbortError' && R.ans)? 'done' : 'error';
       if(R.state==='error'){ R.err=errText(e); R.raw=(e&&e.message)||''; }
       paint();
