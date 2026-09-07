@@ -405,6 +405,7 @@ textarea::placeholder{color:var(--ink-3)}
 .atx tr:first-child td:first-child,.atx td.c1{background:#F0F1F2}
 .atx code{background:var(--soft);padding:2px 6px;border-radius:4px;font-size:13px}
 .atx b{font-weight:700}
+.atx .raw{white-space:pre-wrap;word-break:break-word}
 .caret{display:inline-block;width:7px;height:15px;background:var(--accent);vertical-align:-2px;animation:cb 1s steps(2) infinite}
 @keyframes cb{0%,50%{opacity:1}51%,100%{opacity:0}}
 .srcs{margin:22px 0 0;padding:14px 0 0;border-top:1px solid var(--line-2)}
@@ -1597,7 +1598,23 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
   var R = { q:'', ans:'', srcs:[], state:'idle', err:null, ctl:null, task:'' };
   window.WBRUN = R;
 
+  /* 🔴 小模型不听格式类指令 —— prompt 里写了「中英之间加空格」「不要 emoji」，
+     它照样输出「有540个状态」和「📝」。所以这两件事在前端机器修，不赌它自觉。
+     反引号里的内容原样保留（那里面是代码和 key，加空格会改坏）。 */
+  var EMO=/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F0FF}\u{FE0F}\u{20E3}]/gu;
+  function tidy(t){
+    return String(t||'').split(/(`[^`]*`)/).map(function(seg,i){
+      if(i%2) return seg;                       // 反引号内原样
+      return seg.replace(EMO,'')
+                .replace(/([\u4e00-\u9fa5])([A-Za-z0-9])/g,'$1 $2')
+                .replace(/([A-Za-z0-9])([\u4e00-\u9fa5])/g,'$1 $2')
+                .replace(/ {2,}/g,' ');
+    }).join('');
+  }
+  window.wbTidy = tidy;
+
   function mdToHtml(t){
+    t = tidy(t);
     var esc=function(x){ return x.replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); };
     var lines=esc(t).split('\n'), out=[], i=0;
     while(i<lines.length){
@@ -1712,23 +1729,37 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
   /* ── 主流程 ── */
   function paint(){ if(S.view==='run') document.getElementById('main').innerHTML = viewRun(); }
 
-  /* 流式输出时只重画回答那一块，并且限流到约 8 帧/秒。
-     🔴 别在每个 token 上重画整个视图 —— mdToHtml 每次都重解析全文，
-     500 个 token 就是 500 次全量解析（O(n²)），实测把页面卡死到超过 3 分钟没响应。 */
-  var streamTimer=null, lastPaint=0;
+  /* 🔴 流式期间不解析 markdown，只往末尾追加纯文本。
+     这是第二次修这个地方 —— 第一次我只把频率从「每个 token」降到「每 120ms」，
+     但每次仍然重解析全文，复杂度还是平方级：答案越长越卡，
+     长输出（比如竞品分析）撞得最狠。现在改成：
+       流式中 → textContent 追加，单次开销跟答案长度无关
+       生成完 → 一次性解析成 markdown（表格、列表这时才出来）
+     代价是流式期间看到的是纯文本、表格不成形，几秒后成形 —— 这个代价换的是不卡。 */
+  var streamTimer=null, lastPaint=0, txtEl=null, shown=0;
   function paintStream(){
     if(S.view!=='run') return;
     var now=Date.now(), gap=now-lastPaint;
-    if(gap<120){
-      if(!streamTimer) streamTimer=setTimeout(function(){ streamTimer=null; paintStream(); }, 130-gap);
+    if(gap<100){
+      if(!streamTimer) streamTimer=setTimeout(function(){ streamTimer=null; paintStream(); }, 110-gap);
       return;
     }
     lastPaint=now;
-    var el=document.querySelector('#main .atx');
-    if(el) el.innerHTML = mdToHtml(R.ans) + '<span class="caret"></span>';
-    else paint();
+    if(!txtEl || !txtEl.isConnected){
+      var host=document.querySelector('#main .atx');
+      if(!host){ paint(); return; }
+      host.innerHTML='<div class="raw"></div><span class="caret"></span>';
+      txtEl=host.querySelector('.raw'); shown=0;
+    }
+    if(R.ans.length>shown){
+      txtEl.appendChild(document.createTextNode(R.ans.slice(shown)));
+      shown=R.ans.length;
+    }
   }
-  function stopStream(){ if(streamTimer){ clearTimeout(streamTimer); streamTimer=null; } }
+  function stopStream(){
+    if(streamTimer){ clearTimeout(streamTimer); streamTimer=null; }
+    txtEl=null; shown=0;
+  }
 
   function runQuery(q){
     R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw='';
@@ -1744,7 +1775,7 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
       R.ctl = (window.AbortController? new AbortController() : null);
       return callModel(q, R.srcs, function(full){ R.ans=full; paintStream(); }, R.ctl?R.ctl.signal:undefined);
     }).then(function(){
-      stopStream();
+      stopStream();          // 到这里才做唯一一次完整 markdown 解析（在 paint 里）
       R.state='done';
       if(!R.ans){ R.state='error'; R.err=['没收到内容','平台接受了请求但没返回文字。换个模型或稍后再试。']; }
       paint();

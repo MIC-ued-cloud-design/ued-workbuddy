@@ -178,9 +178,44 @@ def json_chunks():
                 one(label, label2, body)
 
     # token
+    # 🔴 原来直接转储 JSON，模型看到 18 / 24 / 36 一堆数字会选错
+    #    （实测把「Web 端正文最大 18」答成了 24 —— 24 是标题级）。
+    #    改成一句话说清「哪个数管哪件事」，字号这类最容易搞混的写成明确陈述。
     tk = load(os.path.join(SK, 'assets/feique-tokens.json'))
-    for sec, label in [('color', '颜色'), ('fontSize', '字号'), ('spacing', '间距'),
-                       ('radius', '圆角'), ('shadow', '阴影'), ('figmaStyles', 'Figma 样式与样式 ID'),
+
+    fs = tk.get('fontSize') or {}
+    web, mob = fs.get('web') or {}, fs.get('mobile') or {}
+    lines = []
+    if web.get('bodyMax'):
+        lines.append(f"Web 端正文（body）字号最大是 {web['bodyMax']}px。"
+                     f"比它大的 22 / 24 / 32 / 36 属于标题级（heading4 / heading3 / heading2 / heading1），"
+                     f"是合法字号，但不是正文级 —— 问「正文最大多少」答案就是 {web['bodyMax']}，不要答 24 或 36。")
+    if web.get('scale'):
+        lines.append('Web 端完整字号阶梯：' + ' / '.join(str(x) for x in web['scale']) + '（单位 px）。禁用奇数，就近取偶。')
+    if mob.get('scale'):
+        lines.append('移动端字号阶梯：' + ' / '.join(str(x) for x in mob['scale']) + '（单位 px）。移动端正文主力是 16。')
+    if web.get('note'):
+        lines.append('原始说明：' + s(web['note'], 600))
+    lines.append('文字样式（text style）层只有 400 和 700 两档字重。Medium / SemiBold 是没绑样式的硬编码，不算 token。')
+    one('飞鹊视觉规范 token', '字号', '\n'.join(lines))
+
+    sp = tk.get('spacing') or {}
+    rd = tk.get('radius') or {}
+    one('飞鹊视觉规范 token', '间距与圆角',
+        (f"间距阶梯：{' / '.join(str(x) for x in sp.get('scale', []))}（单位 px，4px 一档）。\n"
+         f"圆角阶梯：{' / '.join(str(x) for x in rd.get('scale', []))}（单位 px）。"))
+
+    sh_lines = []
+    for k, v in (tk.get('shadow') or {}).items():
+        if k.startswith('_') or not isinstance(v, dict):
+            continue
+        sh_lines.append(f"{k}：{s(v.get('meaning'))}\n  CSS：{s(v.get('css'))}")
+    if sh_lines:
+        sh_lines.append('三级都是三层叠加，纯黑，横向偏移一律 0。')
+        one('飞鹊视觉规范 token', '阴影', '\n'.join(sh_lines))
+
+    # 颜色和样式 ID 是查表性质的，保留结构化形态
+    for sec, label in [('color', '颜色'), ('figmaStyles', 'Figma 样式与样式 ID'),
                        ('spacingSemantics', '间距的语义用法')]:
         v = tk.get(sec)
         if v:
