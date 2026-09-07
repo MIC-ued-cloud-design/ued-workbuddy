@@ -62,7 +62,7 @@ CSS = r'''
 .fld input:focus,.fld select:focus{border-color:var(--accent)}
 .dfoot{display:flex;gap:9px;justify-content:flex-end;margin:22px 0 0;align-items:center}
 .dfoot .msg{flex:1;font-size:12px;color:var(--ink-2);line-height:1.6}
-.prov{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prov{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .provb{text-align:left;background:var(--white);border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer}
 .provb.on{border-color:var(--accent);background:var(--accent-fill)}
 .provb b{display:block;font-size:13px;color:var(--ink);font-weight:700;margin:0 0 3px}
@@ -84,8 +84,7 @@ JS = r'''
              get:'cloud.siliconflow.cn 注册后在「API 密钥」页新建'},
     deepseek:{n:'DeepSeek', tip:'按量付费，很便宜 · 国内直连',
              u:'https://api.deepseek.com/chat/completions', m:'deepseek-chat',
-             get:'platform.deepseek.com 注册后在「API keys」页新建'},
-    custom: {n:'自己填', tip:'任何 OpenAI 兼容接口', u:'', m:'', get:''}
+             get:'platform.deepseek.com 注册后在「API keys」页新建'}
   };
 
   function cfg(){
@@ -500,10 +499,7 @@ JS = r'''
         '<div class="hint" id="pgh">'+(PROV[prov].get||'')+'</div></div>'+
       '<div class="fld"><label>密钥</label><input id="wbk" type="password" placeholder="粘贴平台给你的 API 密钥" value="'+(c.key||'')+'">'+
         '<div class="hint">粘完可以先点「测试连接」，确认通了再保存。</div></div>'+
-      '<div class="fld" id="cf" style="display:'+(prov==='custom'?'block':'none')+'">'+
-        '<label>接口地址</label><input id="wbu" placeholder="https://…/chat/completions" value="'+(c.url||'')+'">'+
-        '<div class="hint" style="margin-bottom:12px">要是 OpenAI 兼容的对话接口。</div>'+
-        '<label>模型名</label><input id="wbm" placeholder="模型名" value="'+(c.model||'')+'"></div>'+
+
       '<div class="dfoot"><span class="msg" id="wbmsg"></span>'+
         '<button class="rbtn" onclick="wbCloseSet()">取消</button>'+
         '<button class="rbtn" id="wbtest">测试连接</button>'+
@@ -514,22 +510,17 @@ JS = r'''
       b.onclick=function(){
         sel=b.getAttribute('data-p');
         el.querySelectorAll('.provb').forEach(function(x){ x.classList.toggle('on', x===b); });
-        document.getElementById('cf').style.display = sel==='custom'?'block':'none';
         document.getElementById('pgh').textContent = PROV[sel].get||'';
       };
     });
     function collect(){
-      var o={ prov:sel, key:(document.getElementById('wbk').value||'').trim() };
-      if(sel==='custom'){ o.url=(document.getElementById('wbu').value||'').trim();
-                          o.model=(document.getElementById('wbm').value||'').trim(); }
-      return o;
+      return { prov:sel, key:(document.getElementById('wbk').value||'').trim() };
     }
     function msg(t){ document.getElementById('wbmsg').textContent=t; }
     document.getElementById('wbtest').onclick=function(){
       var o=collect();
       if(!o.key){ msg('先把密钥粘进来。'); return; }
       var url=o.url||PROV[o.prov].u, mdl=o.model||PROV[o.prov].m;
-      if(!url||!mdl){ msg('自定义平台要把接口地址和模型名都填上。'); return; }
       msg('正在测…');
       fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+o.key},
         body:JSON.stringify({model:mdl,messages:[{role:'user',content:'你好'}],max_tokens:8})})
@@ -552,8 +543,7 @@ JS = r'''
   var REAL=[
     {id:'zhipu',   n:'智谱 GLM-4-Flash', badge:['rec','免费'], good:'官方标免费 · 国内直连'},
     {id:'silicon', n:'硅基流动',                              good:'部分小模型免费'},
-    {id:'deepseek',n:'DeepSeek',                              good:'按量付费 · 很便宜'},
-    {id:'custom',  n:'自己填',                                 good:'任何 OpenAI 兼容接口'}
+    {id:'deepseek',n:'DeepSeek',                              good:'按量付费 · 很便宜'}
   ];
   MODELS.length=0; REAL.forEach(function(m){ MODELS.push(m); });
   S.model = cfg().prov || 'zhipu';
