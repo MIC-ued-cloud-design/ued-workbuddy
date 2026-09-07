@@ -263,6 +263,9 @@ JS = r'''
     '3. 不自造缩写。主体点名，别用「它」「这个」「该功能」指代。',
     '4. 专业、精炼、看得懂三条同时成立：名词用需求文档里的正式名，一句话只说一件事，词保持完整形态不缩写。',
     '5. 用到哪份资料，就在那句话末尾用括号标出文档名。',
+    '6. 🔴 数字、组件名、key、字号、比例这类具体值，必须从资料里逐字照抄，一个字符都不要改，也不要自己归纳或换算。',
+    '   资料里写「状态（variant）总数：540」，你就说 540，不要因为觉得这个数不合理而改小。',
+    '   拿不准就直接引用资料原句，让用户自己看。说出来的数字和列出来的项数必须对得上。',
     '',
     '写 GSSM 设计目标表时：五列固定是 业务目标 / 设计目标 / 设计策略 / 信号 / 指标。',
     'G 指的是设计目标，不是业务目标，业务目标是这张表的输入。每格不超过 35 字，设计策略不超过 50 字，指标写 2 到 3 个。',
@@ -288,7 +291,7 @@ JS = r'''
   /* ── 调模型（流式） ── */
   function callModel(q, chunks, onDelta, signal){
     var c=cfg(), url=endpoint(), mdl=modelName();
-    var body={ model:mdl, stream:true, temperature:0.3,
+    var body={ model:mdl, stream:true, temperature:0.1,   // 低温：这类问答要准不要花
       messages:[ {role:'system', content:SYS},
                  {role:'user', content:'参考资料：\n\n'+ctxOf(chunks)+'\n\n──────────\n\n我的问题：'+q} ] };
     return fetch(url,{ method:'POST', signal:signal,
@@ -512,27 +515,17 @@ JS = r'''
       '<h3>连一个模型</h3>'+
       '<p class="sub">密钥只存在你这台电脑的浏览器里，不会上传，也不会跟同事共享。'+
       '用的是你自己的额度，所以不会有人替你花钱、也不会被别人刷。</p>'+
-      '<div class="fld"><label>选平台</label><div class="prov">'+
-        Object.keys(PROV).map(function(k){
-          return '<button class="provb'+(k===prov?' on':'')+'" data-p="'+k+'"><b>'+PROV[k].n+'</b><span>'+PROV[k].tip+'</span></button>';
-        }).join('')+'</div>'+
-        '<div class="hint" id="pgh">'+(PROV[prov].get||'')+'</div></div>'+
-      '<div class="fld"><label>密钥</label><input id="wbk" type="password" placeholder="粘贴平台给你的 API 密钥" value="'+(c.key||'')+'">'+
-        '<div class="hint">粘完可以先点「测试连接」，确认通了再保存。</div></div>'+
+      '<div class="fld"><label>智谱 API 密钥</label><input id="wbk" type="password" placeholder="粘贴平台给你的 API 密钥" value="'+(c.key||'')+'">'+
+        '<div class="hint">用的是智谱 GLM-4-Flash，官方标免费。'+
+        '还没有密钥就去 open.bigmodel.cn 注册，在用户中心的「API 密钥」页新建一个。'+
+        '粘完先点「测试连接」，确认通了再保存。</div></div>'+
 
       '<div class="dfoot"><span class="msg" id="wbmsg"></span>'+
         '<button class="rbtn" onclick="wbCloseSet()">取消</button>'+
         '<button class="rbtn" id="wbtest">测试连接</button>'+
         '<button class="rbtn pri" id="wbsave">保存</button></div></div>';
     document.body.appendChild(el);
-    var sel=prov;
-    el.querySelectorAll('.provb').forEach(function(b){
-      b.onclick=function(){
-        sel=b.getAttribute('data-p');
-        el.querySelectorAll('.provb').forEach(function(x){ x.classList.toggle('on', x===b); });
-        document.getElementById('pgh').textContent = PROV[sel].get||'';
-      };
-    });
+    var sel='zhipu';
     function collect(){
       return { prov:sel, key:(document.getElementById('wbk').value||'').trim() };
     }
@@ -561,9 +554,7 @@ JS = r'''
 /* ── 模型选择器换成真的（原来列的是 Claude / GPT / 豆包，页面实际调的是这几家，
         名单不换就是误导）── */
   var REAL=[
-    {id:'zhipu',   n:'智谱 GLM-4-Flash', badge:['rec','免费'], good:'官方标免费 · 国内直连'},
-    {id:'silicon', n:'硅基流动',                              good:'部分小模型免费'},
-    {id:'deepseek',n:'DeepSeek',                              good:'按量付费 · 很便宜'}
+    {id:'zhipu', n:'智谱 GLM-4-Flash', badge:['rec','免费'], good:'官方标免费 · 国内直连'}
   ];
   MODELS.length=0; REAL.forEach(function(m){ MODELS.push(m); });
   S.model = cfg().prov || 'zhipu';
