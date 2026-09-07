@@ -441,7 +441,6 @@ textarea::placeholder{color:var(--ink-3)}
 .sb-sec-h.closed svg{transform:rotate(-90deg)}
 /* 🔴 显式写 —— [hidden] 打不过 .sb-list 自己的 display:flex，本项目栽过两次 */
 .sb-list[hidden]{display:none!important}
-.sb-sec.closed{flex:0 0 auto}
 
 /* 任务历史：选中态 + 清空入口 */
 .sb-item.on{background:var(--nav-on)}
@@ -2020,7 +2019,9 @@ document.getElementById('sbIcons').innerHTML = ic.fq_bell + ic.fq_keyboard;
     var closed=foldClosed();
     h.classList.toggle('closed', closed);
     l.hidden = closed;
-    if(sec) sec.classList.toggle('closed', closed);
+    /* 🔴 不要动 .sb-sec 的 flex —— 它 flex:1 占着剩余空间，
+       正是它把下面的用户行推到底部的。收起时把它压掉，用户行会跟着上移 474px（实测）。
+       所以只隐藏列表，空白留在原处，用户行保持置底。 */
   }
 
   /* 任务列表补点击行为（原来那个 button 没绑任何事件），并从 localStorage 恢复 */
