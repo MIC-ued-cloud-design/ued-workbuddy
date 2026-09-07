@@ -21,8 +21,30 @@ const ALLOW = [
 ];
 
 const MODEL     = 'glm-4-flash';   // 只放行这一个模型，免得代理被拿去跑别的
+const RATE_N    = 8;               // 同一个 IP 每窗口最多几次
+const RATE_MS   = 60000;           // 窗口长度
 const MAX_CHARS = 60000;           // 请求体上限，挡住拿它当通用推理服务用的
 const MAX_TOKENS_CAP = 4096;
+
+/* 速率限制。
+   🔴 说实话：Origin 校验挡不住 curl（服务端可以伪造任意 Origin），
+   口令写在公开页面里、查看源码就能看到。所以真正管用的是这一层。
+   内存计数是按实例的，Deno Deploy 多实例时不共享 —— 挡不住分布式滥用，
+   但足够挡住随手拿去白用的。真被大规模刷就换成 Deno KV 计数。
+
+   兜底判据：用的是智谱**免费**模型，所以最坏情况是额度被耗尽、页面暂时答不了，
+   不会产生账单。风险上限是「不能用」而不是「花钱」。 */
+const hits = new Map();
+function tooFast(ip) {
+  const now = Date.now();
+  const a = (hits.get(ip) || []).filter((t) => now - t < RATE_MS);
+  a.push(now);
+  hits.set(ip, a);
+  if (hits.size > 5000) {                       // 别让这张表无限长
+    for (const [k, v] of hits) if (!v.length || now - v[v.length - 1] > RATE_MS) hits.delete(k);
+  }
+  return a.length > RATE_N;
+}
 
 function cors(origin) {
   return {
@@ -62,6 +84,11 @@ async function handle(req, env) {
 
   if (!ALLOW.includes(origin))
     return err('这个来源不在允许名单里', 403, origin);
+
+  const ip = req.headers.get('CF-Connecting-IP') ||
+             (req.headers.get('X-Forwarded-For') || '').split(',')[0].trim() || 'unknown';
+  if (tooFast(ip))
+    return err('问得太快了，等一分钟再试', 429, origin);
 
   const pass = g('WB_PASS');
   if (pass && req.headers.get('X-WB-Pass') !== pass)
