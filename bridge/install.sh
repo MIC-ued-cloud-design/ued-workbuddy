@@ -57,7 +57,7 @@ SELF="${BASH_SOURCE[0]:-}"
 if [ -n "$SELF" ] && [ -f "$SELF" ] && [ -f "$(dirname "$SELF")/uw-bridge.js" ]; then
   cp "$(dirname "$SELF")/uw-bridge.js" "$DIR/uw-bridge.js"; SRC="本地副本"
 else
-  curl -fsSL "$BASE/uw-bridge.js" -o "$DIR/uw-bridge.js" || die "下载 uw-bridge.js 失败（$BASE）。公司网络能打开 UW 页面的话这一步不该失败，重试一次。"
+  curl -fsSL "$BASE/uw-bridge.js" -o "$DIR/uw-bridge.js" || die "下载 uw-bridge.js 失败（${BASE}）。公司网络能打开 UW 页面的话这一步不该失败，重试一次。"
   SRC="$BASE"
 fi
 "$NODE" --check "$DIR/uw-bridge.js" || die "下载到的脚本不完整，重试一次。"
@@ -100,7 +100,7 @@ if curl -fsS -m 2 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
   say ""
   say "✅ 装好了。桥在 http://127.0.0.1:$PORT 上一直跑着，开机自动启动。"
   say "   Node：$NODE"
-  say "   Claude：$CLAUDE（$VIA）"
+  say "   Claude：${CLAUDE}（${VIA}）"
   say "   脚本来源：$SRC"
   say "   日志：$DIR/log.txt"
   say ""
