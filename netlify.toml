@@ -2,7 +2,12 @@
 # 页面本体在 GitHub Pages 上，不从这里发布 —— 所以不设 build 命令。
 [build]
   command = ""
-  publish = "."
+  # 🔴 不能写 publish = "."。
+  # 一旦把这个仓库连到 Netlify 自动部署，publish = "." 会把整个仓库当静态站发出去，
+  # 于是同一个页面多出第二个公网地址（内容一样、但 AI 用不了 —— 代理的来源白名单
+  # 只放行 github.io 那个域）。同事拿到哪个链接全看运气，这是自己给自己造分叉。
+  # 所以发布目录指向一个只有跳转页的空目录，这个域名就纯粹是后端。
+  publish = "netlify-public"
 
 # 边缘函数的路径写在 netlify/edge-functions/chat.js 里的 config.path，
 # 这里不用重复声明（重复声明就成了两个维护源）。
