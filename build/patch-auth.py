@@ -71,7 +71,27 @@ JS = r'''
 
   window.wbUser  = function(){ return USER; };
   window.wbToken = function(){ return USER ? token() : ''; };
-  window.wbLogin = function(){ location.href = AUTH + '/login'; };
+  /* 点了先探一下后端在不在，再跳。
+     🔴 不这么做的话，后端没部署（或者挂了）时，同事点完落在托管商的 404 页上 ——
+     那个页面没有返回入口，也不会告诉他发生了什么，他只会以为整个工具坏了。
+     探测只在点的时候发生，不在每次打开页面时发生。 */
+  window.wbLogin = function(){
+    var t = setTimeout(function(){ if(window.fqToast) fqToast('正在连接飞书…'); }, 400);
+    fetch(AUTH + '/health', { cache:'no-store' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        clearTimeout(t);
+        if(!j || !j.ok){ if(window.fqToast) fqToast('登录还没开通，等一下再试'); return; }
+        if(!j.appIdConfigured || !j.secretConfigured || !j.sessionSecretConfigured){
+          if(window.fqToast) fqToast('登录还差配置，我去看一下'); return;
+        }
+        location.href = AUTH + '/login';
+      })
+      .catch(function(){
+        clearTimeout(t);
+        if(window.fqToast) fqToast('连不上登录服务，等一下再试');
+      });
+  };
   window.wbLogout = function(){ clear(); USER = null; location.reload(); };
 
   /* 头像：飞书给的是它自己图床的 https 地址。
