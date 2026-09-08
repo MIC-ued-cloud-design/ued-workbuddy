@@ -163,16 +163,19 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 /* ── 浮层改成底部抽屉 ──
    桌面版这两个浮层是 198px / 360px 宽、贴着按钮向上弹；
    手机屏只有 375 左右，贴着弹会顶出屏幕右侧。 */
-.ppop,.mpop{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;
+.ppop,.mpop,.pjpop{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;
   border-radius:16px 16px 0 0;border:0;border-top:1px solid var(--line);
   padding:8px 8px calc(10px + env(safe-area-inset-bottom));
   max-height:76vh;overflow-y:auto;z-index:90;
   box-shadow:0 -8px 40px rgba(0,0,0,.18)}
 .ppop .row,.mpop .row,.mpop .mfoot{height:44px}
+.pjrow,.pjnew{padding:12px 10px}
+.pjlist{max-height:52vh}
+.pjsr input{font-size:16px}   /* 手机上 <16px 一聚焦就整页放大 */
 /* 抽屉后面压暗一层：用伪元素而不是新插一个遮罩节点，因为「点空白关闭」
    靠的是页面上原有那个 document click 判 closest('.plusw') / closest('.model')，
    真插一个节点会挡住那次点击。pointer-events:none 让点击穿过去。 */
-.ppop::before,.mpop::before{content:'';position:fixed;inset:0;z-index:-1;
+.ppop::before,.mpop::before,.pjpop::before{content:'';position:fixed;inset:0;z-index:-1;
   background:rgba(0,0,0,.3);pointer-events:none}
 .mpop .max{padding:12px 10px 13px}
 .mpop .row .nm{font-size:14px}
@@ -307,7 +310,7 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 .wbm-top{padding-left:max(6px,env(safe-area-inset-left));
   padding-right:max(6px,env(safe-area-inset-right))}
 .sb{padding-left:max(12px,env(safe-area-inset-left))}
-.ppop,.mpop{padding-left:max(8px,env(safe-area-inset-left));
+.ppop,.mpop,.pjpop{padding-left:max(8px,env(safe-area-inset-left));
   padding-right:max(8px,env(safe-area-inset-right))}
 #wbmask{padding-left:max(12px,env(safe-area-inset-left));
   padding-right:max(12px,env(safe-area-inset-right))}

@@ -620,6 +620,8 @@ JS = r'''
       (R.srcs||[]).forEach(function(c){ kinds[c.d]=c.s; });
       S.tasks.unshift({
         q: q, n: q.slice(0,40), ans: R.ans,
+        proj: S.proj || '',                    // 「归到项目」选了哪个（build/patch-project.py）
+                                               // 🔴 不能写 window.S —— 顶层 const 不会挂到 window 上
         docs: [].concat.apply([], [[]].concat((R.srcs||[]).map(function(c){ return c.d; })))
                 .filter(function(d,i,a){ return d && a.indexOf(d)===i; }),
         srcKind: kinds,
