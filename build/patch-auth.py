@@ -30,7 +30,6 @@ CSS = r'''
   border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2)}
 .wblogin .ico .fq{width:15px;height:15px}
 .wblogin .t{font-size:13px;color:var(--ink)}
-.wblogin .d{font-size:12px;color:var(--ink-3);margin-top:1px}
 /* 已登录：名字右边一个退出 */
 .wbout{margin-left:auto;font-size:12px;color:var(--ink-3);padding:4px 6px;border-radius:6px}
 .wbout:hover{background:#E9E9E9;color:var(--ink-2)}
@@ -99,8 +98,7 @@ JS = r'''
       f.innerHTML =
         '<button class="wblogin" onclick="wbLogin()">' +
         '<span class="ico">' + (window.fqIcon ? (fqIcon('personal-f', 15) || '') : '') + '</span>' +
-        '<span><span class="t">用飞书登录</span>' +
-        '<span class="d" style="display:block">登录后这里显示你的名字</span></span>' +
+        '<span class="t">用飞书登录</span>' +
         '</button>';
     }
   }

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""把「归到项目」从假按钮做成真功能，注入 index.html（可重复运行，按标记替换）。
+"""把「选择工作空间」从假按钮做成真功能，注入 index.html（可重复运行，按标记替换）。
 
 形态照腾讯 WorkBuddy 的「选择工作空间」：搜索框 + 列表 + 分隔线 + 新建。
 但不止做外壳 —— 选了要真的产生效果，否则只是把假按钮做得更精致：
-  选项目 → 这次任务记上这个项目 → 「我的项目」页看得到、点得开那条任务。
+  选工作空间 → 这次任务记上它 → 「工作空间」页看得到、点得开那条任务。
 
 项目存在浏览器里（跟任务历史同一个地方）。等飞书登录接上服务端存储之后，
 这部分可以整体搬到按人存，界面不用改。
@@ -20,7 +20,7 @@ CSS_B, CSS_E = '/* ==WB-PROJ-CSS:BEGIN== */', '/* ==WB-PROJ-CSS:END== */'
 JS_B,  JS_E  = '/* ==WB-PROJ-JS:BEGIN== */',  '/* ==WB-PROJ-JS:END== */'
 
 CSS = r'''
-/* ══════════ 归到项目 ══════════ */
+/* ══════════ 选择工作空间 ══════════ */
 .pjw{position:relative}
 .cfoot .pjb.on{color:var(--accent-ink);background:var(--accent-fill)}
 .cfoot .pjb.on .fq{color:var(--accent-ink)}
@@ -48,7 +48,7 @@ CSS = r'''
 .pjnew .fq{width:15px;height:15px;color:var(--ink-2);flex:0 0 15px}
 .pjnew b{font-weight:600}
 
-/* 「我的项目」页 */
+/* 「工作空间」页 */
 .prow{cursor:pointer}
 .prow.on{border-color:var(--accent-line);background:var(--accent-fill)}
 .pjtag{font-size:12px;color:var(--ink-3);background:#F2F2F2;border-radius:4px;padding:2px 7px;margin-left:8px;
@@ -64,7 +64,7 @@ CSS = r'''
 '''
 
 JS = r'''
-/* ══════════ 归到项目 · 从假按钮做成真功能 ══════════ */
+/* ══════════ 选择工作空间 · 从假按钮做成真功能 ══════════ */
 (function(){
   var LSK = 'wb_projects';
 
@@ -114,19 +114,19 @@ JS = r'''
   };
   window.wbPjNew = function(){
     var name = (S.pjq || '').trim();
-    if(!name){ var i = document.getElementById('pjq'); if(i){ i.focus(); i.placeholder = '先输入项目名'; } return; }
+    if(!name){ var i = document.getElementById('pjq'); if(i){ i.focus(); i.placeholder = '先输入名字'; } return; }
     var a = load();
     for(var i2 = 0; i2 < a.length; i2++) if(a[i2].n === name){ wbPjPick(name); return; }
     a.unshift({ n:name, t:Date.now() });
     save(a);
     S.proj = name; S.pjopen = false; render();
-    if(window.fqToast) fqToast('已新建项目「' + name + '」');
+    if(window.fqToast) fqToast('已新建工作空间「' + name + '」');
   };
   window.wbPjDel = function(name, e){
     if(e) e.stopPropagation();
     var used = countOf(name);
-    var msg = used ? ('「' + name + '」下面还有 ' + used + ' 条任务。删掉项目，那些任务会变回没有归属，任务本身不会丢。')
-                   : ('确定删掉项目「' + name + '」？');
+    var msg = used ? ('「' + name + '」下面还有 ' + used + ' 条任务。删掉工作空间，那些任务会变回没有归属，任务本身不会丢。')
+                   : ('确定删掉工作空间「' + name + '」？');
     if(!confirm(msg)) return;
     save(load().filter(function(p){ return p.n !== name; }));
     if(S.proj === name) S.proj = '';
@@ -142,7 +142,7 @@ JS = r'''
     var q = (S.pjq || '').trim().toLowerCase();
     var a = load().filter(function(p){ return !q || p.n.toLowerCase().indexOf(q) >= 0; });
     if(!a.length)
-      return '<div class="pjempty">' + (q ? '没有叫这个名字的项目' : '还没有项目<br>在上面输入名字新建一个') + '</div>';
+      return '<div class="pjempty">' + (q ? '未找到工作空间' : '还没有工作空间<br>在上面输入名字新建一个') + '</div>';
     return a.map(function(p){
       var c = countOf(p.n);
       return '<button class="pjrow' + (S.proj === p.n ? ' on' : '') + '" onclick="wbPjPick(\'' +
@@ -153,7 +153,7 @@ JS = r'''
   }
   function newHtml(){
     var q = (S.pjq || '').trim();
-    return icon('add') + (q ? '<span>新建「<b>' + esc(q) + '</b>」</span>' : '<span>新建项目</span>');
+    return icon('add') + (q ? '<span>新建「<b>' + esc(q) + '</b>」</span>' : '<span>新建工作空间</span>');
   }
 
   /* ── 把 .cfoot 里那个假按钮换掉 ──
@@ -169,12 +169,12 @@ JS = r'''
     w.className = 'pjw';
     w.innerHTML =
       '<button class="pjb' + (S.proj ? ' on' : '') + '" data-pj="1" onclick="wbPjToggle(event)">' +
-        icon('folder', 16) + '<span>' + (S.proj ? esc(S.proj) : '归到项目') + '</span>' + icon('down', 16) +
+        icon('folder', 16) + '<span>' + (S.proj ? esc(S.proj) : '选择工作空间') + '</span>' + icon('down', 16) +
       '</button>' +
       (S.pjopen ?
         '<div class="pjpop">' +
           '<div class="pjsr">' + icon('search', 14) +
-            '<input id="pjq" placeholder="搜索或新建项目" oninput="wbPjSearch(this)" ' +
+            '<input id="pjq" placeholder="搜索工作空间" oninput="wbPjSearch(this)" ' +
             'onclick="event.stopPropagation()" autocomplete="off"></div>' +
           '<div class="pjlist" id="pjlist">' + listHtml() + '</div>' +
           '<div class="pjhr"></div>' +
@@ -183,15 +183,15 @@ JS = r'''
     btn.replaceWith(w);
   }
 
-  /* ── 「我的项目」页：自建的排前面、带真实任务数，预置的三个标成示例 ── */
+  /* ── 「工作空间」页：自建的排前面、带真实任务数，预置的三个标成示例 ── */
   if(typeof viewProjects === 'function'){
     var origProjects = viewProjects;
     viewProjects = window.viewProjects = function(){
       var mine = load();
       var head = '<div class="page">' +
-        '<div class="ph"><h2>我的项目</h2>' +
+        '<div class="ph"><h2>工作空间</h2>' +
         '<p>一个需求从调研到复盘的产出物都收在这里，继续上次的进度不用重新说明背景。' +
-        '在输入框下方的「归到项目」里选一个，这次任务就记到那个项目下。</p></div>';
+        '在输入框下方的「选择工作空间」里选一个，这次任务就记到那个空间下。</p></div>';
 
       var body = mine.length ? mine.map(function(p){
         var list = tasksOf(p.n), open = S.pjOpenRow === p.n;
@@ -199,7 +199,7 @@ JS = r'''
             return '<button class="pjtask" onclick="wbOpenTask(' + x.i + ')">' + icon('filltext', 14) +
               '<span class="n">' + esc(x.t.n || '（无标题）') + '</span>' +
               '<span class="m">' + esc(x.t.scene || '') + ' · ' + esc(x.t.time || '') + '</span></button>';
-          }).join('') : '<div class="pjempty">这个项目下还没有任务</div>') + '</div>') : '';
+          }).join('') : '<div class="pjempty">这个空间下还没有任务</div>') + '</div>') : '';
         return '<button class="prow' + (open ? ' on' : '') + '" onclick="wbPjRow(\'' +
             esc(p.n).replace(/'/g, "\\'") + '\')">' +
             '<div><div class="nm">' + esc(p.n) + '</div>' +
@@ -208,11 +208,11 @@ JS = r'''
             '<span class="pjdel" onclick="wbPjDel(\'' + esc(p.n).replace(/'/g, "\\'") + '\',event)">删除</span>' +
           '</button>' + rows;
       }).join('') :
-        '<div class="libempty"><b>还没有项目。</b><br>' +
-        '回到新建任务页，在输入框下面的「归到项目」里输入名字就能建一个。</div>';
+        '<div class="libempty"><b>还没有工作空间。</b><br>' +
+        '回到新建任务页，在输入框下面的「选择工作空间」里输入名字就能建一个。</div>';
 
-      /* 预置那三个保留，但明确标成示例，也不进「归到项目」的下拉 ——
-         真项目和示例混在一起选，任务就会归到一个假项目上。 */
+      /* 预置那三个保留，但明确标成示例，也不进「选择工作空间」的下拉 ——
+         真的和示例混在一起选，任务就会归到一个假空间上。 */
       var demo = '<div class="grp" style="margin-top:30px">' +
         '<div class="grp-t">示例（预置内容，不参与归属）</div>' +
         PROJECTS.map(function(p){
