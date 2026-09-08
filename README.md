@@ -51,12 +51,17 @@ python3 build/gen-data.py    # 组件清册 / token / 自查表 / 目录 → 写
 python3 build/gen-kb.py      # 业务知识与方法论正文 → 写成 kb.js
 python3 build/patch-ui.py    # 资料库界面
 python3 build/patch-ai.py    # 检索与模型接入
-python3 build/patch-mobile.py # 手机版版面
+python3 build/patch-project.py # 选择工作空间
+python3 build/patch-auth.py  # 飞书登录（页面这一半）
+python3 build/patch-mobile.py # 手机版版面 —— 必须最后跑
+python3 build/secret-check.py # 提交前扫一遍有没有混进密钥
 git commit -am "说明这次改了什么" && git push
 ```
 
-界面代码改 `build/patch-ui.py`、`build/patch-ai.py`、`build/patch-mobile.py` 里的 CSS 与 JS，
+界面代码改 `build/patch-*.py` 里的 CSS 与 JS，
 不要直接改 `index.html` 里标记之间的内容 —— 重跑脚本会覆盖掉。
-每个脚本只替换自己那对标记之间的内容，互不干扰，顺序也不影响。
+每个脚本只替换自己那对标记之间的内容，互不干扰。
+**只有一条顺序要求：`patch-mobile.py` 最后跑** —— 它的 CSS 靠「同优先级后来者胜」
+覆盖前面所有区，位置被挤到中间就会失效。
 
 推送之后 GitHub Pages 约一分钟自动更新。
