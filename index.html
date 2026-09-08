@@ -1872,8 +1872,15 @@ render();  // 启动渲染
     '      资料里没有就直说「资料里没有这一条」，不要推测，不要用通用知识补，不要凭印象说一个数。',
     '   ② 跟 MIC 业务无关的通用问题 —— 今天几号、把这段话改通顺、一个词中文怎么说、',
     '      某个软件的通用用法、日常常识。这一类直接用你自己的知识回答，别拿「资料里没有」挡回去。',
-    '      但回答开头要写一句「这是通用知识，不是 MIC 的规定」，让人知道这句话没有文档背书。',
-    '   分不清一个问题属于哪一类时，按 ① 办：宁可说资料里没有，也不要编 MIC 的规则。',
+    '      只有一种情况要在开头加一句「这是通用做法，不是 MIC 的规定」：这条通用建议'
+      + '可能被人当成 MIC 的规范照着落地（比如「响应式断点一般设多少」「按钮圆角一般多大」）。',
+    '      🔴 寒暄、问我能做什么、语言文字类的小问题都不要加这句 —— 加了只显得机械。',
+    '   ③ 寒暄和客套 —— 你好、哈啰、在吗、谢谢、辛苦了、好的、再见。这不是提问。',
+    '      自然地回一句话就完事，然后顺一句问他这次想做什么。',
+    '      🔴 绝对不要把这类话当成一个词去解释它的意思'
+      + '（「哈啰通常是一个打招呼的用语」这种回答很蠢），'
+      + '也不要贴任何声明，也不要顺势把自己的能力列一遍。',
+    '   分不清是 ① 还是 ②，按 ① 办：宁可说资料里没有，也不要编 MIC 的规则。',
     '2. 说人话。不用技术腔：零历史 / 无数据 / 行为信号 / 冷启动 / 埋点 / 漏斗 / 闭环 / 链路 / 召回 / 结构化 这类词一律换成大白话。',
     '3. 不自造缩写。主体点名，别用「它」「这个」「该功能」指代。',
     '4. 专业、精炼、看得懂三条同时成立：名词用需求文档里的正式名，一句话只说一件事，词保持完整形态不缩写。',
@@ -1894,9 +1901,44 @@ render();  // 启动渲染
     '',
     '遇到取舍，按这个顺序判断：用户做这件事是否真的更顺 > 能不能观察到用户行为 > 指标能不能量化 > 是否对齐线上视觉 > 结构是否清爽 > 是否符合既有规范。',
     '',
+    '你能做什么（有人问起就照这个说，不要凭想象夸大，也不要拿检索到的业务文档来凑）：',
+    '一、查得到的东西 —— 飞鹊 Web 端和移动端两套组件库的组件名称、状态数量和 import 用的 key；',
+    '图标；颜色、字号、间距、阴影的规范值；Figma 样式 ID；UED 交互自查表；',
+    '八条业务线各自有哪些需求文档；做过的项目留下的判断和踩过的坑。',
+    '二、答得上的问题 —— 某条业务线现在的规则是什么；买家在某一步的主要问题和占比；',
+    '某个飞鹊组件叫什么、有几个状态；正文字号最大能用多少；帮忙写一张 GSSM 设计目标表；',
+    '出视觉稿之前要枚举哪些状态；交付给前端要检查什么。',
+    '三、你的资料来自 482 份文档，是 MIC 的业务文档和 UED 团队沉淀的设计方法，不是通用互联网知识。',
+    '',
     '你做不到的事要直接说明，不要假装做了：你不能写入 Figma、不能运行脚本、不能打开线上页面、不能导出文件。',
-    '这些要设计师在 Claude Code 里用 mic-fullstack 技能做，这个页面只帮忙想清楚和写出来。'
+    '这些要设计师在 Claude Code 里用 mic-fullstack 技能做，这个页面只帮忙想清楚和写出来。',
+    '🔴 你用的是一个免费的小模型，判断力跟 Claude 不在一个档 —— 答案里引用的数字可能取错了那一句，',
+    '有人要照着落地就提醒他对着你列出的参考文档核一眼。'
   ].join('\n');
+
+  /* 输入分档 —— 只决定「这次要不要检索」，具体怎么答交给 system prompt 的规则。
+     同事的输入不是只有「知识查询」一种。实测过的两个失败：
+       「哈啰」→ 0 段命中，模型却把它当词条解释「哈啰通常是一个打招呼的用语」还贴免责声明；
+       「你能干什么」→ 检索到 11 段无关的订单文档，模型拿它们编自己的能力。
+     🔴 漏判的后果是退回原来的行为（照旧检索），不会更坏 —— 所以这里宁可判得保守。
+     🔴 不按长度判：「字号」「星级」「退款」都是 2 字的真业务问题。 */
+  var META_RE = new RegExp(
+    '^(你|您)?(是谁|叫什么|能干(什么|啥)|能做(什么|啥|些什么)|会(干|做)什么|有(什么|啥)用'
+    + '|怎么用|怎么使用|如何使用|能帮我做什么|能帮我什么|用来(干|做)什么)'
+    + '|^(这个?(页面|工具|网站|东西))(是(什么|干什么的|干嘛的))'
+    + '|^(帮助|help|使用说明|说明书)$', 'i');
+  var HELLO_RE = new RegExp(
+    '^(你好|您好|哈啰|哈喽|哈罗|嗨|hi|hello|hey|yo|在吗|在不在|在么|早|早上好|中午好'
+    + '|下午好|晚上好|晚安|谢谢|谢啦|感谢|多谢|3q|辛苦了|好的|好嘞|收到|明白|懂了|ok|okay'
+    + '|再见|拜拜|bye|测试|test|试一下|随便问问)[\\s!!。.~、,，?？]*$', 'i');
+
+  function chatKind(q){
+    var t = String(q||'').trim();
+    if(META_RE.test(t))  return 'meta';    // 元问题：答案这个页面自己最清楚，别去检索
+    if(HELLO_RE.test(t)) return 'hello';   // 寒暄：不检索、不解释词义、不贴免责声明
+    return 'ask';
+  }
+  window.wbChatKind = chatKind;
 
   /* 当前时间。模型自己没有时钟 —— 不告诉它今天几号，「今天 / 现在 / 本周 / 最近」这类问法
      它一律答不出，而且会答成「资料里没有」，把责任推给知识库。
@@ -1910,19 +1952,29 @@ render();  // 启动渲染
       + '这一条不需要参考资料，也不要说「资料里没有」。';
   }
 
-  function ctxOf(chunks){
-    /* 零命中的兜底话术必须跟规则 1 的两类分层一致 ——
+  function ctxOf(chunks, kind){
+    if(kind==='hello')
+      return '（这次没有检索资料。用户这句话是打招呼或客套，不是提问。'
+        + '自然地回一句话就好，别解释这个词是什么意思，别贴「这是通用知识」那句声明，'
+        + '别列自己的能力清单。回完可以顺一句问他这次想做什么。）';
+    if(kind==='meta')
+      return '（这次没有检索资料 —— 用户问的是「你是谁 / 你能干什么」这类关于我自己的问题，'
+        + '答案在你的角色说明里，不在业务资料里。按角色说明里「你能做什么」和「你做不到什么」'
+        + '两段如实说，分成能做和做不到两小段，别引用业务文档，别贴「这是通用知识」那句声明。'
+        + '🔴 不要凭想象夸大能力。）';
+    /* 零命中的兜底话术必须跟规则 1 的分层一致 ——
        原来这里写「不要凭常识回答」，会把「今天几号」这类通用问题也一起挡掉。 */
-    if(!chunks.length) return '（这次没检索到相关资料。如果这是 MIC 业务或飞鹊规范的问题，'
-      + '就如实告诉用户资料库里没有这一条，不要凭印象编；如果这是跟 MIC 无关的通用问题，'
-      + '就按规则 1 的第二类直接回答，并说明这是通用知识。）';
+    if(!chunks.length) return '（这次没检索到相关资料。先看这句话到底是哪一类：'
+      + '如果是 MIC 业务或飞鹊规范的问题，就如实说资料库里没有这一条，不要凭印象编；'
+      + '如果是跟 MIC 无关的通用问题，就直接回答；'
+      + '如果它其实只是一句寒暄或闲聊，就自然回一句，别把它当词条来解释。）';
     return chunks.map(function(c,i){
       return '【资料 '+(i+1)+'｜'+c.d+(c.t? ' › '+c.t : '')+'】\n'+c.x;
     }).join('\n\n');
   }
 
   /* ── 调模型（流式） ── */
-  function callModel(q, chunks, onDelta, signal){
+  function callModel(q, chunks, onDelta, signal, kind){
     var c=cfg(), m=mode();
     var url = (m==='own') ? endpoint() : PROXY.url;
     var mdl = (m==='own') ? modelName() : 'glm-4-flash';
@@ -1938,7 +1990,7 @@ render();  // 启动渲染
       msgs.push({role:'user',      content:String(t.q).slice(0,1200)});
       msgs.push({role:'assistant', content:String(t.ans).slice(0,1200)});
     });
-    msgs.push({role:'user', content:'参考资料：\n\n'+ctxOf(chunks)+'\n\n──────────\n\n我的问题：'+q});
+    msgs.push({role:'user', content:'参考资料：\n\n'+ctxOf(chunks, kind)+'\n\n──────────\n\n我的问题：'+q});
     var body={ model:mdl, stream:true, temperature:0.1, messages:msgs };   // 低温：这类问答要准不要花
     return fetch(url,{ method:'POST', signal:signal, headers:head, body:JSON.stringify(body) })
       .then(function(res){
@@ -2262,15 +2314,20 @@ render();  // 启动渲染
     R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw='';
     S.view='run';
     if(!ready()){ R.state='needkey'; render(); return; }
-    R.state='loadkb'; render();
-    loadKB().then(function(){
-      R.state='search'; paint();
-      return retrieveAsync(q);
-    }).then(function(chunks){
+    /* 寒暄和元问题不检索 —— 不但省掉一次 7.2MB 语料扫描，
+       更要紧的是界面不会再列出一堆跟问题无关的文档名
+       （那看起来像「在这 9 份文档里找过、确实没有」，其实是随便抓的）。 */
+    var kind = chatKind(q);
+    R.kind = kind;
+    R.state = (kind==='ask') ? 'loadkb' : 'run'; render();
+    (kind==='ask'
+      ? loadKB().then(function(){ R.state='search'; paint(); return retrieveAsync(q); })
+      : Promise.resolve([])
+    ).then(function(chunks){
       R.srcs = chunks || [];
       R.state='run'; paint();
       R.ctl = (window.AbortController? new AbortController() : null);
-      return callModel(q, R.srcs, function(full){ R.ans=full; paintStream(); }, R.ctl?R.ctl.signal:undefined);
+      return callModel(q, R.srcs, function(full){ R.ans=full; paintStream(); }, R.ctl?R.ctl.signal:undefined, kind);
     }).then(function(){
       stopStream();          // 到这里才做唯一一次完整 markdown 解析（在 paint 里）
       R.state='done';
