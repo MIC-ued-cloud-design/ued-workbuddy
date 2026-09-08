@@ -127,6 +127,47 @@ JS = r'''
              get:'platform.deepseek.com 注册后在「API keys」页新建'}
   };
 
+  /* ── 本机桥：同事电脑上的 Claude Code ──
+     bridge/uw-bridge.js 在同事自己的电脑上常驻 127.0.0.1:17331，把 `claude -p` 包成 OpenAI 兼容接口。
+     页面打开时探一下 /health，探到就默认走它：模型比免费的强、用的是同事自己的席位、
+     出网仍经公司 FCF 给 Claude Code 配的代理。探不到（没装 / 手机）就照旧走共享代理，什么都不用配。
+     🔴 公网 https 页调本机 http：Chrome 152 实测放行（2026-09-08，无头 / 有窗口都过），Safari 未验。
+     🔴 只在线上那个来源下才探 —— 桥只认这一个 Origin，别的来源（file:// 的 null、本地起的 http://localhost）
+        探了也是白探，还会在控制台留一条「连接被拒」。这样脱网门和移动端门都保持真绿，不靠豁免。
+        本地联调想探：桥加 --dev 起，页面 localStorage 里放 wb.bridge.dev=1。 */
+  var BRIDGE = { url:'http://127.0.0.1:17331', ok:false, info:null, checked:false, origin:'https://mic-ued-cloud-design.github.io' };
+  function bridgeOff(){ return cfg().bridge === 'off'; }
+  function bridgeDev(){ try{ return localStorage.getItem('wb.bridge.dev')==='1'; }catch(e){ return false; } }
+  function probeBridge(){
+    if(!(location.origin===BRIDGE.origin || bridgeDev()) || !window.fetch || !window.AbortController) return Promise.resolve(false);
+    var ctl=new AbortController(), t=setTimeout(function(){ ctl.abort(); }, 1500);
+    function settle(ok, j){
+      clearTimeout(t);
+      var was=BRIDGE.ok; BRIDGE.ok=ok; BRIDGE.info=j||null; BRIDGE.checked=true;
+      if(ok!==was) onBridgeChange();
+      return ok;
+    }
+    return fetch(BRIDGE.url+'/health',{signal:ctl.signal, cache:'no-store'})
+      .then(function(r){ return r.ok? r.json() : null; })
+      /* 三个条件都要：桥在 · 它认这个来源 · 它找得到 claude。少一个都不算「可用」 */
+      .then(function(j){ return settle(!!(j && j.ok && j.allowed && j.claude && j.claude.found), j); })
+      .catch(function(){ return settle(false, null); });
+  }
+  function onBridgeChange(){
+    syncModelList();
+    if(BRIDGE.ok && !bridgeOff() && window.fqToast){
+      var k='wb.bridge.toast';
+      try{ if(!sessionStorage.getItem(k)){ sessionStorage.setItem(k,'1'); fqToast('已连上你电脑上的 Claude Code，问答走它'); } }catch(e){}
+    }
+    if(typeof render==='function') render();
+  }
+  window.wbBridge = BRIDGE; window.wbProbeBridge = probeBridge;
+  probeBridge();
+  window.addEventListener('focus', function(){ probeBridge(); });
+  /* 定时重探只在「刚才探到了」时做 —— 为的是发现桥被关掉了好退回去。
+     没装桥的同事不必每分钟往一个不存在的端口打一次（控制台会攒一堆连接被拒）。 */
+  setInterval(function(){ if(BRIDGE.ok) probeBridge(); }, 60000);
+
   function cfg(){
     try{ var o=JSON.parse(localStorage.getItem(LS)||'{}'); return o&&typeof o==='object'?o:{}; }
     catch(e){ return {}; }
@@ -140,6 +181,7 @@ JS = r'''
   function localFile(){ return location.protocol === 'file:'; }
   function mode(){
     var c=cfg();
+    if(BRIDGE.ok && c.bridge!=='off') return 'bridge';   /* 本机桥探到且没被这台电脑关掉，优先级最高 */
     if(c.key) return 'own';
     if(PROXY.url && !localFile()) return 'proxy';
     return 'none';
@@ -339,11 +381,11 @@ JS = r'''
   /* ── 调模型（流式） ── */
   function callModel(q, chunks, onDelta, signal, kind){
     var c=cfg(), m=mode();
-    var url = (m==='own') ? endpoint() : PROXY.url;
-    var mdl = (m==='own') ? modelName() : 'glm-4-flash';
+    var url = (m==='bridge') ? BRIDGE.url+'/v1/chat/completions' : (m==='own') ? endpoint() : PROXY.url;
+    var mdl = (m==='bridge') ? 'sonnet' : (m==='own') ? modelName() : 'glm-4-flash';
     var head = {'Content-Type':'application/json'};
     if(m==='own') head['Authorization'] = 'Bearer '+c.key;
-    else if(PROXY.pass) head['X-WB-Pass'] = PROXY.pass;
+    else if(m==='proxy' && PROXY.pass) head['X-WB-Pass'] = PROXY.pass;
     /* 多轮：历史只带问答文本，不重复带资料——资料每轮重新检索，
        否则几轮下来上下文会被十几段资料撑爆，而且旧资料会干扰新问题。
        只留最近 4 轮，每条截到 1200 字。 */
@@ -356,6 +398,10 @@ JS = r'''
     msgs.push({role:'user', content:'参考资料：\n\n'+ctxOf(chunks, kind)+'\n\n──────────\n\n我的问题：'+q});
     var body={ model:mdl, stream:true, temperature:0.1, messages:msgs };   // 低温：这类问答要准不要花
     return fetch(url,{ method:'POST', signal:signal, headers:head, body:JSON.stringify(body) })
+      .catch(function(e){
+        if(m==='bridge' && e && e.name!=='AbortError'){ BRIDGE.ok=false; onBridgeChange(); }
+        throw e;
+      })
       .then(function(res){
         if(!res.ok){
           return res.text().then(function(t){
@@ -372,11 +418,16 @@ JS = r'''
               if(!ln || ln.indexOf('data:')!==0) return;
               var d=ln.slice(5).trim();
               if(d==='[DONE]') return;
-              try{
-                var o=JSON.parse(d);
-                var t=((o.choices||[{}])[0].delta||{}).content;
-                if(t){ full+=t; onDelta(full); }
-              }catch(e){}
+              var o=null;
+              try{ o=JSON.parse(d); }catch(e){}
+              if(!o) return;
+              if(o.error){   /* 本机桥在流里报错：换成带状态码的异常，让 errText 认得出 */
+                var er=new Error(o.error.message||''); er.stream=true;
+                er.status = o.error.code==='busy'? 429 : o.error.code==='timeout'? 504 : o.error.code==='no_claude'? 503 : 502;
+                throw er;
+              }
+              var t=((o.choices||[{}])[0].delta||{}).content;
+              if(t){ full+=t; onDelta(full); }
             });
             return pump();
           });
@@ -387,6 +438,16 @@ JS = r'''
 
   function errText(e){
     var s=e&&e.status, isProxy = (mode()==='proxy');
+    if(mode()==='bridge' || (e&&e.stream)){
+      if(e&&e.name==='AbortError') return ['已停止', '这次回答被你中断了。'];
+      if(s===403) return ['本机桥拒绝了这次请求', '桥只认线上那个地址发来的请求，本地打开的文件和别的网页都会被拒，这是有意的。'];
+      if(s===429) return ['本机 Claude 正忙', '你电脑上的 Claude Code 同时只接两个问题。等上一个答完再问。'];
+      if(s===503) return ['桥找不到 Claude Code', '桥在跑，但它在你电脑上找不到 claude 命令。先确认终端里敲 claude 能用，再重装一次桥。'];
+      if(s===504) return ['本机 Claude 没在时限内答完', '三分钟没答完，桥把它停了。把问题拆小一点再问。'];
+      if(s>=500)  return ['本机 Claude 这次没跑成', '最常见的原因是登录过期：在终端敲一次 claude，看看要不要重新登录。'
+                          + (e&&e.message? ' 桥报的是：'+String(e.message).slice(0,160) : '')];
+      return ['本机桥没响应', '刚才还探到桥，现在连不上了，它可能被关掉了。页面已退回部门共享通道，直接重问一次就行。'];
+    }
     if(s===401||s===403){
       return isProxy
         ? ['共享服务暂时用不了', '部门共享的那条通道没放行这次请求。可以先填自己的智谱密钥继续用，'
@@ -587,8 +648,10 @@ JS = r'''
     '</div>';
   };
   function PROVN(){
-    return mode()==='own' ? '智谱 GLM-4-Flash · 你自己的密钥'
-                          : '智谱 GLM-4-Flash · 部门共享';
+    var m=mode();
+    return m==='bridge' ? 'Claude · 你电脑上的 Claude Code'
+         : m==='own'    ? '智谱 GLM-4-Flash · 你自己的密钥'
+                        : '智谱 GLM-4-Flash · 部门共享';
   }
   function dedupSrc(){ var o=[],s=R.srcs; s.forEach(function(c){ if(o.indexOf(c.d)<0) o.push(c.d); }); return o; }
 
@@ -737,12 +800,44 @@ JS = r'''
     S.text=''; S.sel=null; S.chips=[];
   };
 
+  /* ── 设置弹层里「本机桥」那一块 ──
+     三种状态：探到了且在用 / 探到了但这台电脑选了智谱 / 没探到（给装法）。
+     手机上不给装法 —— 桥只能装在电脑上，手机看见一条 curl 命令只是噪音。 */
+  var BRIDGE_CMD='curl -fsSL https://mic-ued-cloud-design.github.io/ued-workbuddy/bridge/install.sh | bash';
+  function bridgeBox(){
+    if(BRIDGE.ok){
+      return '<div class="nbox" style="margin:0 0 18px"><b>'+(bridgeOff()? '你电脑上的 Claude Code 可用，但这台电脑选了智谱' : '已连上你电脑上的 Claude Code')+'</b>'+
+        '<p>走它的时候用的是你自己的席位，模型比免费的强，出网仍经公司的 FCF 通道。手机上没有这条路，会自动退回共享通道。</p>'+
+        '<p>'+(bridgeOff()
+          ? '<button class="rbtn pri" onclick="wbBridgeUse(true)">改回用本机 Claude</button>'
+          : '<button class="rbtn" onclick="wbBridgeUse(false)">这台电脑改用智谱</button>')+'</p></div>';
+    }
+    if(window.innerWidth<=768 || localFile()) return '';
+    return '<div class="nbox" style="margin:0 0 18px"><b>想让 Claude 来回答？装一次「本机桥」</b>'+
+      '<p>电脑上装了 Claude Code 的话，在终端粘这一行。装完刷新页面会自动改用它。'+
+      '桥只在你的电脑上跑、只服务这个页面，所有请求照旧经公司 FCF 通道出网。</p>'+
+      '<p><code class="mono" style="cursor:pointer;font-size:12px;word-break:break-all" onclick="copyTx(BRIDGE_CMD_PUB,\'安装命令\')">'+BRIDGE_CMD+'</code></p>'+
+      '<p><button class="rbtn" onclick="wbBridgeRecheck()">装好了，再探一次</button></p></div>';
+  }
+  window.BRIDGE_CMD_PUB = BRIDGE_CMD;
+  window.wbBridgeUse = function(on){
+    var c=cfg(); if(on) delete c.bridge; else c.bridge='off'; saveCfg(c);
+    syncModelList(); wbCloseSet(); fqToast(on? '已改用本机 Claude' : '这台电脑改用智谱了'); render();
+  };
+  window.wbBridgeRecheck = function(){
+    probeBridge().then(function(ok){
+      fqToast(ok? '连上了，已改用本机 Claude' : '还没探到桥。看看终端那一行有没有报错');
+      if(ok){ wbCloseSet(); render(); }
+    });
+  };
+
   /* ── 设置弹层 ── */
   window.wbSettings = function(){
     var c=cfg(), prov=c.prov||'zhipu';
     var el=document.createElement('div'); el.id='wbmask';
     el.onclick=function(e){ if(e.target===el) close(); };
     el.innerHTML='<div class="wbdlg">'+
+      bridgeBox()+
       '<h3>用自己的密钥（可选）</h3>'+
       '<p class="sub">这个页面默认走部门共享的通道，不填也能问。'+
       '填了就改走你自己的额度 —— 共享通道排队或者额度用完时，这是自救的办法。'+
@@ -790,8 +885,25 @@ JS = r'''
   var REAL=[
     {id:'zhipu', n:'智谱 GLM-4-Flash', badge:['rec','免费'], good:'官方标免费 · 国内直连'}
   ];
-  MODELS.length=0; REAL.forEach(function(m){ MODELS.push(m); });
-  S.model = cfg().prov || 'zhipu';
+  var BRIDGE_MODEL={id:'bridge', n:'Claude · 你电脑上的 Claude Code', badge:['rec','本机'], good:'走你自己的席位 · 出网经公司 FCF'};
+  /* 列表随桥的状态变：桥在就把它放第一项并默认选中；桥不在就跟原来一模一样。
+     选中项写回 cfg 由 render 里那段做，这里只负责「列表 + 当前项」两件事。 */
+  function syncModelList(){
+    MODELS.length=0;
+    if(BRIDGE.ok) MODELS.push(BRIDGE_MODEL);
+    REAL.forEach(function(m){
+      var x={}; for(var k in m) x[k]=m[k];
+      if(BRIDGE.ok && x.badge && x.badge[0]==='rec') x.badge=['free', x.badge[1]];   /* 「推荐」只给一项 */
+      MODELS.push(x);
+    });
+    if(BRIDGE.ok && !bridgeOff()) S.model='bridge';
+    else if(S.model==='bridge' || !MODELS.some(function(m){ return m.id===S.model; })) S.model = cfg().prov || 'zhipu';
+    lastModel = S.model;   /* 自动切换不算「用户换了模型」，别让 render 弹提示、别写回 cfg */
+  }
+  syncModelList();
+  /* 首屏渲染发生在这段之前，模型按钮上会一直写着模板里的「Auto」直到下一次渲染 ——
+     现网 2026-09-08 就是这样（页面实际用的是智谱）。换完列表马上重绘一次。 */
+  if(typeof render==='function') render();
 
   /* 「配置自定义模型」那个按钮原来没接东西，接到设置上 */
   document.addEventListener('click', function(e){
@@ -910,8 +1022,16 @@ JS = r'''
     if(S.model !== lastModel){
       lastModel = S.model;
       var c0=cfg();
-      if(c0.prov !== S.model){ c0.prov = S.model; saveCfg(c0);
-        fqToast(c0.key? '已切到 '+(PROV[S.model]||{}).n : '还没填这个平台的密钥'); }
+      if(S.model==='bridge'){
+        if(c0.bridge){ delete c0.bridge; saveCfg(c0); }
+        fqToast('已切到本机 Claude');
+      } else {
+        var ch=false;
+        if(BRIDGE.ok && c0.bridge!=='off'){ c0.bridge='off'; ch=true; }   /* 从桥切走 = 这台电脑改用智谱 */
+        if(c0.prov !== S.model){ c0.prov = S.model; ch=true; }
+        if(ch){ saveCfg(c0);
+          fqToast('已切到 '+(PROV[S.model]||{}).n+(c0.key? ' · 你自己的密钥' : (PROXY.url? ' · 部门共享' : '，还没填这个平台的密钥'))); }
+      }
     }
     if(S.view==='run'){
       renderNav();
