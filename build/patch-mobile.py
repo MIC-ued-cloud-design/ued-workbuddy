@@ -220,6 +220,9 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
   font-size:12px;color:var(--ink-3);line-height:1.5;margin:0 0 1px}
 .tbl td[data-label=""]::before,.atx td[data-label=""]::before{display:none}
 .tbl td.wbm-empty,.atx td.wbm-empty{display:none}
+/* 桌面上「状态」列是 width:1% + nowrap 收缩到内容宽，那条规则到了卡片模式会失效成
+   「父容器宽度的 1%」—— 实测「已就绪」被压到 18px。卡片里每格独占一行，不需要收缩。 */
+.tbl td.st{width:auto;max-width:none;white-space:normal;padding-right:0}
 /* 第一列当卡片标题：它就是这一行的身份，头上再顶一个「名称」是噪音 */
 .tbl tbody td:first-child,.atx tbody td:first-child{font-size:14.5px;font-weight:600;
   padding:1px 0 7px}
@@ -331,6 +334,13 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
      只作用于首页 .wrap：资料库、技能这些是长列表，从顶部排才对；
      回答页 .runwrap 是对话流，也必须顶部对齐。 */
   main{display:flex;flex-direction:column}
+  /* 🔴 上面这行是为了让 .wrap 的 margin:auto 能做垂直居中，但它有个副作用：
+     flex 容器里的元素只要带了 auto 的横向 margin，align-self:stretch 就失效，
+     宽度从「撑满容器」变成「按内容收缩」。资料库那张表因此被压到 622px（本该 920），
+     「已就绪」标签和「收录」列都被省略号截掉。
+     显式写回 width:100% —— 配合各自的 max-width，宽度回到原来的行为，
+     横向和纵向的 auto margin 都还在。 */
+  main>.page,main>.runwrap,main>.wrap{width:100%}
   /* 上移 30px：视觉重心比几何中心高一点才不显得坠（吉吉 2026-09-07「视觉点有点靠下」）。
      做法是底部多留 60 —— margin:auto 把剩余空间上下均分，元素高 60，
      上下就各少分 30，内容整体正好上移 30px。
