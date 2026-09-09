@@ -9,6 +9,9 @@ CSS_B, CSS_E = '/* ==WB-AI-CSS:BEGIN== */', '/* ==WB-AI-CSS:END== */'
 JS_B,  JS_E  = '/* ==WB-AI-JS:BEGIN== */',  '/* ==WB-AI-JS:END== */'
 
 CSS = r'''
+/* ── 模型下拉一行放不下时退成省略号，别再压字（三段原本都 nowrap 且不许收缩）── */
+.mpop .row .nm>span:first-child{overflow:hidden;text-overflow:ellipsis}
+.mpop .row .rate{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* ── 跑任务：回答区 ── */
 .runwrap{max-width:824px;margin:0 auto;padding:34px 0 60px}
 .qbox{display:flex;gap:12px;align-items:flex-start;margin:0 0 22px}
@@ -885,7 +888,7 @@ JS = r'''
   var REAL=[
     {id:'zhipu', n:'智谱 GLM-4-Flash', badge:['rec','免费'], good:'官方标免费 · 国内直连'}
   ];
-  var BRIDGE_MODEL={id:'bridge', n:'Claude · 你电脑上的 Claude Code', badge:['rec','本机'], good:'走你自己的席位 · 出网经公司 FCF'};
+  var BRIDGE_MODEL={id:'bridge', n:'Claude Code', badge:['rec','本机'], good:'你自己的席位 · 经公司 FCF'};   /* 名字+标签+说明三段都不许换行，弹层内一行只有约 305px：全名版 435px 会压到说明上（2026-09-09 吉吉截图）*/
   /* 列表随桥的状态变：桥在就把它放第一项并默认选中；桥不在就跟原来一模一样。
      选中项写回 cfg 由 render 里那段做，这里只负责「列表 + 当前项」两件事。 */
   function syncModelList(){

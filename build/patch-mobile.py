@@ -179,6 +179,9 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
   background:rgba(0,0,0,.3);pointer-events:none}
 .mpop .max{padding:12px 10px 13px}
 .mpop .row .nm{font-size:14px}
+/* ≤360px（初代 iPhone SE / 小安卓）：一行放不下「名字 + 标签 + 说明」三段，去掉次要的说明，名字和标签留全。
+   2026-09-09 才看见：320px 上「免费」标签一直压在说明字上，只是溢出不裁、肉眼当成挤了一点。 */
+@media (max-width:360px){ .mpop .row .rate{display:none} }
 
 /* 二级菜单：桌面靠 :hover 从右侧弹出。手机没有 hover，
    而且右侧没地方弹 —— 改成点一级项在原地展开，向下推。 */
