@@ -219,7 +219,7 @@ window.wbHandoff = function(payload){
 function uwtRenderChooser(c, live){
   var p = UWT.payload || {}, H = [];
   H.push('<div class="uwt-hd"><h3>这份任务单交给谁做？</h3>'
-    + '<p>' + uwtEsc(p.card || '任务') + (p.chars ? ' · 已经拼好 ' + p.chars + ' 字' : '') + '</p></div>');
+    + '<p>' + uwtEsc(p.card || '任务') + (p.chars ? ' · 已经拼好' + p.chars + '字' : '') + '</p></div>');
   H.push('<div class="uwt-opts">');
 
   if(live){
@@ -237,7 +237,7 @@ function uwtRenderChooser(c, live){
 
   var note = (!c.external && !c.builtin) ? uwtEsc(c.why)
            : (!c.builtin && c.why) ? uwtEsc(c.why)
-           : (c.root ? '任务单会落到 ' + uwtEsc(c.root) + '/' : '');
+           : (c.root ? '任务单会落到' + uwtEsc(c.root) + '/' : '');
   H.push('<div class="uwt-ft"><span class="uwt-note">' + note + '</span>'
     + '<button class="uwt-btn" onclick="uwtCopyTask()">复制任务单</button>'
     + '<button class="uwt-btn" onclick="uwtCloseChooser()">取消</button></div>');
@@ -265,7 +265,7 @@ function uwtCopyTask(){
   var t = (UWT.payload && UWT.payload.prompt) || '';
   if(!t) return;
   if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){
-    if(window.fqToast) fqToast('任务单已复制 ' + t.length + ' 字');
+    if(window.fqToast) fqToast('任务单已复制' + t.length + '字');
   }, function(){ if(window.fqToast) fqToast('浏览器拦了自动复制，用「复制给Claude Code」那个按钮'); });
 }
 
@@ -318,8 +318,8 @@ function uwtGo(method){
     .catch(function(e){ uwtFail({ error:{ message: e && e.message || '连不上桥' } }); });
 }
 function uwtDone(j){
-  var where = j.terminal ? ('已经在 ' + j.terminal + ' 里开好了') : '已经开好了';
-  if(window.fqToast) fqToast(where + ' · 任务单在 ' + (j.rel || j.dir));
+  var where = j.terminal ? ('已经在' + j.terminal + '里开好了') : '已经开好了';
+  if(window.fqToast) fqToast(where + ' · 任务单在' + (j.rel || j.dir));
 }
 function uwtFail(j, manual){
   var m = (j && j.error && j.error.message) || '没能拉起终端';
@@ -458,7 +458,7 @@ function uwtConnect(j, isAttach){
       UWT.alive = false;
       uwtHead(null, UWT.dir, 'dead');
       UWT.term.write('\r\n\x1b[38;5;244m[ 这个终端结束了' +
-        (d.exitCode ? '（退出码 ' + d.exitCode + '）' : '') + ' ]\x1b[0m\r\n');
+        (d.exitCode ? '（退出码' + d.exitCode + '）' : '') + ' ]\x1b[0m\r\n');
     } else if(d.type === 'error'){
       document.getElementById('uwtBoot').hidden = false;
       document.getElementById('uwtBoot').textContent = d.message || '终端出错了';
@@ -485,7 +485,7 @@ function uwtFirstRunHint(){
   var seen = false; try { seen = localStorage.getItem(k) === '1'; } catch(e){}
   if(seen) return;
   document.getElementById('uwtTip').innerHTML =
-    '第一次会问 <b>Is this a project you trust?</b> —— 按 <b>↓</b> 选 '
+    '第一次会问 <b>Is this a project you trust?</b> —— 按 <b>↓</b> 选'
     + '<b>Yes, I trust this folder</b> 再回车。默认那项是No，直接回车会退出。这一屏只出现一次。';
   try { localStorage.setItem(k, '1'); } catch(e){}
 }
@@ -594,7 +594,7 @@ def collision_gate(page):
             cls = re.findall(r'\.([a-zA-Z][\w-]*)', one)
             foreign = [c for c in cls if not c.startswith('uwt-')]
             if foreign and 'uwt-' not in one:
-                naked.append(one + '  ← 用到 ' + '、'.join(foreign))
+                naked.append(one + '  ← 用到' + '、'.join(foreign))
     if naked:
         print('❌ 作用域门：这些选择器动了别人的 class，却没有我的作用域限定')
         for x in naked[:8]:

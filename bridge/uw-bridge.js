@@ -108,7 +108,7 @@ function launchChrome(){
       const id = ++c.id; c.pending.set(id, { res, rej });
       const o = { id, method, params: params || {} }; if (sessionId) o.sessionId = sessionId;
       proc.stdio[3].write(JSON.stringify(o) + '\0');
-      setTimeout(() => { if (c.pending.has(id)) { c.pending.delete(id); rej(new Error('Chrome没在30秒内响应 ' + method)); } }, 30000);
+      setTimeout(() => { if (c.pending.has(id)) { c.pending.delete(id); rej(new Error('Chrome没在30秒内响应' + method)); } }, 30000);
     });
     proc.on('exit', () => {
       c.alive = false; if (chrome === c) chrome = null;
@@ -149,9 +149,9 @@ async function fetchPage(url){
 async function fetchPages(urls, onStatus){
   const out = [];
   for (const u of urls.slice(0, WEB_MAX_URLS)) {
-    if (!webAllowed(u)) { out.push({ url: u, ok: false, error: 'not_allowed', message: '这个网址不在桥的白名单里（只读 ' + WEB_ALLOW.join(' / ') + '）' }); continue; }
+    if (!webAllowed(u)) { out.push({ url: u, ok: false, error: 'not_allowed', message: '这个网址不在桥的白名单里（只读' + WEB_ALLOW.join(' / ') + '）' }); continue; }
     let host = u; try { host = new URL(u).hostname; } catch (e) {}
-    if (onStatus) onStatus('正在用浏览器读取 ' + host + ' …');
+    if (onStatus) onStatus('正在用浏览器读取' + host + ' …');
     const t0 = Date.now();
     try {
       const pg = await fetchPage(u);
@@ -164,8 +164,8 @@ async function fetchPages(urls, onStatus){
 }
 function webBlock(pages){
   return pages.map((p, i) => p.ok
-    ? '【网页 ' + (i + 1) + '｜' + (p.title || '无标题') + '｜' + (p.finalUrl || p.url) + (p.len > p.text.length ? '｜正文 ' + p.len + ' 字，只给前 ' + p.text.length + ' 字' : '') + '】\n' + p.text
-    : '【网页 ' + (i + 1) + '｜读取失败｜' + p.url + '】\n' + (p.message || p.error)).join('\n\n');
+    ? '【网页' + (i + 1) + '｜' + (p.title || '无标题') + '｜' + (p.finalUrl || p.url) + (p.len > p.text.length ? '｜正文' + p.len + '字，只给前' + p.text.length + '字' : '') + '】\n' + p.text
+    : '【网页' + (i + 1) + '｜读取失败｜' + p.url + '】\n' + (p.message || p.error)).join('\n\n');
 }
 const WEB_SYS = '用户消息末尾如果附有「网页内容」，那是刚从真实浏览器里读到的页面正文（不是知识库资料），用户问这个页面的事就按它答，'
   + '引用时说清是「你给的这个页面上」看到的。标了「读取失败」的网页要如实说读不到、原因是什么，不要假装看过。'
@@ -285,7 +285,7 @@ function runClaude({ system, prompt, model }, onDelta, onSpawn){
     child.on('close', code => {
       if (buf) handleLine(buf);
       if (done) return;
-      if (code !== 0 && !full) return finish({ code: 'claude_failed', status: 502, message: (err.trim().split('\n').pop() || ('Claude退出码 ' + code)).slice(0, 300) });
+      if (code !== 0 && !full) return finish({ code: 'claude_failed', status: 502, message: (err.trim().split('\n').pop() || ('Claude退出码' + code)).slice(0, 300) });
       finish(null);
     });
     child.stdin.on('error', () => {});
@@ -330,7 +330,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && url === '/v1/chat/completions') {
     if (!originOk(origin)) return fail(res, 403, 'bad_origin', '只接受UW页面发来的请求');
-    if (busy >= MAX_BUSY) return fail(res, 429, 'busy', '本机Claude正忙，同时只接 ' + MAX_BUSY + ' 个问题');
+    if (busy >= MAX_BUSY) return fail(res, 429, 'busy', '本机Claude正忙，同时只接' + MAX_BUSY + '个问题');
     let body;
     try { body = JSON.parse(await readBody(req) || '{}'); } catch (e) { return fail(res, 400, 'bad_request', '请求体不是合法JSON或超过1MB'); }
     if (!Array.isArray(body.messages) || !body.messages.length) return fail(res, 400, 'bad_request', '缺messages');
@@ -418,7 +418,7 @@ const server = http.createServer(async (req, res) => {
         file: body.file ? String(body.file) : '',
       });
     } catch (e) { return fail(res, 500, 'mkdir_failed', '建任务目录失败：' + e.message); }
-    log('任务目录 ' + task.dir + ' · 走' + (method === 'builtin' ? '页面内终端' : '系统终端'));
+    log('任务目录' + task.dir + ' · 走' + (method === 'builtin' ? '页面内终端' : '系统终端'));
     const common = { method, dir: task.dir, rel: task.rel, root: task.root, taskFile };
 
     if (method === 'builtin') {
@@ -476,20 +476,20 @@ if (CHECK) {
     try {
       const out = await runClaude({ system: '你是一个只会回答文字问题的助手。', prompt: '只回复两个字：收到', model: MODEL_DEF }, () => {});
       const u = out.result && out.result.usage || {};
-      console.log('回答：' + JSON.stringify(out.text) + ' · ' + (Date.now() - t0) + 'ms · 输入 ' + (u.input_tokens || 0) + ' token'
-        + ' · 工具 ' + ((out.result && out.result.num_turns) === 1 ? '未用' : '?'));
+      console.log('回答：' + JSON.stringify(out.text) + ' · ' + (Date.now() - t0) + 'ms · 输入' + (u.input_tokens || 0) + ' token'
+        + ' · 工具' + ((out.result && out.result.num_turns) === 1 ? '未用' : '?'));
       process.exit(out.text.indexOf('收到') >= 0 ? 0 : 3);
     } catch (e) { console.log('失败：' + (e.message || e)); process.exit(3); }
   })();
 } else {
   server.on('error', e => {
-    if (e.code === 'EADDRINUSE') { log('端口 ' + PORT + ' 已被占用 —— 可能桥已经在跑了'); process.exit(0); }
+    if (e.code === 'EADDRINUSE') { log('端口' + PORT + '已被占用 —— 可能桥已经在跑了'); process.exit(0); }
     log('启动失败：' + e.message); process.exit(1);
   });
   server.listen(PORT, HOST, () => {
-    log('uw-bridge ' + VERSION + ' 听在http://' + HOST + ':' + PORT + (DEV ? '（开发模式：放行本地来源）' : '')
-      + ' · claude ' + (CLAUDE ? CLAUDE.via : '没找到') + ' · 读网页 ' + (findChrome() ? '可用（' + WEB_ALLOW.join('/') + '）' : '不可用：没找到Chrome')
-      + ' · 终端 ' + (!terminal ? '不可用：' + (TERM_ERR || '缺uw-terminal.js')
+    log('uw-bridge ' + VERSION + '听在http://' + HOST + ':' + PORT + (DEV ? '（开发模式：放行本地来源）' : '')
+      + ' · claude ' + (CLAUDE ? CLAUDE.via : '没找到') + ' · 读网页' + (findChrome() ? '可用（' + WEB_ALLOW.join('/') + '）' : '不可用：没找到Chrome')
+      + ' · 终端' + (!terminal ? '不可用：' + (TERM_ERR || '缺uw-terminal.js')
                      : terminal.status().ok ? '两条路都可用' : '只有系统终端（' + terminal.status().reason + '）'));
   });
   const bye = () => { closeChrome(); if (terminal) terminal.closeAll(); };

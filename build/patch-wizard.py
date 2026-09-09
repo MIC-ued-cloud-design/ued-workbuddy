@@ -1286,7 +1286,7 @@ function wzOpen(sceneId, ci){
 function wzClose(){
   const n=wzAllQs().filter(wzFilled).length;
   /* 填了东西再关，问一句 —— 关掉就没了 */
-  if(n && !confirm('已填写 '+n+' 项，关闭后不保留。确定放弃？')) return;
+  if(n && !confirm('已填写'+n+'项，关闭后不保留。确定放弃？')) return;
   W.tok++; W.open=false;
   document.getElementById('wizmask').classList.remove('wzon');
   document.getElementById('wizpeek').classList.remove('wzon');
@@ -1305,7 +1305,7 @@ function wzDraw(){
     </div>
     ${W.step===0 ? wzAutoHTML() : ''}
     <div class="wz-q">
-      <div class="wz-qt">第 ${W.step+1} 步 · ${st.t}</div>
+      <div class="wz-qt">第${W.step+1}步·${st.t}</div>
       <div class="wz-qh">${st.h||''}</div>
       ${st.qs.map((q,i)=>wzQHTML(q,i)).join('')}
     </div>`;
@@ -1332,10 +1332,10 @@ function wzAutoHTML(){
   return `<div class="wz-auto ${miss?'bad':''} ${done&&W.fold?'fold':''}" id="wzAuto">
     <button class="wz-ah" onclick="wzFold()">
       ${done?'<span class="ok">'+FQ_YES+'</span>':'<span class="wzspin"></span>'}
-      <span>${done ? (miss? '检索完成，其中 '+miss+' 项无匹配' : '以下资料已完成知识库检索')
+      <span>${done ? (miss? '检索完成，其中'+miss+'项无匹配' : '以下资料已完成知识库检索')
                    : '正在检索知识库'}</span>
       <span class="real">实时检索</span>
-      <span class="wzn">${rows.length} 项${done?(W.fold?' · 展开':' · 收起'):''}</span>
+      <span class="wzn">${rows.length}项${done?(W.fold?' · 展开':' · 收起'):''}</span>
     </button>
     <ul class="wz-al">${rows.map(r=>`<li class="${r.state||''}">
       <span class="wzd"></span>
@@ -1361,7 +1361,7 @@ function wzLoadKB(){
     function one(src){
       return new Promise((ok,no)=>{
         const s=document.createElement('script');
-        s.src=src; s.onload=ok; s.onerror=()=>no(new Error('同目录找不到 '+src));
+        s.src=src; s.onload=ok; s.onerror=()=>no(new Error('同目录找不到'+src));
         document.head.appendChild(s);
       });
     }
@@ -1408,9 +1408,9 @@ async function wzAuto(){
     }else{
       const docs=[]; hits.forEach(h=>{ if(docs.indexOf(h.d)<0) docs.push(h.d); });
       W.rows[i].state='ok';
-      W.rows[i].detail='检索到 '+hits.length+' 段 · '
+      W.rows[i].detail='检索到'+hits.length+'段 · '
         + docs.slice(0,4).map(x=>`<a class="wz-doc" href="#" onclick="return wzPeek('${wzEsc(x).replace(/'/g,"\\'")}')">${wzEsc(x)}</a>`).join('')
-        + (docs.length>4? `<span class="wz-more">还有 ${docs.length-4} 份</span>`:'');
+        + (docs.length>4? `<span class="wz-more">还有${docs.length-4}份</span>`:'');
     }
     wzRepaintAuto();
   }
@@ -1506,7 +1506,7 @@ function wzSide(){
 }
 function wzProg(){
   const all=wzAllQs(), n=all.filter(wzFilled).length;
-  document.getElementById('wzProg').textContent='确定 '+n+' / '+all.length;
+  document.getElementById('wzProg').textContent='确定'+n+' / '+all.length;
   document.getElementById('wzAsk').disabled = n===0;
 }
 
@@ -1527,7 +1527,7 @@ function wzText(forModel){
   });
   if(b.length){
     L.push('');
-    L.push('还没定的 '+b.length+' 项（不要替我拿默认假设补上，需要问PM或业务的直接标出来）：');
+    L.push('还没定的'+b.length+'项（不要替我拿默认假设补上，需要问PM或业务的直接标出来）：');
     b.forEach(q=>L.push('- '+q.q));
   }
   L.push('');
@@ -1535,11 +1535,11 @@ function wzText(forModel){
   if(!forModel){
     L.push('');
     L.push('用这些能力：'+d.skills.map(k=>k[0]).join('、'));
-    L.push('产出落到 '+d.file);
+    L.push('产出落到'+d.file);
     const docs=[]; W.hits.forEach(h=>{ if(docs.indexOf(h.d)<0) docs.push(h.d); });
     if(docs.length){
       L.push('');
-      L.push('向导已经在知识库里查到这些相关文档（'+docs.length+' 份）：');
+      L.push('向导已经在知识库里查到这些相关文档（'+docs.length+'份）：');
       docs.forEach(x=>L.push('- '+x));
     }
   }
@@ -1574,7 +1574,7 @@ function wzHandoff(){
 async function wzCopy(){
   const t=wzText(false);
   const tip=document.getElementById('wzTip');
-  try{ await navigator.clipboard.writeText(t); tip.textContent='已复制 '+t.length+' 字'; }
+  try{ await navigator.clipboard.writeText(t); tip.textContent='已复制'+t.length+'字'; }
   catch(e){
     /* 本地 file:// 下剪贴板可能被拦。别只说失败，把文本摊出来让人手动选。 */
     const ta=document.createElement('textarea');
@@ -1705,6 +1705,15 @@ def collision_gate(page):
     import re
     mine = set(re.findall(r'\.([a-zA-Z][\w-]*)', _css_code()))
     base = page.split(CSS_B)[0]                  # 只看 WorkBuddy 自己那部分
+    # 🔴 2026-09-09：还要把「接力到终端」那一层剥掉。它注入在 </style> 前、
+    #    排在向导 CSS 之前，所以会落进 base 里；而它为了分区**有意**用带作用域的
+    #    选择器改了 .wizmask / .wz-peek（`html.uwt-split .wizmask{right:…}`）。
+    #    不剥的话这道门会把「我另一层有意改的」报成「本体撞名」——
+    #    对照范围没圈准，报出来的红是假的。（同族：先把 population 圈准）
+    if '==WB-TERM-CSS:BEGIN==' in base:
+        import re as _re
+        base = _re.sub(r'/\* ==WB-TERM-CSS:BEGIN== \*/.*?/\* ==WB-TERM-CSS:END== \*/',
+                       '', base, flags=_re.S)
     clash = sorted(c for c in mine if re.search(r'\.' + re.escape(c) + r'\s*\{', base))
     if clash:
         print('❌ 撞名门：这些class跟WorkBuddy自己的同名，会漏属性进来')
