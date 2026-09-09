@@ -76,13 +76,32 @@ CSS = r'''
 .uwt-btn:hover{border-color:var(--dark);color:var(--ink)}
 .uwt-btn.uwt-pri{background:var(--dark);border-color:var(--dark);color:#fff}
 
-/* ── 终端抽屉 ─────────────────────────────────── */
+/* ── 终端那一栏 ───────────────────────────────────
+   🔴 不是浮层。吉吉 2026-09-09 走查：「页面内的终端不要遮挡页面原有内容区，
+   打开页面内终端后可以给页面分区」—— 第一版是 position:fixed 盖在右边，
+   把向导弹层和主内容一起压在底下，等于「把终端换了个地方开」还挡了活。
+   现在是真分区：开终端 → <html> 挂 .uwt-split → 主容器 .app 和向导弹层一起收窄，
+   两边都完整可见。量过页面结构才敢这么改：body 下只有 .app 一个 static 主容器，
+   除我这两层和向导的两层之外没有别的 fixed 元素，所以收 .app 就够。
+   宽度用 --uwt-w 一个变量驱动，分隔条拖它，抽屉和被收窄的两边同时跟着变。 */
+:root{--uwt-w:min(46vw,860px)}
 .uwt-drawer{position:fixed;top:0;right:0;bottom:0;z-index:250;
-  width:min(58vw,980px);min-width:min(100vw,560px);
-  background:#1A1A1A;box-shadow:-8px 0 32px rgba(0,0,0,.28);
+  width:var(--uwt-w);
+  background:#1A1A1A;border-left:1px solid #000;
   display:none;flex-direction:column;
   font:13px/1.6 Roboto,-apple-system,"PingFang SC",sans-serif}
 .uwt-drawer.uwt-on{display:flex}
+
+/* 分区：主内容和向导弹层都让出右边那一栏 */
+html.uwt-split .app{width:calc(100% - var(--uwt-w))}
+html.uwt-split .wizmask{right:var(--uwt-w)}
+html.uwt-split .wz-peek{max-width:calc(100vw - var(--uwt-w) - 40px)}
+
+/* 分隔条：拖它改宽度。24px 的抓取区，视觉上只有 1px 那条线 */
+.uwt-grip{position:absolute;left:-6px;top:0;bottom:0;width:12px;cursor:col-resize;z-index:2}
+.uwt-grip::after{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:transparent}
+.uwt-grip:hover::after,.uwt-grip.uwt-drag::after{background:#4A4A4A}
+html.uwt-dragging{cursor:col-resize;user-select:none}
 .uwt-dhd{flex:0 0 auto;display:flex;align-items:center;gap:10px;
   padding:11px 14px;background:#222;border-bottom:1px solid #333;color:#EDEDED}
 .uwt-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#4B9E5F}
@@ -103,10 +122,24 @@ CSS = r'''
 .uwt-dtip b{color:#BDBDBD;font-weight:400}
 .uwt-boot{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   color:#8C8C8C;font-size:13px;text-align:center;padding:24px;line-height:1.8}
+/* 🔴 必须显式写。`[hidden]` 的 display:none 是浏览器默认样式表里的，
+   优先级低于上面这条 class 里的 display:flex —— 于是 el.hidden=true 之后
+   「正在起终端…」照样铺在终端上，一直挡着。
+   而探针查的是 .hidden 属性、不是实际可见性，所以它报绿、肉眼看红
+   （_verify/README 里记的第三类：只查 hidden 属性是 true，该量几何）。 */
+.uwt-boot[hidden]{display:none}
 
 /* 手机上抽屉占满，终端字号调小一档，不然 80 列放不下 */
+/* 🔴 视口不够宽就别硬分区：1100px 以下分完两边都不够用，
+   终端占满、主内容照旧留在底下（这时它本来就看不全，分区没意义）。
+   判据是「分完之后左边还够不够干活」，不是屏幕类别。 */
+@media (max-width:1100px){
+  .uwt-drawer{width:100vw}
+  html.uwt-split .app{width:100%}
+  html.uwt-split .wizmask{right:0}
+  .uwt-grip{display:none}
+}
 @media (max-width:760px){
-  .uwt-drawer{width:100vw;min-width:0}
   .uwt-box{width:100%}
   .uwt-dsub{display:none}
 }
@@ -118,6 +151,7 @@ CSS = r'''
 DOM = '''
 <div class="uwt-mask" id="uwtMask"><div class="uwt-box" id="uwtBox"></div></div>
 <div class="uwt-drawer" id="uwtDrawer">
+  <div class="uwt-grip" id="uwtGrip" title="拖动改宽度"></div>
   <div class="uwt-dhd">
     <span class="uwt-dot" id="uwtDot"></span>
     <span class="uwt-dt" id="uwtDt">终端</span>
@@ -316,8 +350,50 @@ function uwtLoadXterm(){
     document.head.appendChild(s);
   });
 }
+/* ── 分区开关与分隔条 ───────────────────────────────
+   开终端 = 给 <html> 挂 .uwt-split，主内容和向导弹层一起收窄；关掉就摘掉。
+   宽度只有 --uwt-w 一个源，拖分隔条改它，抽屉和被收窄的两边同时跟着变。 */
+function uwtSplitOn(){
+  document.documentElement.classList.add('uwt-split');
+  var w = null; try { w = localStorage.getItem('wb.term.w'); } catch(e){}
+  if(w) document.documentElement.style.setProperty('--uwt-w', w);
+  uwtFit();
+}
+function uwtSplitOff(){ document.documentElement.classList.remove('uwt-split'); }
+/* 拖分隔条。上下限：终端不小于 380（80 列放不下就没意义），
+   左边至少留 520（少于这个数向导弹层就没法看了）。 */
+function uwtGripInit(){
+  var g = document.getElementById('uwtGrip');
+  if(!g || g.dataset.on) return;
+  g.dataset.on = '1';
+  g.addEventListener('mousedown', function(e){
+    e.preventDefault();
+    g.classList.add('uwt-drag');
+    document.documentElement.classList.add('uwt-dragging');
+    function move(ev){
+      var w = window.innerWidth - ev.clientX;
+      w = Math.max(380, Math.min(w, window.innerWidth - 520));
+      document.documentElement.style.setProperty('--uwt-w', w + 'px');
+      uwtFit();
+    }
+    function up(){
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      g.classList.remove('uwt-drag');
+      document.documentElement.classList.remove('uwt-dragging');
+      try { localStorage.setItem('wb.term.w',
+        getComputedStyle(document.documentElement).getPropertyValue('--uwt-w').trim()); } catch(e){}
+      uwtFit();
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+}
+
 function uwtOpenDrawer(j, isAttach){
   document.getElementById('uwtDrawer').classList.add('uwt-on');
+  uwtSplitOn();
+  uwtGripInit();
   document.getElementById('uwtBoot').hidden = false;
   document.getElementById('uwtBoot').textContent = '正在起终端…';
   UWT.dir = j.rel || j.dir || '';
@@ -430,6 +506,7 @@ function uwtPasteTask(){
 /* 收起 ≠ 结束：只断开页面这一头，CC 还在跑（桥那边留 30 分钟，回来能接上）。 */
 function uwtHide(){
   document.getElementById('uwtDrawer').classList.remove('uwt-on');
+  uwtSplitOff();
   if(UWT.ws){ try { UWT.ws.close(); } catch(e){} UWT.ws = null; }
 }
 function uwtKill(){
@@ -439,6 +516,10 @@ function uwtKill(){
 }
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape' && document.getElementById('uwtMask').classList.contains('uwt-on')) uwtCloseChooser();
+});
+/* 窗口宽度变了要重算列数：46vw 是相对视口的，缩窗口时抽屉自己会变窄 */
+window.addEventListener('resize', function(){
+  if(document.documentElement.classList.contains('uwt-split')) uwtFit();
 });
 '''
 
@@ -476,31 +557,59 @@ def _css_code():
 
 
 def collision_gate(page):
-    """我加的 class 有没有跟 WorkBuddy 本体撞名。
-    2026-09-08 立：撞名之后后代选择器只覆盖显式设过的属性，没设的照样从本体漏进来，
-    表现是「错位 / 变形」，看着像布局问题，其实是撞名。前缀比特异性可靠。"""
-    # 我在 CSS 里写到的所有 class（自己的 + 万一手滑写了别人的）
-    mine = set(re.findall(r'\.([a-zA-Z][\w-]*)', _css_code()))
-    # page 进来时已经 strip 过了，里面不含上一次注入的自己 —— 所以整页都能当对照
-    clash = sorted(c for c in mine if re.search(r'\.' + re.escape(c) + r'\s*\{', page))
-    if clash:
-        print('❌ 撞名门：这些class页面本体已经有同名定义，属性会漏进来')
-        for c in clash:
-            d = re.search(r'\.' + re.escape(c) + r'\s*\{([^}]*)\}', page)
-            print('   .%-14s本体定义： %s' % (c, (d.group(1) if d else '?')[:70]))
-        print('   → 加uwt- 前缀，别靠特异性打架（没覆盖到的属性照样漏）')
-        sys.exit(1)
-    flat = {c for c in mine if c.startswith('uwt-')}
-    off = sorted(c for c in mine if not c.startswith('uwt-'))
+    """两件事，判据不同，别混成一条。
+
+    ① **命名冲突**：我给自己元素起的 class 跟页面本体重名 —— 后代选择器只覆盖我显式设过的
+       属性，没设的照样从本体漏进来，表现是「错位 / 变形」，看着像布局问题。
+       2026-09-08 栽过（向导的 .sw 撞了 WorkBuddy 自己的开关组件）。
+       → 判据：我的 DOM 里出现的 class **必须全部带 uwt- 前缀**。
+
+    ② **有意选中别人的元素**：分区要收窄 .app 和 .wizmask，这是故意的，不是冲突。
+       🔴 第一版判据把这两件事混成「CSS 里不许出现别人的 class」，于是分区一写就报红。
+       判据形式不够精确，**修判据、不加豁免名单**（加名单等于拿准确性换绿灯）。
+       → 判据：非 uwt- 的 class 允许出现，但**必须被我的作用域限定** ——
+         同一条选择器里要出现 uwt-（`html.uwt-split .app`）。
+         裸写 `.app{…}` 照样红：那会污染整站，而且改完没人知道是我改的。
+    """
+    # ① 我的 DOM 里的 class 必须全带前缀
+    dom_cls = set()
+    for grp in re.findall(r'class="([^"]+)"', DOM):
+        dom_cls.update(grp.split())
+    off = sorted(c for c in dom_cls if not c.startswith('uwt-'))
     if off:
-        print('❌ 前缀门：CSS里有不带uwt- 前缀的class —— %s' % '、'.join(off))
+        print('❌ 前缀门：我的 DOM 里有不带 uwt- 前缀的 class —— %s' % '、'.join(off))
         sys.exit(1)
-    stray = sorted(set(re.findall(r'class="([^"]*)"', DOM)))
-    off = [c for grp in stray for c in grp.split() if not c.startswith('uwt-')]
-    if off:
-        print('❌ 前缀门：DOM里有不带uwt- 前缀的class —— %s' % '、'.join(sorted(set(off))))
+
+    # ② CSS 里出现的别人的 class，逐条选择器查有没有被我的作用域限定
+    css = _css_code()
+    naked = []
+    for block in re.finditer(r'([^{}]+)\{', css):
+        sel = block.group(1).strip()
+        if not sel or sel.startswith('@') or sel.startswith(':root'):
+            continue
+        for one in sel.split(','):
+            one = one.strip()
+            if not one:
+                continue
+            cls = re.findall(r'\.([a-zA-Z][\w-]*)', one)
+            foreign = [c for c in cls if not c.startswith('uwt-')]
+            if foreign and 'uwt-' not in one:
+                naked.append(one + '  ← 用到 ' + '、'.join(foreign))
+    if naked:
+        print('❌ 作用域门：这些选择器动了别人的 class，却没有我的作用域限定')
+        for x in naked[:8]:
+            print('   ' + x)
+        print('   → 写成 html.uwt-split .xxx 这种带 uwt- 作用域的形式，别裸改全站')
         sys.exit(1)
-    print('✅ 撞名门通过 · %d个uwt- class没有一个跟页面本体同名' % len(flat))
+
+    mine = {c for c in re.findall(r'\.(uwt-[\w-]*)', css)}
+    scoped = sorted({c for blk in re.finditer(r'([^{}]+)\{', css)
+                     for one in blk.group(1).split(',')
+                     for c in re.findall(r'\.([a-zA-Z][\w-]*)', one)
+                     if not c.startswith('uwt-') and 'uwt-' in one})
+    print('✅ 撞名门通过 · 自己的 %d 个 uwt- class 全带前缀'
+          '%s' % (len(mine), ('；另有 %d 个别人的 class 被作用域限定后有意改动（%s）'
+                              % (len(scoped), '、'.join(scoped))) if scoped else ''))
 
 
 def radius_gate():
