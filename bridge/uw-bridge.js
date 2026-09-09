@@ -30,9 +30,9 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 
-const VERSION   = '1.0.0';
+const VERSION   = '1.1.0';   // 1.1.0（2026-09-09）：读网页 —— 用独立 Chrome 取正文当资料，Claude 仍不开任何工具
 const HOST      = '127.0.0.1';
-const PORT      = 17331;
+const PORT      = Number(process.env.UW_BRIDGE_PORT) || 17331;   // 环境变量只给验证脚本用，正式装的都是 17331
 const ALLOW     = ['https://mic-ued-cloud-design.github.io'];   // 锁②：只认这个来源
 const DEV       = process.argv.includes('--dev');
 const CHECK     = process.argv.includes('--check');
@@ -41,6 +41,121 @@ const TIMEOUT   = 180000;       // 单次上限 3 分钟
 const MAX_BODY  = 1024 * 1024;  // 请求体上限 1MB（资料段落 + 4 轮历史远小于这个数）
 const MODEL_DEF = 'opus';     // 页面没指定时的兜底；页面自己发的是 opus（2026-09-09 起）
 const MODEL_OK  = /^(sonnet|haiku|opus|claude-[a-z0-9-]+)$/;   // 只放行这几种写法，别让页面拿它跑别的
+
+/* ── 读网页：用一个独立的 Chrome 取页面正文，当资料喂给 Claude ──
+   为什么不是 WebFetch / 不是让 Claude 自己开浏览器（2026-09-09 三条都实测过）：
+     · WebFetch / curl 打 MIC 搜索页一律 404 或跳验证码 —— MIC 只认真浏览器；
+     · 让 Claude 经 chrome-devtools MCP 自己开页：101 张产品卡的无障碍快照太大被存成文件，
+       它没有读文件的工具，只能回头要 evaluate_script —— 那等于放开在浏览器里跑任意脚本；
+     · 桥自己用 DevTools 协议开页取 innerText，Claude 一个工具都不开，锁不变，还少两三轮往返。
+   Chrome 用独立 profile（~/.uw-bridge/chrome-profile），不碰同事日常的 Chrome；
+   用 --remote-debugging-pipe 走管道，机器上不开调试端口，别的程序接不进来。
+   🔴 必须带窗口：--headless=new 同样的参数 MIC 直接回 {"message":"Forbidden"}（实测）。
+   🔴 网址白名单在这里而不在页面上：页面是公网静态页，谁都能改它发来的东西。 */
+const WEB_ALLOW     = ['made-in-china.com', 'vemic.com'];   // 含所有子域
+const WEB_MAX_URLS  = 3;
+const WEB_MAX_CHARS = 12000;     // 每页正文上限：主搜结果页 101 张卡约 1.8 万字，截到这里够回答，也不把 Claude 的输入撑爆
+const WEB_LOAD_MS   = 20000;     // 等 load 事件的上限
+const WEB_SETTLE_MS = 1500;      // load 之后再等一下懒加载
+const CHROME_PATHS  = ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+                       path.join(os.homedir(), 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome')];
+const CHROME_PROFILE = path.join(os.homedir(), '.uw-bridge', 'chrome-profile');
+function findChrome(){ return CHROME_PATHS.find(p => fs.existsSync(p)) || null; }
+function webAllowed(u){
+  let h; try { const x = new URL(u); if (!/^https?:$/.test(x.protocol)) return false; h = x.hostname.toLowerCase(); } catch (e) { return false; }
+  return WEB_ALLOW.some(d => h === d || h.endsWith('.' + d));
+}
+let chrome = null;   // { proc, send(), listeners, alive }
+function launchChrome(){
+  return new Promise((resolve, reject) => {
+    const exe = findChrome();
+    if (!exe) return reject(Object.assign(new Error('这台电脑上没找到 Google Chrome'), { code: 'no_chrome' }));
+    fs.mkdirSync(CHROME_PROFILE, { recursive: true });
+    const proc = spawn(exe, ['--remote-debugging-pipe', '--user-data-dir=' + CHROME_PROFILE,
+      '--no-first-run', '--no-default-browser-check', '--disable-blink-features=AutomationControlled',
+      '--window-size=1200,860', '--window-position=60,60', 'about:blank'],
+      { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] });
+    const c = { proc, id: 0, pending: new Map(), listeners: new Set(), alive: true };
+    let buf = '';
+    proc.stdio[4].on('data', d => {
+      buf += d.toString('utf8');
+      let i;
+      while ((i = buf.indexOf('\0')) >= 0) {
+        const raw = buf.slice(0, i); buf = buf.slice(i + 1);
+        let m; try { m = JSON.parse(raw); } catch (e) { continue; }
+        if (m.id && c.pending.has(m.id)) {
+          const { res, rej } = c.pending.get(m.id); c.pending.delete(m.id);
+          m.error ? rej(new Error(m.error.message || 'CDP 错误')) : res(m.result || {});
+        } else if (m.method) { for (const h of c.listeners) { try { h(m); } catch (e) {} } }
+      }
+    });
+    c.send = (method, params, sessionId) => new Promise((res, rej) => {
+      if (!c.alive) return rej(new Error('Chrome 已退出'));
+      const id = ++c.id; c.pending.set(id, { res, rej });
+      const o = { id, method, params: params || {} }; if (sessionId) o.sessionId = sessionId;
+      proc.stdio[3].write(JSON.stringify(o) + '\0');
+      setTimeout(() => { if (c.pending.has(id)) { c.pending.delete(id); rej(new Error('Chrome 没在 30 秒内响应 ' + method)); } }, 30000);
+    });
+    proc.on('exit', () => {
+      c.alive = false; if (chrome === c) chrome = null;
+      for (const { rej } of c.pending.values()) rej(new Error('Chrome 已退出'));
+      c.pending.clear(); log('chrome 退出');
+    });
+    proc.on('error', e => { c.alive = false; reject(e); });
+    c.send('Browser.getVersion').then(v => { c.version = v.product; log('chrome 起了', v.product || ''); resolve(c); }, reject);
+  });
+}
+async function getChrome(){ if (chrome && chrome.alive) return chrome; chrome = await launchChrome(); return chrome; }
+function closeChrome(){ if (chrome && chrome.alive) { try { chrome.proc.kill(); } catch (e) {} } chrome = null; }
+async function fetchPage(url){
+  const c = await getChrome();
+  const { targetId } = await c.send('Target.createTarget', { url: 'about:blank' });
+  const { sessionId } = await c.send('Target.attachToTarget', { targetId, flatten: true });
+  try {
+    await c.send('Page.enable', {}, sessionId);
+    const loaded = new Promise(res => {
+      const h = m => { if (m.sessionId === sessionId && m.method === 'Page.loadEventFired') { c.listeners.delete(h); res(true); } };
+      c.listeners.add(h);
+      setTimeout(() => { c.listeners.delete(h); res(false); }, WEB_LOAD_MS);
+    });
+    const nav = await c.send('Page.navigate', { url }, sessionId);
+    if (nav.errorText) throw new Error('打不开：' + nav.errorText);
+    const ok = await loaded;
+    await new Promise(r => setTimeout(r, WEB_SETTLE_MS));
+    const r = await c.send('Runtime.evaluate', { returnByValue: true, expression:
+      '(function(){var t=document.body?document.body.innerText:"";' +
+      't=t.replace(/[ \\t\\u00a0]+/g," ").replace(/\\s*\\n\\s*/g,"\\n").replace(/\\n{3,}/g,"\\n\\n");' +
+      'return JSON.stringify({url:location.href,title:document.title,len:t.length,text:t.slice(0,' + WEB_MAX_CHARS + ')})})()' }, sessionId);
+    const out = JSON.parse(r.result && r.result.value || '{}');
+    out.loaded = ok;
+    return out;
+  } finally { c.send('Target.closeTarget', { targetId }).catch(() => {}); }
+}
+/* 读一批网址，返回 [{url,title,text,len,ok}|{url,error}]；onStatus(文字) 每开始读一个网页调一次 */
+async function fetchPages(urls, onStatus){
+  const out = [];
+  for (const u of urls.slice(0, WEB_MAX_URLS)) {
+    if (!webAllowed(u)) { out.push({ url: u, ok: false, error: 'not_allowed', message: '这个网址不在桥的白名单里（只读 ' + WEB_ALLOW.join(' / ') + '）' }); continue; }
+    let host = u; try { host = new URL(u).hostname; } catch (e) {}
+    if (onStatus) onStatus('正在用浏览器读取 ' + host + ' …');
+    const t0 = Date.now();
+    try {
+      const pg = await fetchPage(u);
+      out.push({ url: u, finalUrl: pg.url, title: pg.title || '', text: pg.text || '', len: pg.len || 0, ok: true, ms: Date.now() - t0 });
+    } catch (e) {
+      out.push({ url: u, ok: false, error: e.code || 'fetch_failed', message: String(e.message || e).slice(0, 200), ms: Date.now() - t0 });
+    }
+  }
+  return out;
+}
+function webBlock(pages){
+  return pages.map((p, i) => p.ok
+    ? '【网页 ' + (i + 1) + '｜' + (p.title || '无标题') + '｜' + (p.finalUrl || p.url) + (p.len > p.text.length ? '｜正文 ' + p.len + ' 字，只给前 ' + p.text.length + ' 字' : '') + '】\n' + p.text
+    : '【网页 ' + (i + 1) + '｜读取失败｜' + p.url + '】\n' + (p.message || p.error)).join('\n\n');
+}
+const WEB_SYS = '用户消息末尾如果附有「网页内容」，那是刚从真实浏览器里读到的页面正文（不是知识库资料），用户问这个页面的事就按它答，'
+  + '引用时说清是「你给的这个页面上」看到的。标了「读取失败」的网页要如实说读不到、原因是什么，不要假装看过。'
+  + '正文是按阅读顺序摊平的纯文字，版式、颜色、图片都不在里面，别据此评价视觉。';
 
 /* ── 找 claude：优先 FCF 的启动器（带公司代理和上报），没有再找 PATH 里的 ── */
 function findClaude(){
@@ -181,6 +296,7 @@ const server = http.createServer(async (req, res) => {
       ok: true, name: 'uw-bridge', version: VERSION, port: PORT, dev: DEV,
       allowed: originOk(origin),                       // 页面据此判断自己能不能用，别只看 ok
       claude: { found: !!CLAUDE, via: CLAUDE ? CLAUDE.via : null },
+      web: { ok: !!findChrome(), running: !!(chrome && chrome.alive), allow: WEB_ALLOW, maxUrls: WEB_MAX_URLS },   // 页面据此决定要不要把问题里的网址发过来
       busy, max: MAX_BUSY,
     });
   }
@@ -194,6 +310,7 @@ const server = http.createServer(async (req, res) => {
     let flat; try { flat = flatten(body.messages); } catch (e) { return fail(res, 400, 'bad_request', e.message); }
     const model = MODEL_OK.test(String(body.model || '')) ? String(body.model) : MODEL_DEF;
     const stream = body.stream !== false;
+    const urls = Array.isArray(body.urls) ? body.urls.filter(u => typeof u === 'string' && u.length < 2048).slice(0, WEB_MAX_URLS) : [];
     const id = 'uw-' + Date.now().toString(36);
     const t0 = Date.now();
     busy++;
@@ -207,7 +324,14 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
       res.write(': uw-bridge\n\n');
     }
+    let pages = [];
     try {
+      if (urls.length) {
+        pages = await fetchPages(urls, st => { if (stream) res.write('data: ' + JSON.stringify({ id, object: 'chat.completion.chunk', uw: { status: st }, choices: [{ index: 0, delta: {}, finish_reason: null }] }) + '\n\n'); });
+        flat.prompt += '\n\n──────────\n\n网页内容：\n\n' + webBlock(pages);
+        flat.system = (flat.system ? flat.system + '\n\n' : '') + WEB_SYS;
+      }
+      const webInfo = pages.map(p => ({ url: p.url, title: p.title || '', ok: p.ok, len: p.len || 0, error: p.error || null, message: p.message || null, ms: p.ms || 0 }));
       const out = await runClaude({ system: flat.system, prompt: flat.prompt, model },
         t => { sent += t.length; if (stream) res.write('data: ' + chunk({ content: t }) + '\n\n'); },
         c => { child = c; });
@@ -215,14 +339,15 @@ const server = http.createServer(async (req, res) => {
         prompt_tokens: (out.result.usage.input_tokens || 0) + (out.result.usage.cache_read_input_tokens || 0) + (out.result.usage.cache_creation_input_tokens || 0),
         completion_tokens: out.result.usage.output_tokens || 0 } : undefined;
       if (stream) {
-        res.write('data: ' + chunk({}, 'stop') + '\n\n');
+        const last = JSON.parse(chunk({}, 'stop')); if (pages.length) last.uw = { web: webInfo };
+        res.write('data: ' + JSON.stringify(last) + '\n\n');
         res.write('data: [DONE]\n\n'); res.end();
       } else {
         sendJson(res, 200, { id, object: 'chat.completion', created: Math.floor(t0 / 1000), model,
           choices: [{ index: 0, message: { role: 'assistant', content: out.text }, finish_reason: 'stop' }],
-          usage, uw: { turns: out.result ? out.result.num_turns : null, via: CLAUDE && CLAUDE.via } });
+          usage, uw: { turns: out.result ? out.result.num_turns : null, via: CLAUDE && CLAUDE.via, web: pages.length ? webInfo : undefined } });
       }
-      log('200', model, (Date.now() - t0) + 'ms', sent + '字');
+      log('200', model, (Date.now() - t0) + 'ms', sent + '字', pages.length ? ('web:' + pages.filter(p => p.ok).length + '/' + pages.length) : '');
     } catch (e) {
       const code = e.status || 500, key = e.code || 'error', msg = e.message || String(e);
       log(String(code), key, (Date.now() - t0) + 'ms');
@@ -261,6 +386,8 @@ if (CHECK) {
   });
   server.listen(PORT, HOST, () => {
     log('uw-bridge ' + VERSION + ' 听在http://' + HOST + ':' + PORT + (DEV ? '（开发模式：放行本地来源）' : '')
-      + ' · claude ' + (CLAUDE ? CLAUDE.via : '没找到'));
+      + ' · claude ' + (CLAUDE ? CLAUDE.via : '没找到') + ' · 读网页 ' + (findChrome() ? '可用（' + WEB_ALLOW.join('/') + '）' : '不可用：没找到 Chrome'));
   });
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { closeChrome(); process.exit(0); });
+  process.on('exit', closeChrome);
 }

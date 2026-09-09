@@ -1959,7 +1959,8 @@ render();  // 启动渲染
     '出视觉稿之前要枚举哪些状态；交付给前端要检查什么。',
     '三、你的资料来自 482 份文档，是 MIC 的业务文档和 UED 团队沉淀的设计方法，不是通用互联网知识。',
     '',
-    '你做不到的事要直接说明，不要假装做了：你不能写入 Figma、不能运行脚本、不能打开线上页面、不能导出文件。',
+    '你做不到的事要直接说明，不要假装做了：你不能写入 Figma、不能运行脚本、不能导出文件。',
+    '线上页面：只有用户在问题里给了网址、且消息末尾附有「网页内容」时你才看得到那个页面；没有附的就说明这次读不到，不要假装看过。',
     '这些要设计师在 Claude Code 里用 mic-fullstack 技能做，这个页面只帮忙想清楚和写出来。',
     '🔴 你用的是一个免费的小模型，判断力跟 Claude 不在一个档 —— 答案里引用的数字可能取错了那一句，',
     '有人要照着落地就提醒他对着你列出的参考文档核一眼。'
@@ -2001,6 +2002,18 @@ render();  // 启动渲染
       + '这一条不需要参考资料，也不要说「资料里没有」。';
   }
 
+  /* ── 读网页（本机桥 1.1.0 起）──
+     问题里带网址就把网址发给桥，桥用独立 Chrome 取正文附在资料后面；白名单在桥那头，页面不判。
+     只有桥探到 Chrome 才发；1.0.x 的老桥不认 urls 字段、原样忽略，所以老桥也不会坏。 */
+  function webUrlsIn(q){
+    var m = String(q||'').match(/https?:\/\/[^\s<>"'，。；、）)】」』\]]+/g) || [];
+    var seen={}, out=[];
+    m.forEach(function(u){ u=u.replace(/[.,;:!?]+$/,''); if(!seen[u]){ seen[u]=1; out.push(u); } });
+    return out.slice(0,3);
+  }
+  function webReady(){ return mode()==='bridge' && !!(BRIDGE.info && BRIDGE.info.web && BRIDGE.info.web.ok); }
+  function escW(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
   function ctxOf(chunks, kind){
     if(kind==='hello')
       return '（这次没有检索资料。用户这句话是打招呼或客套，不是提问。'
@@ -2041,6 +2054,8 @@ render();  // 启动渲染
     });
     msgs.push({role:'user', content:'参考资料：\n\n'+ctxOf(chunks, kind)+'\n\n──────────\n\n我的问题：'+q});
     var body={ model:mdl, stream:true, temperature:0.1, messages:msgs };   // 低温：这类问答要准不要花
+    var urls = webUrlsIn(q);
+    if(urls.length && webReady()) body.urls = urls;   /* 桥会用独立 Chrome 读这些网址的正文，附在资料后面 */
     return fetch(url,{ method:'POST', signal:signal, headers:head, body:JSON.stringify(body) })
       .catch(function(e){
         if(m==='bridge' && e && e.name!=='AbortError'){ BRIDGE.ok=false; onBridgeChange(); }
@@ -2070,8 +2085,12 @@ render();  // 启动渲染
                 er.status = o.error.code==='busy'? 429 : o.error.code==='timeout'? 504 : o.error.code==='no_claude'? 503 : 502;
                 throw er;
               }
+              if(o.uw){   /* 桥的旁路信息：读网页进度 / 读了哪些网页 */
+                if(o.uw.status){ R.status=o.uw.status; if(typeof paint==='function') paint(); }
+                if(o.uw.web){ R.web=o.uw.web; }
+              }
               var t=((o.choices||[{}])[0].delta||{}).content;
-              if(t){ full+=t; onDelta(full); }
+              if(t){ R.status=''; full+=t; onDelta(full); }
             });
             return pump();
           });
@@ -2141,7 +2160,13 @@ render();  // 启动渲染
   };
 
   /* ── 跑任务视图 ── */
-  var R = { q:'', ans:'', srcs:[], state:'idle', err:null, ctl:null, task:'', turns:[] };
+  var R = { q:'', ans:'', srcs:[], state:'idle', err:null, ctl:null, task:'', turns:[], status:'', web:null };
+  function webOkCount(){ return (R.web||[]).filter(function(w){ return w.ok; }).length; }
+  function webFailBox(){
+    var bad=(R.web||[]).filter(function(w){ return !w.ok; });
+    if(!bad.length) return '';
+    return '<div class="srcs"><div class="srcs-h">有网页没读到：'+bad.map(function(w){ return escW(w.url)+'（'+escW(w.message||w.error||'')+'）'; }).join('；')+'</div></div>';
+  }
   window.WBRUN = R;
 
   /* 🔴 小模型不听格式类指令 —— prompt 里写了「中英之间加空格」「不要 emoji」，
@@ -2272,8 +2297,8 @@ render();  // 启动渲染
         '<b>WorkBuddy</b><span>'+
           (st==='loadkb'?'正在载入知识库…':
            st==='search'?'正在从知识库里找相关资料…':
-           st==='run'  ?'正在回答（'+PROVN()+'）':
-           R.srcs.length? '参考了 '+R.srcs.length+' 段资料 · '+PROVN() : PROVN())+
+           st==='run'  ?(R.status? R.status : '正在回答（'+PROVN()+'）'):
+           ((R.srcs.length? '参考了 '+R.srcs.length+' 段资料 · ' : '')+(webOkCount()? '读了 '+webOkCount()+' 个网页 · ' : '')+PROVN()))+
         '</span></div>'+
         '<div class="atx">'+(R.ans? mdToHtml(R.ans) : '')+
           (st==='run'||st==='search'||st==='loadkb'? '<span class="caret"></span>':'')+'</div>'+
@@ -2281,6 +2306,7 @@ render();  // 启动渲染
           '<div class="srcs-l">'+dedupSrc().map(function(d){
             return '<button class="srcchip" onclick="wbOpenSrc(\''+d.replace(/'/g,"\\'")+'\')">'+d+'</button>'; }).join('')+
           '</div></div>' : '')+
+        webFailBox()+
         '<div class="runfoot">'+
           (st==='run'? '<button class="rbtn" onclick="wbStop()">停止</button>'
                      : '<button class="rbtn pri" onclick="go(\'new\')">开个新话题</button>'+
@@ -2381,7 +2407,7 @@ render();  // 启动渲染
       R.turns.push({q:R.q, ans:R.ans});
       if(R.turns.length>8) R.turns.shift();
     }
-    R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw='';
+    R.q=q; R.ans=''; R.srcs=[]; R.err=null; R.raw=''; R.status=''; R.web=null;
     S.view='run';
     if(!ready()){ R.state='needkey'; render(); return; }
     /* 寒暄和元问题不检索 —— 不但省掉一次 7.2MB 语料扫描，
@@ -2389,6 +2415,9 @@ render();  // 启动渲染
        （那看起来像「在这 9 份文档里找过、确实没有」，其实是随便抓的）。 */
     var kind = chatKind(q);
     R.kind = kind;
+    if(webUrlsIn(q).length && !webReady() && window.fqToast){   /* 网址给了但这条路不通，先说清楚，别让人以为它看过 */
+      fqToast(mode()==='bridge' ? '要读网页得把本机桥升到新版：重跑一次安装命令' : '读网页要走本机桥（设置里有装法），这次只按知识库答');
+    }
     R.state = (kind==='ask') ? 'loadkb' : 'run'; render();
     (kind==='ask'
       ? loadKB().then(function(){ R.state='search'; paint(); return retrieveAsync(q); })
@@ -2452,6 +2481,10 @@ render();  // 启动渲染
     if(BRIDGE.ok){
       return '<div class="nbox" style="margin:0 0 18px"><b>'+(bridgeOff()? '你电脑上的 Claude Code 可用，但这台电脑选了智谱' : '已连上你电脑上的 Claude Code')+'</b>'+
         '<p>走它的时候用的是你自己的席位，模型比免费的强，出网仍经公司的 FCF 通道。手机上没有这条路，会自动退回共享通道。</p>'+
+        ((BRIDGE.info&&BRIDGE.info.web&&BRIDGE.info.web.ok)
+          ? '<p>问题里带 made-in-china.com 或 vemic.com 的网址时，桥会开一个独立的 Chrome 窗口读页面正文给它看。那个窗口可以最小化，别关。</p>'
+          : (BRIDGE.info&&BRIDGE.info.web) ? '<p>这台电脑没找到 Google Chrome，读网页那一步用不了。</p>'
+          : '<p>你装的桥是旧版，重跑一次安装命令就能读网页。</p>')+
         '<p>'+(bridgeOff()
           ? '<button class="rbtn pri" onclick="wbBridgeUse(true)">改回用本机 Claude</button>'
           : '<button class="rbtn" onclick="wbBridgeUse(false)">这台电脑改用智谱</button>')+'</p></div>';
