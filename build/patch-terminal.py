@@ -92,16 +92,44 @@ CSS = r'''
   font:13px/1.6 Roboto,-apple-system,"PingFang SC",sans-serif}
 .uwt-drawer.uwt-on{display:flex}
 
-/* 分区：主内容和向导弹层都让出右边那一栏 */
+/* 分区：主内容和两个弹层都让出右边那一栏。
+   🔴 .uwt-mask（选三条路那个弹层）第一版漏了 —— 它自己 inset:0 在整个视口里居中，
+   白框右边 216px 正好压在终端底下（吉吉走查截图）。分区规则要**逐个列全**，
+   漏一个就是一个被压住的浮层；探针那条只断言了 .wizmask，覆盖不全才没抓到。 */
 html.uwt-split .app{width:calc(100% - var(--uwt-w))}
 html.uwt-split .wizmask{right:var(--uwt-w)}
+html.uwt-split .uwt-mask{right:var(--uwt-w)}
 html.uwt-split .wz-peek{max-width:calc(100vw - var(--uwt-w) - 40px)}
 
-/* 分隔条：拖它改宽度。24px 的抓取区，视觉上只有 1px 那条线 */
-.uwt-grip{position:absolute;left:-6px;top:0;bottom:0;width:12px;cursor:col-resize;z-index:2}
-.uwt-grip::after{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:transparent}
-.uwt-grip:hover::after,.uwt-grip.uwt-drag::after{background:#4A4A4A}
+/* 分隔条。12px 抓取区，但**常态就要看得见** ——
+   第一版 ::after 是 transparent、只在 hover 时才显线，吉吉的反馈是
+   「我希望有个功能，就是我可以自己拉动内容区宽度」：功能其实已经有了，
+   他看不出那儿能拖，所以等于没有。加一条常驻的细线 ＋ 中间一个握把。 */
+.uwt-grip{position:absolute;left:-6px;top:0;bottom:0;width:12px;cursor:col-resize;z-index:3;
+  display:flex;align-items:center;justify-content:center}
+.uwt-grip::after{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:#3A3A3A;
+  transition:background .12s}
+.uwt-grip::before{content:"";position:relative;z-index:1;width:4px;height:32px;border-radius:var(--ctl-r);
+  background:#4A4A4A;box-shadow:0 0 0 3px #1A1A1A;transition:background .12s}
+.uwt-grip:hover::after,.uwt-grip.uwt-drag::after{background:#6B6B6B}
+.uwt-grip:hover::before,.uwt-grip.uwt-drag::before{background:#9A9A9A}
 html.uwt-dragging{cursor:col-resize;user-select:none}
+
+/* 收起之后回去的把手。会话在桥上还活着 30 分钟，第一版收起了就没有任何入口 ——
+   吉吉：「点了收起终端的按钮，但没有再打开的按钮和途径」。
+   贴在右边缘、跟收起同一侧，只在真有活着的会话时出现。 */
+.uwt-reopen{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:239;
+  display:none;align-items:center;gap:7px;padding:11px 12px 11px 10px;
+  border:1px solid #333;border-right:0;border-radius:var(--box-r) 0 0 var(--box-r);
+  background:#222;color:#EDEDED;cursor:pointer;
+  font:12px/1.4 Roboto,-apple-system,"PingFang SC",sans-serif;
+  box-shadow:-2px 0 12px rgba(0,0,0,.22)}
+.uwt-reopen.uwt-on{display:flex}
+.uwt-reopen:hover{background:#2C2C2C;border-color:#4A4A4A}
+.uwt-reopen .uwt-rdot{width:7px;height:7px;border-radius:50%;background:#4B9E5F;flex:0 0 auto}
+.uwt-reopen .uwt-rdot.uwt-run{background:#E6A23C;animation:uwt-pulse 1.1s ease-in-out infinite}
+.uwt-reopen b{font-weight:400;writing-mode:vertical-rl;letter-spacing:1px;max-height:150px;
+  overflow:hidden;text-overflow:ellipsis}
 .uwt-dhd{flex:0 0 auto;display:flex;align-items:center;gap:10px;
   padding:11px 14px;background:#222;border-bottom:1px solid #333;color:#EDEDED}
 .uwt-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#4B9E5F}
@@ -137,6 +165,7 @@ html.uwt-dragging{cursor:col-resize;user-select:none}
   .uwt-drawer{width:100vw}
   html.uwt-split .app{width:100%}
   html.uwt-split .wizmask{right:0}
+  html.uwt-split .uwt-mask{right:0}
   .uwt-grip{display:none}
 }
 @media (max-width:760px){
@@ -150,6 +179,9 @@ html.uwt-dragging{cursor:col-resize;user-select:none}
 # ══════════════════════════════════════════════════════════════
 DOM = '''
 <div class="uwt-mask" id="uwtMask"><div class="uwt-box" id="uwtBox"></div></div>
+<button class="uwt-reopen" id="uwtReopen" onclick="uwtReopen()" title="回到那个终端">
+  <span class="uwt-rdot" id="uwtRdot"></span><b id="uwtRlabel">终端还在跑</b>
+</button>
 <div class="uwt-drawer" id="uwtDrawer">
   <div class="uwt-grip" id="uwtGrip" title="拖动改宽度"></div>
   <div class="uwt-dhd">
@@ -181,7 +213,7 @@ JS = r'''
       所以选择界面里必须把这个差别说出来，别让人以为只是「换个地方回答」。
    ══════════════════════════════════════════════════════════ */
 var UWT = { ws:null, term:null, fit:null, loaded:false, sid:null, dir:null,
-            payload:null, alive:false, ro:null };
+            payload:null, alive:false, ro:null, live:null };
 
 function uwtBridge(){ return window.wbBridge || null; }
 /* 两条路各自能不能用。别把「桥没装」和「桥旧了」混成一句话 —— 同事要据此知道该干什么。 */
@@ -285,7 +317,11 @@ function uwtGo(method){
 
   if(method === 'attach'){
     uwtSessions().then(function(list){
-      if(!list.length){ if(window.fqToast) fqToast('那个终端已经结束了，重新选一次'); return; }
+      if(!list.length){
+        uwtKillUI();
+        if(window.fqToast) fqToast('那个终端已经结束了');
+        return;
+      }
       fetch(B.url + '/terminal/attach', { method:'POST',
         headers:{ 'content-type':'application/json' },
         body: JSON.stringify({ sessionId: list[0].id }) })
@@ -397,7 +433,9 @@ function uwtOpenDrawer(j, isAttach){
   document.getElementById('uwtBoot').hidden = false;
   document.getElementById('uwtBoot').textContent = '正在起终端…';
   UWT.dir = j.rel || j.dir || '';
-  uwtHead((UWT.payload && UWT.payload.card) || '终端', UWT.dir, null);
+  /* 从右边缘把手接回来时没走向导、payload 是空的 —— 用会话自己的标题兜住，
+     别让标题栏显示 undefined */
+  uwtHead((UWT.payload && UWT.payload.card) || (UWT.live && UWT.live.title) || '终端', UWT.dir, null);
   uwtLoadXterm().then(function(ok){
     if(!ok){
       document.getElementById('uwtBoot').textContent =
@@ -508,11 +546,40 @@ function uwtHide(){
   document.getElementById('uwtDrawer').classList.remove('uwt-on');
   uwtSplitOff();
   if(UWT.ws){ try { UWT.ws.close(); } catch(e){} UWT.ws = null; }
+  /* 收起 ≠ 结束，所以收起之后必须留一条回去的路。桥那边会话还留 30 分钟。 */
+  uwtCheckLive();
+}
+function uwtKillUI(){
+  var b = document.getElementById('uwtReopen');
+  if(b) b.classList.remove('uwt-on');
+}
+/* 桥上还有活着的会话吗？有就亮出右边缘那个把手。
+   刷新页面之后也走这条 —— 不然刷一下就再也回不去了。 */
+function uwtCheckLive(){
+  return uwtSessions().then(function(list){
+    var b = document.getElementById('uwtReopen');
+    if(!b) return;
+    var open = document.getElementById('uwtDrawer').classList.contains('uwt-on');
+    if(!list.length || open){ b.classList.remove('uwt-on'); return; }
+    var s = list[0];
+    UWT.live = s;
+    document.getElementById('uwtRlabel').textContent = (s.title || '终端') + '还在跑';
+    document.getElementById('uwtRdot').className = 'uwt-rdot' + (s.busy ? ' uwt-run' : '');
+    b.classList.add('uwt-on');
+    b.title = '回到「' + (s.title || '终端') + '」' + (s.rel ? '（' + s.rel + '）' : '');
+  });
+}
+function uwtReopen(){
+  document.getElementById('uwtReopen').classList.remove('uwt-on');
+  uwtGo('attach');
 }
 function uwtKill(){
   if(UWT.ws && UWT.ws.readyState === 1) UWT.ws.send(JSON.stringify({ type:'close' }));
   UWT.sid = null; UWT.alive = false;
-  uwtHide();
+  document.getElementById('uwtDrawer').classList.remove('uwt-on');
+  uwtSplitOff();
+  if(UWT.ws){ try { UWT.ws.close(); } catch(e){} UWT.ws = null; }
+  uwtKillUI();          /* 真结束了就别再亮把手 */
 }
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape' && document.getElementById('uwtMask').classList.contains('uwt-on')) uwtCloseChooser();
@@ -521,6 +588,16 @@ document.addEventListener('keydown', function(e){
 window.addEventListener('resize', function(){
   if(document.documentElement.classList.contains('uwt-split')) uwtFit();
 });
+/* 页面一打开、以及之后每 30 秒，看桥上有没有还活着的会话。
+   刷新页面丢的只是这一头的连接，活还在跑 —— 不查就再也回不去了。 */
+(function(){
+  function tick(){
+    var B = window.wbBridge;
+    if(B && B.ok && !document.getElementById('uwtDrawer').classList.contains('uwt-on')) uwtCheckLive();
+  }
+  setTimeout(tick, 2500);
+  setInterval(tick, 30000);
+})();
 '''
 
 # ══════════════════════════════════════════════════════════════
@@ -615,13 +692,17 @@ def collision_gate(page):
 def radius_gate():
     """圆角只准 4（控件）和 8（容器）+ 整圆。2026-09-08 量过飞鹊真组件：
     只有 4/6/8/pill/整圆，12/16/20/24 各 0 次。写死量成的两档，别再冒出第三档。"""
+    # 🔴 要认四角简写。`border-radius:var(--box-r) 0 0 var(--box-r)` 是右边缘那个
+    #    把手必须的写法（贴着屏幕右沿，右侧两角不该圆），第一版判据只认单值、
+    #    把它当违规拦下来了。判据形式不完整 → 改成拆开逐值判，不加豁免。
+    OK = ('50%', 'var(--ctl-r)', 'var(--box-r)', '0', '0px')
     lits = re.findall(r'border-radius:\s*([^;}]+)', _css_code())
     bad = []
     for v in lits:
-        v = v.strip()
-        if v in ('50%', 'var(--ctl-r)', 'var(--box-r)'):
-            continue
-        bad.append(v)
+        parts = [x for x in v.replace('/', ' ').split() if x]
+        offend = [x for x in parts if x not in OK]
+        if offend:
+            bad.append(v.strip() + '（不认的值：' + '、'.join(offend) + '）')
     if bad:
         print('❌ 圆角门：出现了不在两档里的写法 —— %s' % '、'.join(bad))
         sys.exit(1)
