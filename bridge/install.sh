@@ -104,7 +104,7 @@ if curl -fsS -m 2 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
   say "   脚本来源：$SRC"
   say "   日志：$DIR/log.txt"
   say ""
-  say "现在刷新 UW 页面，模型处会出现「Claude Code · 本机」，问答默认走它。"
+  say "现在刷新 UW 页面，模型处会出现「Claude Opus · 本机」，问答默认走它。"
   say "不想用了：bash <(curl -fsSL $BASE/install.sh) --uninstall"
 else
   die "开机自动启动设置好了，但桥没响应。看日志：$DIR/log.txt"

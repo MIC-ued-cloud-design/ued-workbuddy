@@ -2025,7 +2025,7 @@ render();  // 启动渲染
   function callModel(q, chunks, onDelta, signal, kind){
     var c=cfg(), m=mode();
     var url = (m==='bridge') ? BRIDGE.url+'/v1/chat/completions' : (m==='own') ? endpoint() : PROXY.url;
-    var mdl = (m==='bridge') ? 'sonnet' : (m==='own') ? modelName() : 'glm-4-flash';
+    var mdl = (m==='bridge') ? 'opus' :   /* 2026-09-09 吉吉定：本机 Claude 用 Opus 5。别名交给 claude 自己解析成当前最新 Opus；桥只放行 sonnet/haiku/opus 三个别名 */ (m==='own') ? modelName() : 'glm-4-flash';
     var head = {'Content-Type':'application/json'};
     if(m==='own') head['Authorization'] = 'Bearer '+c.key;
     else if(m==='proxy' && PROXY.pass) head['X-WB-Pass'] = PROXY.pass;
@@ -2528,7 +2528,7 @@ render();  // 启动渲染
   var REAL=[
     {id:'zhipu', n:'智谱 GLM-4-Flash', badge:['rec','免费'], good:'官方标免费 · 国内直连'}
   ];
-  var BRIDGE_MODEL={id:'bridge', n:'Claude Code', badge:['rec','本机'], good:'你自己的席位 · 经公司 FCF'};   /* 名字+标签+说明三段都不许换行，弹层内一行只有约 305px：全名版 435px 会压到说明上（2026-09-09 吉吉截图）*/
+  var BRIDGE_MODEL={id:'bridge', n:'Claude Opus', badge:['rec','本机'], good:'你自己的席位 · 经公司 FCF'};   /* 名字+标签+说明三段都不许换行，弹层内一行只有约 305px：全名版 435px 会压到说明上（2026-09-09 吉吉截图）*/
   /* 列表随桥的状态变：桥在就把它放第一项并默认选中；桥不在就跟原来一模一样。
      选中项写回 cfg 由 render 里那段做，这里只负责「列表 + 当前项」两件事。 */
   function syncModelList(){

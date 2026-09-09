@@ -39,7 +39,7 @@ const CHECK     = process.argv.includes('--check');
 const MAX_BUSY  = 2;            // 同时最多跑几个 Claude；再来的排队会拖慢所有人，直接 429 让页面提示
 const TIMEOUT   = 180000;       // 单次上限 3 分钟
 const MAX_BODY  = 1024 * 1024;  // 请求体上限 1MB（资料段落 + 4 轮历史远小于这个数）
-const MODEL_DEF = 'sonnet';
+const MODEL_DEF = 'opus';     // 页面没指定时的兜底；页面自己发的是 opus（2026-09-09 起）
 const MODEL_OK  = /^(sonnet|haiku|opus|claude-[a-z0-9-]+)$/;   // 只放行这几种写法，别让页面拿它跑别的
 
 /* ── 找 claude：优先 FCF 的启动器（带公司代理和上报），没有再找 PATH 里的 ── */
