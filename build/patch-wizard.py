@@ -1,25 +1,48 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""在 WorkBuddy 页面上加一层「选项式向导」，输出到 wizard.html。
+"""在 WorkBuddy 页面上加一层「选项式向导」。
 
-🔴 跟其他 patch-*.py 不一样的两点：
-  1. 它不改 index.html —— 读 index.html，写 wizard.html。吉吉说先不部署，
-     所以线上那份一个字不动。以后要上线，把 OUT 改成 PAGE 就行。
-  2. 所以它必须在其他所有 patch 之后跑（它吃的是成品）。
+🔴 2026-09-09 起就地改 index.html（上线）。在此之前它写的是 wizard.html、线上不动，
+   因为吉吉说先不部署；这轮他定了「做在线上版本里」，所以 OUT 换成了 PAGE。
+   换完必须配一件事：**幂等**。原来是纯 append（每次都从干净的 index.html 重新生成
+   wizard.html，所以无所谓），就地写之后跑两次就注入两遍，
+   `const WIZ` 重复声明 → 整页 JS 全废，而 patch 脚本自己不会报错。
+   → strip_between()：BEGIN/END 之间先删再插。
+
+🔴 它必须在其他所有 patch 之后跑（它吃的是成品），且在 patch-terminal.py 之后
+   —— 收尾按钮调的是那边提供的 window.wbHandoff。
 
 做的事：点场景卡片的时候，除了照旧把模板填进输入框，再弹一层分步向导：
-左边一步一步勾选和填空，右边任务单实时长出来，填完直接让 WorkBuddy 回答
-（不是复制到别处 —— WorkBuddy 自己就有知识库和模型）。
+左边一步一步勾选和填空，右边任务单实时长出来，填完选「交给谁做」：
+开系统终端 / 在页面里开终端 / 就让 WorkBuddy 答（见 patch-terminal.py）。
 """
 import os, sys, subprocess, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 PAGE = os.path.join(ROOT, 'index.html')
-OUT  = os.path.join(ROOT, 'wizard.html')
+OUT  = PAGE          # 2026-09-09 上线：就地改 index.html（配 strip_between 保幂等）
 
 CSS_B, CSS_E = '/* ==WB-WIZ-CSS:BEGIN== */', '/* ==WB-WIZ-CSS:END== */'
 JS_B,  JS_E  = '/* ==WB-WIZ-JS:BEGIN== */',  '/* ==WB-WIZ-JS:END== */'
+DOM_B, DOM_E = '<!-- ==WB-WIZ-DOM:BEGIN== -->', '<!-- ==WB-WIZ-DOM:END== -->'
+
+
+def strip_between(page, b, e):
+    """先删再插。就地写index.html之后，这道是幂等的全部 ——
+    不删就跑两次注入两遍，const WIZ重复声明整页JS全废，而脚本自己不报错。"""
+    n = 0
+    while True:
+        i = page.find(b)
+        if i < 0:
+            break
+        j = page.find(e, i)
+        if j < 0:
+            print('❌ 找到 %s但没找到配对的 %s，页面被手改过？已中止' % (b, e))
+            sys.exit(1)
+        page = page[:i] + page[j + len(e):]
+        n += 1
+    return page, n
 
 # ═══════════════════════════════════════════════════════════
 # 视觉：全部用 WorkBuddy 自己的 token
@@ -262,56 +285,56 @@ const WIZ = {
     /* 这三条会真跑（下面 wzAuto）。原来那份 demo 里它是纯动画：
        写着「已经替你跑完了」，其实一件都没查。 */
     auto:[
-      { kind:'kb', q:'UED 交互自查表 交互自查 自查表',            label:'检索 UED 交互自查表' },
-      { kind:'kb', q:'交互专家 七维度 脑回路 问题定义 信息架构',    label:'检索交互专家 7 维度脑回路' },
+      { kind:'kb', q:'UED交互自查表 交互自查 自查表',            label:'检索UED交互自查表' },
+      { kind:'kb', q:'交互专家 七维度 脑回路 问题定义 信息架构',    label:'检索交互专家7维度脑回路' },
       { kind:'kb', q:'状态枚举 空态 加载态 错误态 极限值 未登录',    label:'检索状态与极限值清单' }
     ],
     steps:[
       { t:'确认输入', h:'输入越全，越不会边画边发明',
         qs:[
           { k:'i1', type:'check', q:'手上有哪些输入？',
-            opts:[['PRD 文档',''],['上一步的业务分析',''],['竞品分析结论',''],
-                  ['已有的 Figma 参考稿',''],['线上现有页面',''],
+            opts:[['PRD文档',''],['上一步的业务分析',''],['竞品分析结论',''],
+                  ['已有的Figma参考稿',''],['线上现有页面',''],
                   ['只有一句口头需求','那先回「前期调研」把业务问清楚']] },
-          { k:'i2', type:'text', q:'如果 PRD 和视觉稿冲突，以哪个为准？',
+          { k:'i2', type:'text', q:'如果PRD和视觉稿冲突，以哪个为准？',
             ph:'默认以需求文档为准，并把差异同步回另一份' }
         ]},
       { t:'圈定范围', h:'范围不圈，画到一半才发现漏了一个端',
         qs:[
           { k:'i3', type:'check', q:'要覆盖哪些端？',
-            opts:[['PC 英文主站',''],['触屏站',''],['买家 App',''],['供应商 App',''],
+            opts:[['PC英文主站',''],['触屏站',''],['买家App',''],['供应商App',''],
                   ['多语站','多语版常是简化版，规则跟主站不一样']] },
           { k:'i4', type:'text', q:'涉及哪几个页面？从哪进、从哪出？',
             ph:'把入口和出口写清楚，中间才不会漏页' }
         ]},
-      { t:'过 7 维度', h:'挑相关的认真过。答不上的那一维，就是稿子的洞',
+      { t:'过7维度', h:'挑相关的认真过。答不上的那一维，就是稿子的洞',
         qs:[
           { k:'i5', type:'check', q:'本次需要重点过哪几维？',
-            opts:[['01 问题定义','这是需求还是真实问题，翻译过了吗'],
-                  ['02 用户研究','用户在什么条件下会做这个行为'],
-                  ['03 信息架构','信息按决策路径排了吗'],
-                  ['04 任务流程','认知/操作/决策/情绪/信任五类阻力怎么应对'],
-                  ['05 反馈与状态','11 态想全了吗'],
-                  ['06 空间与导航','Push 还是 Modal 还是 Drawer，依据是什么'],
-                  ['07 验证迭代','方案背后的假设怎么验']] },
+            opts:[['01问题定义','这是需求还是真实问题，翻译过了吗'],
+                  ['02用户研究','用户在什么条件下会做这个行为'],
+                  ['03信息架构','信息按决策路径排了吗'],
+                  ['04任务流程','认知/操作/决策/情绪/信任五类阻力怎么应对'],
+                  ['05反馈与状态','11态想全了吗'],
+                  ['06空间与导航','Push还是Modal还是Drawer，依据是什么'],
+                  ['07验证迭代','方案背后的假设怎么验']] },
           { k:'i6', type:'area', q:'这次最没把握的一维，卡在哪？',
-            hint:'写出来。答不上的要去问 PM 或业务，不要含糊带过 —— 含糊带过的问题会在验收时集中暴露。' }
+            hint:'写出来。答不上的要去问PM或业务，不要含糊带过 —— 含糊带过的问题会在验收时集中暴露。' }
         ]},
       { t:'状态枚举', h:'人和模型都爱只画成功态，真实用户更常遇到别的',
         qs:[
           { k:'i7', type:'check', q:'哪些状态本次必须画？',
-            opts:[['默认态',''],['加载态','200ms 内不展示 / 300ms 骨架屏 / 超时给重试'],
+            opts:[['默认态',''],['加载态','200ms内不展示 / 300ms骨架屏 / 超时给重试'],
                   ['空态',''],['错误态',''],['无权限',''],
-                  ['未登录','MIC 有 4 层登录态，别只画一种'],
+                  ['未登录','MIC有4层登录态，别只画一种'],
                   ['超时',''],['禁用态',''],['首次使用',''],
                   ['极值','超长文案、超多条目'],['弱网','']] }
         ]}
     ],
     out:['交互说明（每个决策带「为什么」）','完整状态清单','页面流转图（含异常分支）',
-         'GSSM 设计目标表','追问清单（答不上的标出来）','交付前自检表'],
-    skills:[['MIC-交互','7 维度 + UED 交互自查表 + 上游追问'],
+         'GSSM设计目标表','追问清单（答不上的标出来）','交付前自检表'],
+    skills:[['MIC-交互','7维度 + UED交互自查表 + 上游追问'],
             ['UX-Figma-MD','交互稿转结构化文档'],
-            ['figma-feique-first','交互稿直接做到视觉级，真组件绑 token'],
+            ['figma-feique-first','交互稿直接做到视觉级，真组件绑token'],
             ['MIC-表达','正面写、具体、可验证']]
   },
 
@@ -323,7 +346,7 @@ const WIZ = {
     file:'docs/ued/MIC-XXX/05-视觉稿交付说明.md',
     /* 三条都验过命中的是哪几份文档，不是只看段数 —— 检索有命中不等于命中对的那句话 */
     auto:[
-      { kind:'kb', q:'飞鹊视觉规范 字号阶梯 色值 间距 token', label:'检索飞鹊视觉规范真值（字号 / 色值 / 间距）' },
+      { kind:'kb', q:'飞鹊视觉规范 字号阶梯 色值 间距token', label:'检索飞鹊视觉规范真值（字号 / 色值 / 间距）' },
       { kind:'kb', q:'视觉稿 状态 独立画布 状态墙 空态 加载态', label:'检索状态墙与独立画布的做法' },
       { kind:'kb', q:'图层命名 组件真名回写 交付给前端 规范', label:'检索交付给前端的命名与组件真名规则' }
     ],
@@ -331,8 +354,8 @@ const WIZ = {
       { t:'确认输入', h:'视觉稿最常见的返工，是没等交互稿定下来就先画',
         qs:[
           { k:'v1', type:'check', q:'手上有哪些输入？',
-            opts:[['已定稿的交互稿',''],['PRD 文档',''],['线上现有页面',''],
-                  ['GSSM 设计目标表',''],['已有的飞鹊参考稿',''],
+            opts:[['已定稿的交互稿',''],['PRD文档',''],['线上现有页面',''],
+                  ['GSSM设计目标表',''],['已有的飞鹊参考稿',''],
                   ['交互稿还没定','那先回「交互稿」把流程和状态定下来，否则画完流程一变就得重画']] },
           { k:'v2', type:'text', q:'参考的线上页面是哪一个？',
             ph:'贴网址。没有线上参照就写「新页面，无线上参照」' }
@@ -340,12 +363,12 @@ const WIZ = {
       { t:'定基准', h:'这一问决定整套做法。三种基准的工作方法不一样，选错要重来',
         qs:[
           { k:'v3', type:'radio', q:'这次的视觉基准是哪一种？',
-            opts:[['照线上 1:1 还原','按测量值复刻，差异逐项对齐。线上设计本身有问题的地方单独标出来，不顺手改'],
+            opts:[['照线上1:1还原','按测量值复刻，差异逐项对齐。线上设计本身有问题的地方单独标出来，不顺手改'],
                   ['在现有页面上改局部','只动要改的那块，其余保持线上现状'],
                   ['全新页面','没有线上参照，用飞鹊组件从零搭']] },
           { k:'v4', type:'check', q:'要覆盖哪些端？',
-            hint:'Web 端和移动端是两套飞鹊组件库，编号不通用 —— 这一问决定用哪套。',
-            opts:[['PC 英文主站',''],['触屏站',''],['买家 App',''],['供应商 App',''],
+            hint:'Web端和移动端是两套飞鹊组件库，编号不通用 —— 这一问决定用哪套。',
+            opts:[['PC英文主站',''],['触屏站',''],['买家App',''],['供应商App',''],
                   ['多语站','多语版常是简化版，规则跟主站不一样'],
                   ['阿语（RTL）','整段镜像，字体另有规范']] }
         ]},
@@ -356,21 +379,21 @@ const WIZ = {
                   ['有一两个要用现有组件拼','拼的时候不新造样式，取值仍走规范'],
                   ['有飞鹊完全没有的','写清是哪个。先确认是不是换个形态就能解决，别急着新造']] },
           { k:'v6', type:'area', q:'哪些取值需要先确认？',
-            hint:'字号、颜色、间距只要拿不准就写出来。飞鹊正文最大 18px、不用奇数字号，色值取规范真值不自己调 —— 拿不准的写出来比自己定一个更省事。' }
+            hint:'字号、颜色、间距只要拿不准就写出来。飞鹊正文最大18px、不用奇数字号，色值取规范真值不自己调 —— 拿不准的写出来比自己定一个更省事。' }
         ]},
       { t:'状态画布与交付', h:'每个状态一张独立画布。只画成功态的稿，前端做到一半才发现没得参照',
         qs:[
           { k:'v7', type:'check', q:'哪些状态要各出一张画布？',
-            opts:[['默认态',''],['加载态','200ms 内不展示 / 300ms 骨架屏 / 超时给重试'],
+            opts:[['默认态',''],['加载态','200ms内不展示 / 300ms骨架屏 / 超时给重试'],
                   ['空态',''],['错误态',''],['无权限',''],
-                  ['未登录','MIC 有 4 层登录态，别只画一种'],
+                  ['未登录','MIC有4层登录态，别只画一种'],
                   ['超时',''],['禁用态',''],['首次使用',''],
                   ['极值','超长标题、超长价格、超多条目'],['弱网','']] },
           { k:'v8', type:'check', q:'交付前要过哪几道检查？',
-            opts:[['图层命名全部做完','不留 Frame / Rectangle 这类默认名'],
-                  ['组件真名回写','实例默认叫 set 名，一页几百个都叫 icon，前端对不上'],
+            opts:[['图层命名全部做完','不留Frame / Rectangle这类默认名'],
+                  ['组件真名回写','实例默认叫set名，一页几百个都叫icon，前端对不上'],
                   ['颜色和文字绑到样式','不留硬编码色值'],
-                  ['用 auto-layout 搭','不用绝对定位摆位置'],
+                  ['用auto-layout搭','不用绝对定位摆位置'],
                   ['出交付说明区','给前端的尺寸、间距、色值规格']] }
         ]}
     ],
@@ -390,10 +413,10 @@ const WIZ = {
   'design/2': {
     file:'docs/ued/MIC-XXX/03-设计策略与提案.md',
     auto:[
-      { kind:'kb', q:'MIC 平台级设计原则 既有实践 论证成本', label:'检索 MIC 平台级设计原则' },
+      { kind:'kb', q:'MIC平台级设计原则 既有实践 论证成本', label:'检索MIC平台级设计原则' },
       { kind:'kb', q:'方案写作 工艺 提案 结论先行 表达', label:'检索方案写作工艺与表达原则' },
       { kind:'kb', q:'跟现有业务冲突 重复建设 自查', label:'检索「跟现有业务重复或冲突」自查' },
-      { kind:'kb', q:'竞品分析 参考竞品 阿里国际站 海外 B2B 平台', label:'检索竞品分析方法与已有结论' }
+      { kind:'kb', q:'竞品分析 参考竞品 阿里国际站 海外B2B平台', label:'检索竞品分析方法与已有结论' }
     ],
     steps:[
       { t:'说清真实问题', h:'提案最容易被问倒的一句，是「你要解决的到底是什么问题」',
@@ -408,13 +431,13 @@ const WIZ = {
       { t:'给谁看、要他定什么', h:'读者不同，同一份内容的写法完全不同。这步不定，材料会写成谁都不针对',
         qs:[
           { k:'p3', type:'check', q:'这份提案给谁看？',
-            opts:[['直属领导',''],['UED 部门评审',''],['PM 或业务方',''],
+            opts:[['直属领导',''],['UED部门评审',''],['PM或业务方',''],
                   ['前端或开发',''],['更上层的决策会','']] },
           { k:'p4', type:'radio', q:'这次要拿到什么？',
             opts:[['选定一个方向',''],['先对齐认知，这次不做决定',''],
                   ['批排期或资源',''],['否掉一个已经在推的方向','']] },
           { k:'p5', type:'text', q:'什么时候要、以什么形式过？',
-            ph:'例如：周四设计评审，口头过 20 分钟，外加一份飞书文档' }
+            ph:'例如：周四设计评审，口头过20分钟，外加一份飞书文档' }
         ]},
       { t:'约束与边界', h:'先说清哪些东西不能动，方向才不会白想',
         qs:[
@@ -429,14 +452,14 @@ const WIZ = {
       { t:'方向与比较标准', h:'给几个方向不是重点，方向之间怎么比才是',
         qs:[
           { k:'p8', type:'radio', q:'给几个方向？',
-            opts:[['2 个：一个稳的、一个激进的',''],
-                  ['3 个：覆盖不同的投入量级',''],
-                  ['1 个：只推荐一个，把取舍写透','']] },
+            opts:[['2个：一个稳的、一个激进的',''],
+                  ['3个：覆盖不同的投入量级',''],
+                  ['1个：只推荐一个，把取舍写透','']] },
           { k:'p9', type:'check', q:'用什么标准比这几个方向？',
             hint:'比完记得给推荐意见并写清理由 —— 只摆几个方向不表态，等于把判断推回给评审。',
             opts:[['用户体验是否真的变好','排在最前。其余标准跟它冲突时，以它为准'],
                   ['开发投入和排期',''],
-                  ['能不能量化验证（GSSM 指标）',''],
+                  ['能不能量化验证（GSSM指标）',''],
                   ['跟现有业务有没有重复或冲突',''],
                   ['风险和能不能回退','']] }
         ]}
@@ -506,7 +529,7 @@ function wzDraw(){
 
   wzSide(); wzProg();
   const last = W.step===d.steps.length-1;
-  /* 🔴 最后一步隐藏「下一步」。原来它改文案成「完成填写」，可 wzNext() 里
+  /* 🔴 最后一步隐藏「下一步」。原来它改文案成「完成填写」，可wzNext() 里
      `W.step < steps.length-1` 才前进 —— 那一步点它什么也不会发生，是个死按钮。
      每一步只留一个主操作：前三步是「下一步」，最后一步是「交给 WorkBuddy 回答」。 */
   document.getElementById('wzNext').hidden = last;
@@ -561,7 +584,7 @@ function wzLoadKB(){
     }
     one('kb-search.js').then(()=>one('kb.js')).then(()=>{
       if(window.WBKB && window.WBSearch) res(true);
-      else rej(new Error('kb.js 加载了但 WBKB / WBSearch 没挂上'));
+      else rej(new Error('kb.js加载了但WBKB / WBSearch没挂上'));
     }).catch(rej);
   });
   return wzKBp;
@@ -587,7 +610,7 @@ async function wzAuto(){
       /* 分清「知识库没打开」和「知识库里没有」—— 两件事，话不能说成一样 */
       W.rows[i].state='miss';
       W.rows[i].detail='<b>未执行</b> · '+wzEsc(kbErr)
-        +'（wizard.html 需与 kb.js、kb-search.js 置于同一目录）';
+        +'（页面需与kb.js、kb-search.js置于同一目录）';
       wzRepaintAuto();
       continue;
     }
@@ -721,7 +744,7 @@ function wzText(forModel){
   });
   if(b.length){
     L.push('');
-    L.push('还没定的 '+b.length+' 项（不要替我拿默认假设补上，需要问 PM 或业务的直接标出来）：');
+    L.push('还没定的 '+b.length+' 项（不要替我拿默认假设补上，需要问PM或业务的直接标出来）：');
     b.forEach(q=>L.push('- '+q.q));
   }
   L.push('');
@@ -750,6 +773,21 @@ function wzAsk(){
   S.scene=sid; S.sel=+ci; S.text=q; S.chips=[{n:wzCard().n, i:wzCard().i}];
   window.wbRun(q);
 }
+/* 收尾：不再直接送进页面内问答，改成先问「交给谁做」。
+   三条路的差别不是「换个地方回答」—— 前两条拉起的是完整 Claude Code（有工具、有技能、
+   有门），第三条是页面内问答（关了全部工具）。差别写在选择界面里，见 patch-terminal.py。
+   桥不在 / 那一层没注入时退回原来的行为，别把人卡在这一步。 */
+function wzHandoff(){
+  var d = wzDef(), c = wzCard(), sc = wzScene();
+  if(typeof window.wbHandoff !== 'function'){ wzAsk(); return; }
+  var docs = []; W.hits.forEach(function(h){ if(docs.indexOf(h.d) < 0) docs.push(h.d); });
+  var q = wzText(true);
+  window.wbHandoff({
+    task: c.n, card: c.n, scene: sc.name,
+    prompt: q, chars: q.length,
+    docs: docs, out: d.out || [], skills: d.skills || [], file: d.file || ''
+  });
+}
 async function wzCopy(){
   const t=wzText(false);
   const tip=document.getElementById('wzTip');
@@ -761,7 +799,7 @@ async function wzCopy(){
       +'width:min(680px,90vw);height:50vh;z-index:300;padding:14px;font-size:12px;border-radius:8px';
     document.body.appendChild(ta); ta.select();
     ta.onblur=()=>ta.remove();
-    tip.textContent='浏览器已阻止自动复制，请按 Cmd+C 手动复制';
+    tip.textContent='浏览器已阻止自动复制，请按Cmd+C手动复制';
   }
 }
 
@@ -800,13 +838,13 @@ MASK = '''
       <div class="wz-side" id="wzSide"></div>
     </div>
     <div class="wz-ft">
-      <span class="wz-prog" id="wzProg">确定 0 / 0</span>
+      <span class="wz-prog" id="wzProg">确定0 / 0</span>
       <span class="wz-tip" id="wzTip"></span>
       <div style="margin-left:auto;display:flex;gap:8px">
         <button class="wz-btn" id="wzPrev" onclick="W.step--;wzDraw()">上一步</button>
-        <button class="wz-btn" id="wzCopy" onclick="wzCopy()" hidden>复制给 Claude Code</button>
+        <button class="wz-btn" id="wzCopy" onclick="wzCopy()" hidden>复制给Claude Code</button>
         <button class="wz-btn wzpri" id="wzNext" onclick="wzNext()">下一步</button>
-        <button class="wz-btn wzpri" id="wzAsk" onclick="wzAsk()" hidden>交给 WorkBuddy 回答</button>
+        <button class="wz-btn wzpri" id="wzAsk" onclick="wzHandoff()" hidden>下一步：交给谁做</button>
       </div>
     </div>
   </div>
@@ -851,11 +889,11 @@ def radius_gate():
             line = code[:m.start()].count('\n') + 1
             bad.append((line, v))
     if bad:
-        print('❌ 圆角门：这些值不在飞鹊阶梯里（只允许 4 控件 / 8 容器 / pill / 整圆 / 0）')
+        print('❌ 圆角门：这些值不在飞鹊阶梯里（只允许4控件 / 8容器 / pill / 整圆 / 0）')
         for l, v in bad:
-            print('   CSS 第 %d 行： border-radius:%s' % (l, v))
+            print('   CSS第 %d行：border-radius:%s' % (l, v))
         sys.exit(1)
-    print('✅ 圆角门通过 · %d 处 border-radius 全部落在 4 / 8 / pill / 整圆 / 0'
+    print('✅ 圆角门通过 · %d处border-radius全部落在4 / 8 / pill / 整圆 / 0'
           % len(re.findall(r'border-radius:', code)))
 
     # 🔴 这道门只查字面量，查不出「变量拿不到」——
@@ -886,13 +924,13 @@ def collision_gate(page):
     base = page.split(CSS_B)[0]                  # 只看 WorkBuddy 自己那部分
     clash = sorted(c for c in mine if re.search(r'\.' + re.escape(c) + r'\s*\{', base))
     if clash:
-        print('❌ 撞名门：这些 class 跟 WorkBuddy 自己的同名，会漏属性进来')
+        print('❌ 撞名门：这些class跟WorkBuddy自己的同名，会漏属性进来')
         for c in clash:
             d = re.search(r'\.' + re.escape(c) + r'\s*\{([^}]*)\}', base)
-            print('   .%-10s WorkBuddy 定义： %s' % (c, (d.group(1) if d else '?')[:80]))
-        print('   → 给它们加 wz 前缀，别靠特异性打架（没覆盖到的属性照样漏）')
+            print('   .%-10s WorkBuddy定义： %s' % (c, (d.group(1) if d else '?')[:80]))
+        print('   → 给它们加wz前缀，别靠特异性打架（没覆盖到的属性照样漏）')
         sys.exit(1)
-    print('✅ 撞名门通过 · 我的 %d 个 class 没有一个跟 WorkBuddy 同名' % len(mine))
+    print('✅ 撞名门通过 · 我的 %d个class没有一个跟WorkBuddy同名' % len(mine))
 
 
 def syntax_gate(js):
@@ -903,15 +941,15 @@ def syntax_gate(js):
     r = subprocess.run(['node', '--check', tmp], capture_output=True, text=True)
     os.unlink(tmp)
     if r.returncode != 0:
-        print('❌ JS 语法门：注入的脚本语法错，已中止（wizard.html 没被写出）')
+        print('❌ JS语法门：注入的脚本语法错，已中止（index.html没被动）')
         print(r.stderr.strip()[:900]); sys.exit(1)
-    print('✅ JS 语法门通过')
+    print('✅ JS语法门通过')
 
 
 def main():
     import re
     if not os.path.exists(PAGE):
-        print('❌ 找不到 index.html'); sys.exit(1)
+        print('❌ 找不到index.html'); sys.exit(1)
     page = open(PAGE, encoding='utf-8').read()
 
     # wzNext 要看得到 wzDraw，放在 JS 末尾统一声明
@@ -921,6 +959,15 @@ function wzNext(){
   if(W.step < d.steps.length-1){ W.step++; wzDraw(); }
 }
 '''
+    # 🔴 先删掉上一次注入的，再跑门，再插。
+    #    顺序不能反：撞名门是拿「页面本体」当对照的，不先清掉上一次注入的自己，
+    #    第二次跑就会把自己的 class 报成撞名（自己跟自己撞）。
+    page, n1 = strip_between(page, CSS_B, CSS_E)
+    page, n2 = strip_between(page, DOM_B, DOM_E)
+    page, n3 = strip_between(page, JS_B, JS_E)
+    if n1 or n2 or n3:
+        print('   （先清掉上一次注入的 %d/%d/%d块）' % (n1, n2, n3))
+
     radius_gate()
     collision_gate(page)
     syntax_gate(js)
@@ -929,20 +976,20 @@ function wzNext(){
     i = page.rindex('</style>')
     page = page[:i] + CSS_B + '\n' + CSS + '\n' + CSS_E + '\n' + page[i:]
 
-    # 弹层 DOM 进 </body> 前（要在 body 下，不能进 #main —— render() 会重写 #main）
+    # 弹层DOM进 </body> 前（要在body下，不能进 #main —— render() 会重写 #main）
     j = page.rindex('</body>')
-    page = page[:j] + MASK + page[j:]
+    page = page[:j] + DOM_B + MASK + DOM_E + '\n' + page[j:]
 
-    # JS 进最后一个 </script> 前（这样 SCENES / S / pick / wbRun 都已经声明过了）
+    # JS进最后一个 </script> 前（这样SCENES / S / pick / wbRun都已经声明过了）
     k = page.rindex('</script>')
     page = page[:k] + '\n' + JS_B + '\n' + js + '\n' + JS_E + '\n' + page[k:]
 
     open(OUT, 'w', encoding='utf-8').write(page)
-    print('✅ wizard.html 写出 · %.0f KB（index.html 一个字没动）' % (os.path.getsize(OUT)/1024))
+    print('✅ 向导层已注入index.html · %.0f KB' % (os.path.getsize(OUT)/1024))
     # 🔴 原来这行写死了「design/0」，加了卡它还是这么报 —— 改了 A 忘了绑定的 B。
     #    现在从 JS 里的 WIZ 表抽，单一维护源。
     keys = re.findall(r"^  '([a-z]+/\d+)':\s*\{", JS, re.M)
-    print('   已登记向导的卡片（%d 张）：%s' % (len(keys), '、'.join(keys)))
+    print('   已登记向导的卡片（%d张）：%s' % (len(keys), '、'.join(keys)))
 
 
 if __name__ == '__main__':

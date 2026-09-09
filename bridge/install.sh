@@ -51,16 +51,38 @@ fi
 [ -n "$CLAUDE" ] || die "没找到 Claude Code。先确认终端里敲 claude 能用，再回来跑这一行。"
 CLAUDE_DIR="$(dirname "$CLAUDE")"
 
-# ── 3. 放脚本 ────────────────────────────────────────────
+# ── 3. 放脚本（两个文件：桥本体 + 拉起终端那两条路）──────
 mkdir -p "$DIR"
 SELF="${BASH_SOURCE[0]:-}"
-if [ -n "$SELF" ] && [ -f "$SELF" ] && [ -f "$(dirname "$SELF")/uw-bridge.js" ]; then
-  cp "$(dirname "$SELF")/uw-bridge.js" "$DIR/uw-bridge.js"; SRC="本地副本"
-else
-  curl -fsSL "$BASE/uw-bridge.js" -o "$DIR/uw-bridge.js" || die "下载 uw-bridge.js 失败（${BASE}）。公司网络能打开 UW 页面的话这一步不该失败，重试一次。"
-  SRC="$BASE"
+SELFDIR=""
+[ -n "$SELF" ] && [ -f "$SELF" ] && SELFDIR="$(dirname "$SELF")"
+for f in uw-bridge.js uw-terminal.js; do
+  if [ -n "$SELFDIR" ] && [ -f "$SELFDIR/$f" ]; then
+    cp "$SELFDIR/$f" "$DIR/$f"; SRC="本地副本"
+  else
+    curl -fsSL "$BASE/$f" -o "$DIR/$f" || die "下载 $f 失败（${BASE}）。公司网络能打开 UW 页面的话这一步不该失败，重试一次。"
+    SRC="$BASE"
+  fi
+  "$NODE" --check "$DIR/$f" || die "下载到的 $f 不完整，重试一次。"
+done
+
+# ── 3.5 页面内终端的两个可选依赖 ───────────────────────────
+# 🔴 这一步失败不阻断：装不上只是「页面内终端」不可用，系统终端和问答照旧。
+#    别把可选功能做成必过的门 —— 那会把人锁在门外。
+# node-pty 带 N-API prebuild，正常情况不编译、不需要 Xcode。
+NPM="$(command -v npm 2>/dev/null || true)"
+[ -z "$NPM" ] && [ -x "$NODE_DIR/npm" ] && NPM="$NODE_DIR/npm"
+TERM_DEPS="没装"
+if [ -n "$NPM" ]; then
+  say "▶ 正在装页面内终端要用的两个组件（约 10 秒，装不上不影响其它功能）…"
+  [ -f "$DIR/package.json" ] || printf '%s\n' '{"name":"uw-bridge-local","private":true}' > "$DIR/package.json"
+  if (cd "$DIR" && PATH="$NODE_DIR:$PATH" "$NPM" install --silent --no-audit --no-fund --omit=dev node-pty@^1.1.0 ws@^8.18.0 >/dev/null 2>&1) \
+     && "$NODE" -e "require('$DIR/node_modules/node-pty');require('$DIR/node_modules/ws')" 2>/dev/null; then
+    TERM_DEPS="已装"
+  else
+    say "⚪ 这两个组件没装上 —— 页面内终端会标成不可用，「打开系统终端」照常能用。"
+  fi
 fi
-"$NODE" --check "$DIR/uw-bridge.js" || die "下载到的脚本不完整，重试一次。"
 
 # ── 4. 先真答一句确认能跑（在设置开机自启之前，失败了就不设）────
 say "▶ 正在用你的 Claude Code 试答一句（约 5 秒）…"
@@ -102,10 +124,12 @@ if curl -fsS -m 2 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
   say "   Node：$NODE"
   say "   Claude：${CLAUDE}（${VIA}）"
   say "   脚本来源：$SRC"
+  say "   页面内终端组件：$TERM_DEPS"
   say "   日志：$DIR/log.txt"
   say ""
   say "现在刷新 UW 页面，模型处会出现「Claude Opus · 本机」，问答默认走它。"
 say "问题里带 made-in-china.com 或 vemic.com 的网址时，会弹出一个独立的 Chrome 窗口读页面给它看：可以最小化，别关。"
+  say "向导填完可以选「打开系统终端」或「在页面里开终端」，任务单会落到 ~/UW工作区/ 里。"
   say "不想用了：bash <(curl -fsSL $BASE/install.sh) --uninstall"
 else
   die "开机自动启动设置好了，但桥没响应。看日志：$DIR/log.txt"

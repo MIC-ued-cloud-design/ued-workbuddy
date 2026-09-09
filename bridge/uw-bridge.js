@@ -30,7 +30,13 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 
-const VERSION   = '1.2.0';   // 1.2.0（2026-09-09）：--effort low —— 首字 42 秒里有 37.7 秒是 extended thinking，页面那段全在转圈
+/* 拉起终端那两条路住在隔壁文件里。用 try 包着：装到一半只下来一个文件时，
+   桥照样能起、问答照样能用，只是终端标成不可用 —— 半装状态别让整个桥起不来。 */
+let TERM = null, TERM_ERR = null;
+try { TERM = require('./uw-terminal'); } catch (e) { TERM_ERR = e.message; }
+
+const VERSION   = '1.3.0';   // 1.3.0（2026-09-09）：拉起终端两条路（系统终端 / 页面内终端）—— 见 uw-terminal.js
+// 1.2.0（2026-09-09）：--effort low —— 首字 42 秒里有 37.7 秒是 extended thinking，页面那段全在转圈
 // 1.1.0（2026-09-09）：读网页 —— 用独立 Chrome 取正文当资料，Claude 仍不开任何工具
 const HOST      = '127.0.0.1';
 const PORT      = Number(process.env.UW_BRIDGE_PORT) || 17331;   // 环境变量只给验证脚本用，正式装的都是 17331
@@ -58,7 +64,7 @@ const MODEL_OK  = /^(sonnet|haiku|opus|claude-[a-z0-9-]+)$/;   // 只放行这�
      · 桥自己用 DevTools 协议开页取 innerText，Claude 一个工具都不开，锁不变，还少两三轮往返。
    Chrome 用独立 profile（~/.uw-bridge/chrome-profile），不碰同事日常的 Chrome；
    用 --remote-debugging-pipe 走管道，机器上不开调试端口，别的程序接不进来。
-   🔴 必须带窗口：--headless=new 同样的参数 MIC 直接回 {"message":"Forbidden"}（实测）。
+   🔴 必须带窗口：--headless=new 同样的参数 MIC 直接回{"message":"Forbidden"}（实测）。
    🔴 网址白名单在这里而不在页面上：页面是公网静态页，谁都能改它发来的东西。 */
 const WEB_ALLOW     = ['made-in-china.com', 'vemic.com'];   // 含所有子域
 const WEB_MAX_URLS  = 3;
@@ -77,7 +83,7 @@ let chrome = null;   // { proc, send(), listeners, alive }
 function launchChrome(){
   return new Promise((resolve, reject) => {
     const exe = findChrome();
-    if (!exe) return reject(Object.assign(new Error('这台电脑上没找到 Google Chrome'), { code: 'no_chrome' }));
+    if (!exe) return reject(Object.assign(new Error('这台电脑上没找到Google Chrome'), { code: 'no_chrome' }));
     fs.mkdirSync(CHROME_PROFILE, { recursive: true });
     const proc = spawn(exe, ['--remote-debugging-pipe', '--user-data-dir=' + CHROME_PROFILE,
       '--no-first-run', '--no-default-browser-check', '--disable-blink-features=AutomationControlled',
@@ -93,24 +99,24 @@ function launchChrome(){
         let m; try { m = JSON.parse(raw); } catch (e) { continue; }
         if (m.id && c.pending.has(m.id)) {
           const { res, rej } = c.pending.get(m.id); c.pending.delete(m.id);
-          m.error ? rej(new Error(m.error.message || 'CDP 错误')) : res(m.result || {});
+          m.error ? rej(new Error(m.error.message || 'CDP错误')) : res(m.result || {});
         } else if (m.method) { for (const h of c.listeners) { try { h(m); } catch (e) {} } }
       }
     });
     c.send = (method, params, sessionId) => new Promise((res, rej) => {
-      if (!c.alive) return rej(new Error('Chrome 已退出'));
+      if (!c.alive) return rej(new Error('Chrome已退出'));
       const id = ++c.id; c.pending.set(id, { res, rej });
       const o = { id, method, params: params || {} }; if (sessionId) o.sessionId = sessionId;
       proc.stdio[3].write(JSON.stringify(o) + '\0');
-      setTimeout(() => { if (c.pending.has(id)) { c.pending.delete(id); rej(new Error('Chrome 没在 30 秒内响应 ' + method)); } }, 30000);
+      setTimeout(() => { if (c.pending.has(id)) { c.pending.delete(id); rej(new Error('Chrome没在30秒内响应 ' + method)); } }, 30000);
     });
     proc.on('exit', () => {
       c.alive = false; if (chrome === c) chrome = null;
-      for (const { rej } of c.pending.values()) rej(new Error('Chrome 已退出'));
-      c.pending.clear(); log('chrome 退出');
+      for (const { rej } of c.pending.values()) rej(new Error('Chrome已退出'));
+      c.pending.clear(); log('chrome退出');
     });
     proc.on('error', e => { c.alive = false; reject(e); });
-    c.send('Browser.getVersion').then(v => { c.version = v.product; log('chrome 起了', v.product || ''); resolve(c); }, reject);
+    c.send('Browser.getVersion').then(v => { c.version = v.product; log('chrome起了', v.product || ''); resolve(c); }, reject);
   });
 }
 async function getChrome(){ if (chrome && chrome.alive) return chrome; chrome = await launchChrome(); return chrome; }
@@ -184,6 +190,14 @@ function originOk(o){
   if (DEV && (o === 'null' || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o))) return true;
   return false;
 }
+/* 终端管理器。claude 用函数传进去而不是传值 —— 桥可能起在 claude 装好之前，
+   findClaude() 会在 /health 时重试，管理器要拿到那个重试后的结果。 */
+const terminal = TERM ? new TERM.TerminalManager({
+  originOk,
+  claude: () => (CLAUDE || (CLAUDE = findClaude())),
+  log,
+}) : null;
+
 function cors(res, origin){
   if (!originOk(origin)) return;
   res.setHeader('Access-Control-Allow-Origin', origin);
@@ -306,6 +320,10 @@ const server = http.createServer(async (req, res) => {
       allowed: originOk(origin),                       // 页面据此判断自己能不能用，别只看 ok
       claude: { found: !!CLAUDE, via: CLAUDE ? CLAUDE.via : null },
       web: { ok: !!findChrome(), running: !!(chrome && chrome.alive), allow: WEB_ALLOW, maxUrls: WEB_MAX_URLS },   // 页面据此决定要不要把问题里的网址发过来
+      /* 页面据此决定「打开系统终端」和「页面内终端」两个按钮给不给、给了要不要灰。
+         external 只要有 claude 就能用；builtin 还要两个可选依赖。 */
+      terminal: terminal ? Object.assign({ external: !!CLAUDE }, terminal.status())
+                         : { ok: false, external: false, reason: '桥没装全：' + (TERM_ERR || '缺uw-terminal.js') },
       busy, max: MAX_BUSY,
     });
   }
@@ -371,7 +389,82 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  /* ── 拉起终端 ──────────────────────────────────────────
+     一个端点管两条路，method 决定走哪条：
+       external → 建目录 + 写 task.md + 写自删脚本 + open -a，回「开在哪个终端里了」
+       builtin  → 建目录 + 写 task.md + 发一张一次性票，页面拿票连 ws
+     两条路的目录和 task.md 完全一样 —— 换路不换产物，同事换个方式打开看到的是同一份活。 */
+  if (req.method === 'POST' && url === '/launch') {
+    if (!originOk(origin)) return fail(res, 403, 'bad_origin', '只接受UW页面发来的请求');
+    if (!terminal) return fail(res, 503, 'no_terminal', '这个桥没装终端功能，重跑一次安装命令');
+    if (!CLAUDE) CLAUDE = findClaude();
+    if (!CLAUDE) return fail(res, 503, 'no_claude', '这台电脑上没找到claude，先装Claude Code');
+
+    let body;
+    try { body = JSON.parse(await readBody(req) || '{}'); } catch (e) { return fail(res, 400, 'bad_request', '请求体不是合法JSON或超过1MB'); }
+    const method = body.method === 'builtin' ? 'builtin' : 'external';
+    if (method === 'builtin' && !terminal.status().ok) {
+      return fail(res, 503, 'no_pty', terminal.status().reason || '页面内终端不可用');
+    }
+
+    let task, taskFile;
+    try {
+      task = TERM.makeTaskDir(body.task || body.card || '任务');
+      taskFile = TERM.writeTaskFile(task.dir, {
+        card: body.card, scene: body.scene, prompt: body.prompt,
+        docs: Array.isArray(body.docs) ? body.docs.slice(0, 60).map(String) : [],
+        out:  Array.isArray(body.out)  ? body.out.slice(0, 30).map(String)  : [],
+        skills: Array.isArray(body.skills) ? body.skills.slice(0, 20) : [],
+        file: body.file ? String(body.file) : '',
+      });
+    } catch (e) { return fail(res, 500, 'mkdir_failed', '建任务目录失败：' + e.message); }
+    log('任务目录 ' + task.dir + ' · 走' + (method === 'builtin' ? '页面内终端' : '系统终端'));
+    const common = { method, dir: task.dir, rel: task.rel, root: task.root, taskFile };
+
+    if (method === 'builtin') {
+      const t = terminal.issue({ ...task, title: String(body.card || '任务终端').slice(0, 40),
+                                 cols: body.cols | 0 || 100, rows: body.rows | 0 || 30 });
+      return sendJson(res, 200, { ok: true, ...common, port: PORT, ...t });
+    }
+
+    let script;
+    try { script = TERM.writeLaunchScript(task.root, task.rel, CLAUDE.path); }
+    catch (e) { return fail(res, 500, 'script_failed', '写启动脚本失败：' + e.message); }
+    const opened = await TERM.openSystemTerminal(script, task.root);
+    return sendJson(res, 200, opened
+      ? { ok: true, ...common, terminal: opened }
+      /* 打不开也别只回个失败：把目录和该敲的命令给出去，同事自己开终端也能接着干 */
+      : { ok: false, ...common, error: { code: 'open_failed', message: '没能自动打开终端' },
+          manual: 'cd ' + JSON.stringify(task.root) + ' && claude' });
+  }
+
+  /* 正在跑的终端会话（页面刷新后据此问「要不要接回去」） */
+  if (req.method === 'GET' && url === '/terminal/sessions') {
+    if (!originOk(origin)) return fail(res, 403, 'bad_origin', '只接受UW页面发来的请求');
+    if (!terminal) return sendJson(res, 200, { ok: true, sessions: [] });
+    return sendJson(res, 200, { ok: true, sessions: terminal.list() });
+  }
+
+  /* 接回一个还活着的会话：同样要一张票，不让 ws 那一跳凭 id 直连 */
+  if (req.method === 'POST' && url === '/terminal/attach') {
+    if (!originOk(origin)) return fail(res, 403, 'bad_origin', '只接受UW页面发来的请求');
+    if (!terminal) return fail(res, 503, 'no_terminal', '这个桥没装终端功能');
+    let body; try { body = JSON.parse(await readBody(req) || '{}'); } catch (e) { return fail(res, 400, 'bad_request', '请求体不合法'); }
+    const id = String(body.sessionId || '');
+    if (!terminal.sessions.has(id)) return fail(res, 404, 'gone', '这个终端会话已经结束了');
+    return sendJson(res, 200, { ok: true, port: PORT, ...terminal.issue({ attach: id }) });
+  }
+
   fail(res, 404, 'not_found', '没有这个路径');
+});
+
+/* ── WebSocket 升级只走 /terminal ──
+   🔴 foder 那套鉴权（Origin 必须等于 host=127.0.0.1:port）照抄必 403：
+   它的页面是本地服务器自己发的、同源；UW 的页面在公网 GitHub Pages，天生不同源。
+   所以这里换成「回环 socket + 来源白名单 + 一次性票」，票在 HTTP 那一跳发（那跳有 CORS 把着）。 */
+server.on('upgrade', (req, socket, head) => {
+  if (!terminal) { try { socket.destroy(); } catch {} return; }
+  terminal.handleUpgrade(req, socket, head);
 });
 
 /* ── 启动 / 自检 ── */
@@ -395,8 +488,11 @@ if (CHECK) {
   });
   server.listen(PORT, HOST, () => {
     log('uw-bridge ' + VERSION + ' 听在http://' + HOST + ':' + PORT + (DEV ? '（开发模式：放行本地来源）' : '')
-      + ' · claude ' + (CLAUDE ? CLAUDE.via : '没找到') + ' · 读网页 ' + (findChrome() ? '可用（' + WEB_ALLOW.join('/') + '）' : '不可用：没找到 Chrome'));
+      + ' · claude ' + (CLAUDE ? CLAUDE.via : '没找到') + ' · 读网页 ' + (findChrome() ? '可用（' + WEB_ALLOW.join('/') + '）' : '不可用：没找到Chrome')
+      + ' · 终端 ' + (!terminal ? '不可用：' + (TERM_ERR || '缺uw-terminal.js')
+                     : terminal.status().ok ? '两条路都可用' : '只有系统终端（' + terminal.status().reason + '）'));
   });
-  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { closeChrome(); process.exit(0); });
-  process.on('exit', closeChrome);
+  const bye = () => { closeChrome(); if (terminal) terminal.closeAll(); };
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { bye(); process.exit(0); });
+  process.on('exit', bye);
 }

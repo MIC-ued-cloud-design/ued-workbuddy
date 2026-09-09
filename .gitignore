@@ -11,3 +11,6 @@ _verify/
 # 场景向导本地版 —— 吉吉说先不部署。写进这里是防 `git add -A` / `commit -am` 顺手带上线
 wizard.html
 _弃-*.html
+
+# 桥的本地依赖（install.sh 在同事机器上自己装）
+bridge/node_modules/
