@@ -35,7 +35,8 @@ CSS = r'''
 
 /* 色块 */
 .swgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px}
-.swcell{border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;background:var(--white)}
+.swcell{border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;background:var(--white);
+  display:flex;flex-direction:column;align-items:stretch;padding:0}   /* 卡片是 button：网格把同行卡片拉等高后 Chrome 默认把按钮内容垂直居中，色块会往下掉 10px 露白边（2026-09-09 吉吉截图，29 张里 5 张）。flex 纵向＝内容顶对齐 */
 .swcell:hover{border-color:var(--accent-line)}
 .swtop{height:52px}
 .swbot{padding:9px 11px}
