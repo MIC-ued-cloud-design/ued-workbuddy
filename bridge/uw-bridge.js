@@ -30,7 +30,8 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 
-const VERSION   = '1.1.0';   // 1.1.0（2026-09-09）：读网页 —— 用独立 Chrome 取正文当资料，Claude 仍不开任何工具
+const VERSION   = '1.2.0';   // 1.2.0（2026-09-09）：--effort low —— 首字 42 秒里有 37.7 秒是 extended thinking，页面那段全在转圈
+// 1.1.0（2026-09-09）：读网页 —— 用独立 Chrome 取正文当资料，Claude 仍不开任何工具
 const HOST      = '127.0.0.1';
 const PORT      = Number(process.env.UW_BRIDGE_PORT) || 17331;   // 环境变量只给验证脚本用，正式装的都是 17331
 const ALLOW     = ['https://mic-ued-cloud-design.github.io'];   // 锁②：只认这个来源
@@ -38,6 +39,13 @@ const DEV       = process.argv.includes('--dev');
 const CHECK     = process.argv.includes('--check');
 const MAX_BUSY  = 2;            // 同时最多跑几个 Claude；再来的排队会拖慢所有人，直接 429 让页面提示
 const TIMEOUT   = 180000;       // 单次上限 3 分钟
+/* 思考档位。2026-09-09 实测（同一张 GSSM 表、同一份 14 段资料）：
+     默认档 首字 42.4s / 总 63.7s，其中 thinking 占 37.7s —— 页面只渲染 text_delta，那 37 秒同事看到的是纯转圈；
+     medium 首字  9.4s / 总 31.1s；low 首字 7.1s / 总 26.2s。
+   UW 的活是查资料和写表，不是做决策，low 够用；代价是它对格式类指令更松
+   （实测会把出处标成「（资料 3）」这种只有模型看得见的序号），已在页面 SYS 规则 5 里写硬补回。
+   要调档不用改代码：起桥前设 UW_EFFORT=medium。 */
+const EFFORT    = process.env.UW_EFFORT || 'low';
 const MAX_BODY  = 1024 * 1024;  // 请求体上限 1MB（资料段落 + 4 轮历史远小于这个数）
 const MODEL_DEF = 'opus';     // 页面没指定时的兜底；页面自己发的是 opus（2026-09-09 起）
 const MODEL_OK  = /^(sonnet|haiku|opus|claude-[a-z0-9-]+)$/;   // 只放行这几种写法，别让页面拿它跑别的
@@ -227,6 +235,7 @@ function runClaude({ system, prompt, model }, onDelta, onSpawn){
       '--strict-mcp-config',          // 不加载任何 MCP
       '--setting-sources', '',        // 不加载个人 / 项目设置：没有钩子、没有 CLAUDE.md
       '--no-session-persistence',
+      '--effort', EFFORT,            // 见文件头 EFFORT 那段：默认档的 thinking 要 37 秒，页面全程不显示
       '--model', model];
     if (system) args.push('--system-prompt', system);
 
