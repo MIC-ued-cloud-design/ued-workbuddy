@@ -77,8 +77,8 @@ body{-webkit-tap-highlight-color:rgba(59,158,255,.14)}
   align-items:center;gap:4px;
   background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(12px);
   -webkit-backdrop-filter:saturate(180%) blur(12px);
-  border-bottom:1px solid var(--line)}
-.wbm-top .wbm-ic{width:40px;height:40px;flex:0 0 40px;border-radius:8px;
+  border-bottom:1px solid var(--line-2)}
+.wbm-top .wbm-ic{width:40px;height:40px;flex:0 0 40px;border-radius:var(--ctl-r);
   display:grid;place-items:center;color:var(--ink)}
 .wbm-top .wbm-ic:active{background:var(--sel)}
 .wbm-top .wbm-ic .fq{width:19px;height:19px}
@@ -106,10 +106,7 @@ body.wbm-open{overflow:hidden}
 html:has(body.wbm-open){overflow:hidden}
 .wbm-scrim{touch-action:none}
 .sb{overscroll-behavior:contain}
-.sb-list{overscroll-behavior:contain}
-.nav button{padding:11px 10px}                      /* 点击区从 36 提到 42 */
-.sb-item{padding:10px}
-.sb-foot{padding:10px 8px calc(4px + env(safe-area-inset-bottom))}
+.nav button{padding:11px 12px}                      /* 点击区从 36 提到 42 */
 
 /* 第二栏（资料库中间那栏）在手机上不出现 ——
    它和主区的「全部资料」列表是同一批库，手机上留一份就够，
@@ -118,16 +115,16 @@ html:has(body.wbm-open){overflow:hidden}
 
 /* ── 版面 ── */
 .wrap{max-width:none;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 44px}
-.page{max-width:none;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 44px}
-.runwrap{max-width:none;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 46px}
+.page{max-width:none;margin:0;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 44px;border-radius:0;box-shadow:none}
+.runwrap{max-width:none;margin:0;padding:calc(52px + env(safe-area-inset-top) + 18px) 16px 46px;border-radius:0;box-shadow:none}
 
 /* 320px 上标题会折成两行，中文默认可以在任意字之间断，
    折出来是「…我帮 / 你」，第二行只剩一个字。balance 让两行长度接近，
    断在标点后面。不支持的浏览器退回普通折行，不会更差。 */
-h1{font-size:26px;line-height:1.3;letter-spacing:-.2px;text-wrap:balance}
+h1{font-size:30px;line-height:1.2;letter-spacing:-.8px;text-wrap:balance}
 .sub{font-size:13.5px;margin-top:9px}
-.ph h2{font-size:21px}
-.ph p{font-size:13.5px;max-width:none}
+.ph h2{font-size:26px}
+.ph p{font-size:14.5px;max-width:none}
 .ph{margin-bottom:20px}
 
 /* 场景 tab 一行横滑 ——
@@ -137,14 +134,14 @@ h1{font-size:26px;line-height:1.3;letter-spacing:-.2px;text-wrap:balance}
   scrollbar-width:none;scroll-snap-type:x proximity;max-width:100%}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{flex:0 0 auto;scroll-snap-align:center;padding:9px 14px}
-.scene-note{margin-top:14px;font-size:12.5px;text-align:left}
+.scene-note{margin-top:14px;font-size:14px;text-align:left}
 .pills{justify-content:flex-start;margin-top:16px}
 .pill{padding:10px 14px}
 
 /* ── 输入区 ──
    ⚠️ 手机上输入类控件字号必须 ≥16px，否则 iOS Safari 一聚焦就整页放大，
    而且退出聚焦不会自动缩回去 —— 这是移动端最容易漏的一条。 */
-.cwrap{margin-top:18px;border-radius:14px}
+.cwrap{margin-top:18px}
 textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 .cbar{gap:6px;padding:6px 9px 10px}
 .cbar .plus,.mic{width:34px;height:34px}        /* 桌面 30px，手机上偏小 */
@@ -163,19 +160,16 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 /* ── 浮层改成底部抽屉 ──
    桌面版这两个浮层是 198px / 360px 宽、贴着按钮向上弹；
    手机屏只有 375 左右，贴着弹会顶出屏幕右侧。 */
-.ppop,.mpop,.pjpop{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;
-  border-radius:16px 16px 0 0;border:0;border-top:1px solid var(--line);
+.ppop,.mpop{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;
+  border-radius:var(--r-lg) var(--r-lg) 0 0;border:0;border-top:1px solid var(--line-2);
   padding:8px 8px calc(10px + env(safe-area-inset-bottom));
   max-height:76vh;overflow-y:auto;z-index:90;
   box-shadow:0 -8px 40px rgba(0,0,0,.18)}
 .ppop .row,.mpop .row,.mpop .mfoot{height:44px}
-.pjrow,.pjnew{padding:12px 10px}
-.pjlist{max-height:52vh}
-.pjsr input{font-size:16px}   /* 手机上 <16px 一聚焦就整页放大 */
 /* 抽屉后面压暗一层：用伪元素而不是新插一个遮罩节点，因为「点空白关闭」
    靠的是页面上原有那个 document click 判 closest('.plusw') / closest('.model')，
    真插一个节点会挡住那次点击。pointer-events:none 让点击穿过去。 */
-.ppop::before,.mpop::before,.pjpop::before{content:'';position:fixed;inset:0;z-index:-1;
+.ppop::before,.mpop::before{content:'';position:fixed;inset:0;z-index:-1;
   background:rgba(0,0,0,.3);pointer-events:none}
 .mpop .max{padding:12px 10px 13px}
 .mpop .row .nm{font-size:14px}
@@ -217,7 +211,7 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
    上下叠对两者都免疫，代价是卡片高一些。 */
 .tbl thead,.atx thead{display:none}
 .tbl tbody tr,.atx tbody tr{display:block;background:var(--white);
-  border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin:0 0 8px}
+  border:1px solid var(--line-2);border-radius:var(--box-r);padding:11px 13px;margin:0 0 8px}
 .tbl tbody tr:hover,.atx tbody tr:hover{background:var(--white)}
 .tbl td,.atx td{display:block;padding:5px 0;border:0;max-width:none;
   white-space:normal;overflow:visible;text-overflow:clip;
@@ -260,9 +254,6 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 .srow{flex-direction:column;align-items:flex-start;gap:5px}
 .srow .ds{margin-left:0;max-width:none;text-align:left}
 .srow .code{overflow-wrap:anywhere}
-.prow{flex-direction:column;align-items:stretch;gap:10px}
-.prow .st{margin-left:0;text-align:left}
-.prow .st .u{margin-top:2px}
 
 /* 资料库工具条：搜索框占满一行，tab 横滑 */
 .fqbar{flex-wrap:wrap;gap:8px}
@@ -294,11 +285,11 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
    桌面版是 nowrap + 省略号（一行摆得下），320px 上会截成
    「project-feique-library-pag…」，看不出是哪份。 */
 .srcchip{padding:8px 13px;white-space:normal;overflow:visible;text-overflow:clip;
-  text-align:left;overflow-wrap:anywhere;border-radius:12px;line-height:1.55}
+  text-align:left;overflow-wrap:anywhere;border-radius:var(--box-r);line-height:1.55}
 
 /* 设置弹层 */
 #wbmask{padding:12px}
-.wbdlg{padding:20px 18px;max-height:92vh;border-radius:14px}
+.wbdlg{padding:20px 18px;max-height:92vh;border-radius:var(--r-lg)}
 .dfoot{flex-wrap:wrap;justify-content:stretch}
 .dfoot .msg{flex:1 0 100%;order:3;margin-top:4px}
 .dfoot .rbtn{flex:1}
@@ -313,7 +304,7 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 .wbm-top{padding-left:max(6px,env(safe-area-inset-left));
   padding-right:max(6px,env(safe-area-inset-right))}
 .sb{padding-left:max(12px,env(safe-area-inset-left))}
-.ppop,.mpop,.pjpop{padding-left:max(8px,env(safe-area-inset-left));
+.ppop,.mpop{padding-left:max(8px,env(safe-area-inset-left));
   padding-right:max(8px,env(safe-area-inset-right))}
 #wbmask{padding-left:max(12px,env(safe-area-inset-left));
   padding-right:max(12px,env(safe-area-inset-right))}

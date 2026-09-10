@@ -50,75 +50,62 @@ def strip_between(page, b, e):
 #    一个页面两套配色是最容易被同事一眼看出「拼起来的」。
 # ═══════════════════════════════════════════════════════════
 CSS = r'''
-/* ═══ 向导层的色值全部按飞鹊 SOT 走，不用 WorkBuddy 那套 ═══
-   吉吉 2026-09-08 走查：「很多 UI 有点太淡了」。
-   查过 feique-tokens.json 才知道根因不是「浅了几个色阶」，是分档丢了 ——
-   WorkBuddy 的 --line 是 #EBEBEB 一个值包打天下（那套照 Claude 界面采样，
-   Claude 不区分「能点的」和「装饰的」），而飞鹊分三档：
-     #CED3D9  按钮描边，也是输入框描边的实测值（1px INSIDE）← 最深，给能点的
-     #DAE0E6  列表分割线
-     #E6ECF2  模块 / 边框描边                              ← 最浅，给装饰的
-   在 .wizmask 里重定义，靠 CSS 变量作用域圈住 —— WorkBuddy 本体一个像素不受影响。
-
-   🔴 `.wz-peek`（点文档名弹的浮层）必须一起列在这里。它挂在 <body> 下、
-   跟 .wizmask 平级不是后代（那样挂是为了不被 WorkBuddy 的 render() 重写 #main），
-   所以拿不到 .wizmask 上的变量 —— 实测它的 border-radius 直接失效成 0px、
-   描边和文字色还留在 WorkBuddy 的原值上。而圆角门查不出来：
-   字面量写的是 var(--box-r)，看着完全合法。
-   → 往后再往 <body> 下加顶层元素，记得加进下面这个选择器列表。 */
-.wizmask,.wz-peek{
-  --line:#DAE0E6;      /* 原 #EBEBEB */
-  --line-2:#E6ECF2;    /* 原 #F0F0F0 */
-  --ink:#222;          /* 原 #333 · text/title */
-  --ink-2:#555;        /* 原 #666 · text/main */
-  --ink-3:#888;        /* 原 #A0A0A0 · text/auxiliary —— 之前浅了一档半，大面积灰字最费眼 */
-  --dark:#222;         /* 原 #1A1A1A · primary/dark */
-  --ctl:#CED3D9;       /* 🔴 能点的东西专用：输入框 / 按钮 / 选项 / 勾选框 */
-  --ctl-r:4px;         /* 控件级圆角 · 输入框/勾选框/选项/标签 —— 飞鹊「输入类全族」实测值 */
-  --box-r:8px;         /* 容器级圆角 · 问题区/绿条/步骤条/模态/浮层 —— 飞鹊「表单卡片容器」「Alert/Message」实测值 */
-}
-.wizmask{position:fixed;inset:0;z-index:200;background:rgba(26,26,26,.34);
+/* ═══ 向导层：用全站那一套 token（:root），只写结构 ═══
+   2026-09-10 吉吉：「流程卡片的 UI 样式整体重新设计下，结构参考 CE，UI 按 Apple」。
+   结构上借了 CE 两条：① 左侧一根步骤栏，每一步下面挂这一步已定的答案（每步交一份耐久产物）
+   ② 右侧任务单把「这一单会交出什么」放最前（入口先看清产物契约），确定 / 待定跟在后面。
+   视觉：浅灰画布上三栏 —— 白色步骤栏 / 灰底＋白色问题卡 / 白色任务单；头尾磨砂。 */
+.wizmask{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   display:none;align-items:center;justify-content:center;padding:28px}
 .wizmask.wzon{display:flex}
-.wiz{width:min(1180px,100%);height:min(860px,calc(100vh - 56px));background:var(--white);
-  border-radius:var(--box-r);box-shadow:0 24px 80px rgba(0,0,0,.22);
+.wiz{width:min(1240px,100%);height:min(880px,calc(100vh - 56px));background:var(--canvas);
+  border-radius:var(--r-lg);box-shadow:var(--sh-3);
   display:flex;flex-direction:column;overflow:hidden}
 
 /* ── 头 ── */
-.wz-hd{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.wz-hd{display:flex;align-items:center;gap:12px;padding:18px 24px;flex:0 0 auto;
+  background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border-bottom:1px solid var(--glass-line)}
 .wz-tag{font-size:12px;color:var(--accent-ink);background:var(--accent-fill);
-  border:1px solid var(--accent-line);border-radius:999px;padding:2px 10px;flex:0 0 auto}
-.wz-t{font-size:16px;font-weight:600;color:var(--ink)}
+  border-radius:var(--r-pill);padding:3px 10px;flex:0 0 auto;font-weight:500}
+.wz-t{font-size:17px;font-weight:600;color:var(--ink);letter-spacing:-.3px}
 .wz-x{margin-left:auto;border:0;background:none;font-size:22px;line-height:1;color:var(--ink-3);
   cursor:pointer;padding:0 4px;border-radius:var(--ctl-r)}
-/* 吉吉 2026-09-08：关闭键悬停「应该是高亮，不要底色」。
-   原来那块 var(--soft) 灰底看着像多了个方块。去掉底色、只把图标本身从
-   #888 提到 #222 —— 这也跟 WorkBuddy 自己的惯例一致：它的关闭键是
-   `.x:hover{opacity:1}`，其余次级按钮一律 `:hover{color:var(--ink)}`，都不加底色。 */
+/* 关闭键悬停只提亮不加底（吉吉 2026-09-08） */
 .wz-x:hover{color:var(--ink)}
 
 .wz-body{flex:1;display:flex;min-height:0}
-.wz-main{flex:1;overflow:auto;padding:18px 22px 26px;background:var(--soft);min-width:0}
-.wz-side{width:340px;flex:0 0 auto;border-left:1px solid var(--line);overflow:auto;
-  padding:18px 18px 26px;background:var(--white)}
 
-/* ── 步骤条 ── */
-.wz-steps{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
-.wz-steps .wzs{flex:1 1 150px;display:flex;align-items:center;gap:8px;padding:11px 13px;
-  border:1px solid var(--line);border-radius:var(--box-r);background:var(--white);
-  font-size:13px;color:var(--ink-3);cursor:pointer;text-align:left}
-.wz-steps .wzs .i{width:19px;height:19px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line);
-  display:grid;place-items:center;font-size:11px}
-.wz-steps .wzs.wzon{border-color:var(--accent-line);background:var(--accent-fill);color:var(--accent-ink);font-weight:500}
-.wz-steps .wzs.wzon .i{background:var(--accent);border-color:var(--accent);color:#fff}
-.wz-steps .wzs.wzdone{color:var(--ink-2)}
-.wz-steps .wzs.wzdone .i{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent-ink)}
+/* ── 左：步骤栏 ── */
+.wz-rail{width:236px;flex:0 0 auto;padding:18px 12px;overflow:auto;background:var(--white);
+  border-right:1px solid var(--line-2);display:flex;flex-direction:column;gap:2px}
+.wz-rail .wzs{position:relative;display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;
+  padding:12px;border:0;border-radius:var(--box-r);background:var(--white);cursor:pointer;
+  font-size:14px;color:var(--ink-3);line-height:1.45}
+.wz-rail .wzs:hover{background:var(--soft)}
+.wz-rail .wzs .i{width:22px;height:22px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line);
+  display:grid;place-items:center;font-size:12px;color:var(--ink-3);background:var(--white);position:relative;z-index:1}
+/* 步骤之间那根竖线 */
+.wz-rail .wzs::before{content:'';position:absolute;left:23px;top:36px;bottom:-4px;width:1px;background:var(--line-2)}
+.wz-rail .wzs:last-child::before{display:none}
+.wz-rail .wzs .wzs-tx{min-width:0;display:flex;flex-direction:column;gap:4px;padding-top:1px}
+.wz-rail .wzs .wzs-tt{font-weight:500}
+.wz-rail .wzs .wzs-got{display:flex;flex-direction:column;gap:2px}
+.wz-rail .wzs .wzs-got span{font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:168px;line-height:1.5}
+.wz-rail .wzs.wzon{background:var(--accent-fill);color:var(--accent-ink)}
+.wz-rail .wzs.wzon .i{background:var(--accent);border-color:var(--accent);color:#fff}
+.wz-rail .wzs.wzdone{color:var(--ink)}
+.wz-rail .wzs.wzdone .i{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent-ink)}
 
-/* ── 「已经替你查了」那条 ── */
-.wz-auto{border:1px solid var(--line);border-radius:var(--box-r);background:var(--white);
-  margin:0 0 16px;overflow:hidden}
+/* ── 中：问题区 ── */
+.wz-main{flex:1;overflow:auto;padding:24px 28px 32px;background:var(--canvas);min-width:0}
+.wz-side{width:320px;flex:0 0 auto;border-left:1px solid var(--line-2);overflow:auto;
+  padding:24px 22px 30px;background:var(--white)}
+
+/* 「已经替你查了」那条 */
+.wz-auto{border-radius:var(--r-lg);background:var(--white);margin:0 0 16px;overflow:hidden;border:1px solid transparent;box-shadow:var(--sh-1)}
 .wz-auto.bad{border-color:#F0DCB4}
-.wz-ah{width:100%;display:flex;align-items:center;gap:9px;padding:13px 15px;border:0;
+.wz-ah{width:100%;display:flex;align-items:center;gap:9px;padding:14px 18px;border:0;
   background:none;cursor:pointer;text-align:left;font-size:13px;color:var(--ink)}
 .wz-ah .wzspin{width:14px;height:14px;border:2px solid var(--accent-line);border-top-color:var(--accent);
   border-radius:50%;animation:wzsp .7s linear infinite;flex:0 0 auto}
@@ -126,8 +113,8 @@ CSS = r'''
 .wz-ah .ok{color:var(--accent-ink);font-size:14px;flex:0 0 auto}
 .wz-ah .wzn{font-size:12px;color:var(--ink-3);margin-left:auto;flex:0 0 auto}
 .wz-ah .real{font-size:11px;color:var(--accent-ink);background:var(--accent-fill);
-  border:1px solid var(--accent-line);border-radius:999px;padding:1px 7px;flex:0 0 auto}
-.wz-al{list-style:none;margin:0;padding:0 15px 13px;border-top:1px solid var(--line-2)}
+  border-radius:var(--r-pill);padding:1px 8px;flex:0 0 auto}
+.wz-al{list-style:none;margin:0;padding:0 18px 14px;border-top:1px solid var(--line-2)}
 .wz-auto.fold .wz-al{display:none}
 .wz-al li{display:flex;gap:9px;padding:9px 0;font-size:13px;color:var(--ink-2);
   border-bottom:1px solid var(--line-2);line-height:1.7}
@@ -139,108 +126,100 @@ CSS = r'''
 .wz-al li .bd{flex:1;min-width:0}
 .wz-dt{display:block;margin-top:5px;font-size:12px;color:var(--ink-3);line-height:1.8}
 .wz-dt b{color:#C77700;font-weight:500}
-a.wz-doc{display:inline-block;margin:3px 5px 0 0;padding:2px 8px;border-radius:var(--ctl-r);
-  background:var(--soft);border:1px solid var(--line);color:var(--ink-2);font-size:12px;
+a.wz-doc{display:inline-block;margin:3px 5px 0 0;padding:2px 9px;border-radius:var(--ctl-r);
+  background:var(--soft);color:var(--ink-2);font-size:12px;
   text-decoration:none;max-width:250px;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;vertical-align:middle}
-a.wz-doc:hover{border-color:var(--accent-line);background:var(--accent-fill);color:var(--accent-ink)}
+a.wz-doc:hover{background:var(--accent-fill);color:var(--accent-ink)}
 .wz-more{font-size:12px;color:var(--ink-3)}
 
-/* ── 问题区 ── */
-.wz-q{background:var(--white);border:1px solid var(--line);border-radius:var(--box-r);padding:20px 22px 4px}
-.wz-qt{font-size:15px;font-weight:600;color:var(--ink);margin:0 0 3px}
-.wz-qh{font-size:13px;color:var(--ink-3);margin:0 0 20px}
-.wz-item{margin:0 0 22px}
-.wz-lbl{display:flex;gap:7px;font-size:14px;color:var(--ink);font-weight:500;margin:0 0 4px}
-.wz-lbl .no{color:var(--ink);font-weight:400;flex:0 0 auto}   /* #222 · 吉吉 09-08 指定题号也用 222 */
-.wz-hint{font-size:12px;color:var(--ink-3);line-height:1.75;margin:0 0 10px}
+/* 问题卡 */
+.wz-q{background:var(--white);border-radius:var(--r-lg);padding:28px 30px 10px;box-shadow:var(--sh-1)}
+.wz-qn{font-size:12px;color:var(--ink-3);font-weight:500;margin:0 0 6px}
+.wz-qt{font-size:28px;font-weight:600;color:var(--ink);margin:0 0 6px;letter-spacing:-.7px;line-height:1.15}
+.wz-qh{font-size:15px;color:var(--ink-2);margin:0 0 28px;line-height:1.6}
+.wz-item{margin:0 0 28px}
+.wz-lbl{display:flex;gap:7px;font-size:15px;color:var(--ink);font-weight:600;margin:0 0 4px}
+.wz-lbl .no{color:var(--ink);font-weight:400;flex:0 0 auto}
+.wz-hint{font-size:13px;color:var(--ink-3);line-height:1.7;margin:0 0 12px}
 .wz-item input[type=text],.wz-item textarea{width:100%;box-sizing:border-box;font:inherit;
-  font-size:14px;color:var(--ink);padding:10px 13px;border:1px solid var(--ctl);
-  border-radius:var(--ctl-r);background:var(--white);outline:none;resize:vertical}
-/* 🔴 placeholder 之前吃浏览器默认色（约 #757575），深得像已经填好的内容 ——
-   这是「看不出是输入框」的真因，比描边更要紧。飞鹊 text/disable = #B3B3B3。 */
-.wz-item input[type=text]::placeholder,.wz-item textarea::placeholder{color:#B3B3B3}
-/* focus 态：吉吉 09-08「不要用投影，就用渐变描边就行」。
-   原来是 box-shadow 3px 光晕，那圈柔光让输入框看着像个浮层。
-   🔴 飞鹊没有 gradient token（查过 feique-tokens：阴影三级、hover 色都有，渐变一条没有），
-   所以这个渐变是按吉吉要求做的，不是规范值。用 WorkBuddy 的 accent 起头
-   （不用飞鹊蓝 #007DFA —— 向导叠在 WorkBuddy 上，蓝要跟本体一致）。 */
-.wz-item input[type=text]:focus,.wz-item textarea:focus{
-  border-color:transparent;
-  background:linear-gradient(var(--white),var(--white)) padding-box,
-             linear-gradient(150deg,var(--accent-ink) 0%,var(--accent) 60%,#5FB0FF 100%) border-box}
-/* 🔴 渐变两端都要够深。第一版收在 --accent-line #BDDCFF（对白底 1.3:1），
-   1px 描边上那一端等于消失 —— 又做出一个「太淡」。现在 #1682E8→#3B9EFF→#5FB0FF，
-   最浅那端也有 2.3:1。 */
-/* 🔴 原来这里给已填态套 --accent-line（#BDDCFF），比 #CED3D9 还淡 ——
-   填了字反而边框变浅，正反馈做成了负反馈。已填不再改描边：
-   框里有字本身就是反馈，右栏任务单还会把它列进「确定」。 */
+  font-size:15px;color:var(--ink);padding:12px 14px;border:1px solid var(--ctl);
+  border-radius:var(--box-r);background:var(--white);outline:none;resize:vertical;
+  transition:border-color .12s}
+/* placeholder 用 --ink-3，别吃浏览器默认色（约 #757575，深得像已填内容） */
+.wz-item input[type=text]::placeholder,.wz-item textarea::placeholder{color:var(--ink-3)}
+/* focus：只换主色描边，不要光环和投影（吉吉 2026-09-10） */
+.wz-item input[type=text]:focus,.wz-item textarea:focus{border-color:var(--accent)}
+/* 选项：灰底行，选中换主色浅底（Apple 的分组列表） */
 .wz-opts{display:flex;flex-direction:column;gap:8px}
-.wz-opt{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;border:1px solid var(--ctl);
-  border-radius:var(--ctl-r);background:var(--white);cursor:pointer;font-size:14px;color:var(--ink)}
-.wz-opt:hover{border-color:var(--accent-line);background:var(--accent-fill)}
-.wz-opt.wzon{border-color:var(--accent);background:var(--accent-fill)}
-.wz-opt .bx{width:16px;height:16px;flex:0 0 auto;margin-top:2px;border:1px solid var(--ctl);
-  border-radius:var(--ctl-r);background:var(--white);position:relative}
+.wz-opt{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border:1px solid transparent;
+  border-radius:var(--box-r);background:var(--soft);cursor:pointer;font-size:15px;color:var(--ink);
+  transition:background .12s,border-color .12s}
+.wz-opt:hover{background:var(--soft-2)}
+.wz-opt.wzon{background:var(--accent-fill);border-color:var(--accent-line)}
+.wz-opt .bx{width:18px;height:18px;flex:0 0 auto;margin-top:2px;border:1px solid var(--ctl);
+  border-radius:var(--r-xs);background:var(--white);position:relative}
 .wz-opt.rd .bx{border-radius:50%}
 .wz-opt.wzon .bx{border-color:var(--accent);background:var(--accent)}
 /* 飞鹊勾（yes2.svg）在四个地方用，尺寸各不同，统一在这里给 */
 .wz-ck{display:block;flex:0 0 auto}
-.wz-steps .wzs .i .wz-ck{width:11px;height:11px;color:var(--accent-ink)}
+.wz-rail .wzs .i .wz-ck{width:12px;height:12px;color:var(--accent-ink)}
 .wz-ah .ok .wz-ck{width:13px;height:13px;color:var(--accent-ink)}
 .rc-item .mk .wz-ck{width:11px;height:11px;color:var(--accent-ink);margin-top:3px}
-/* 勾用飞鹊 yes2.svg，不再用 border+rotate 拼 */
 .wz-opt .bx .wz-ck{display:none}
-.wz-opt.wzon .bx .wz-ck{display:block;width:12px;height:12px;color:#fff;
-  position:absolute;left:1px;top:1px}
-/* 🔴 单选圆点：原来这条只有位置没有 content 和 position —— 那是「勾用 border+rotate 拼」
-   那个年代的残留，换成 yes2.svg 之后基础规则被删掉、这条覆盖规则留下来了。
-   在此之前没有任何一张卡用单选，所以一直没被发现（选中会是一个没有白点的蓝圆）。
-   视觉稿第 2 步「三种基准」是真的单选，所以补齐。 */
+.wz-opt.wzon .bx .wz-ck{display:block;width:13px;height:13px;color:#fff;
+  position:absolute;left:2px;top:2px}
+/* 单选圆点 */
 .wz-opt.rd.wzon .bx::after{content:'';position:absolute;
-  left:4px;top:4px;width:6px;height:6px;border:0;border-radius:50%;
+  left:5px;top:5px;width:6px;height:6px;border:0;border-radius:50%;
   background:#fff;transform:none}
-.wz-opt .od{display:block;font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.7}
+.wz-opt .od{display:block;font-size:13px;color:var(--ink-3);margin-top:3px;line-height:1.6}
 
-/* ── 右侧任务单 ── */
-.rcpt-t{text-align:center;font-size:15px;font-weight:600;color:var(--ink);letter-spacing:3px}
-.rcpt-sub{text-align:center;font-size:12px;color:var(--ink-3);line-height:1.8;margin:5px 0 0}
-.rcpt-div{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-3);margin:18px 0 10px}
-.rcpt-div::before,.rcpt-div::after{content:'';flex:1;border-top:1px dashed var(--line)}
+/* ── 右：任务单 ── */
+.rcpt-t{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.4px}
+.rcpt-sub{font-size:13px;color:var(--ink-3);line-height:1.6;margin:3px 0 0}
+.rc-sum{display:flex;align-items:center;gap:10px;margin:16px 0 6px}
+.rc-sum .rc-bar{flex:1;height:4px;border-radius:var(--r-pill);background:var(--soft-2);overflow:hidden;display:block}
+.rc-sum .rc-bar b{display:block;height:100%;background:var(--accent);border-radius:var(--r-pill);transition:width .2s}
+.rc-sum .lb{font-size:12px;color:var(--ink-3)}
+.rc-sum .wzn{font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.rcpt-div{font-size:12px;color:var(--ink-3);font-weight:500;margin:24px 0 8px}
 .rc-list{list-style:none;margin:0;padding:0}
-.rc-item{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:12px}
+.rc-item{display:flex;gap:8px;padding:9px 0;border-bottom:1px solid var(--line-2);font-size:13px}
 .rc-item:last-child{border-bottom:0}
 .rc-item .mk{color:var(--accent-ink);flex:0 0 auto}
 .rc-item.off .mk{color:var(--ink-3)}
-.rc-item .wznm{display:block;color:var(--ink-2);line-height:1.7}
+.rc-item .wznm{display:block;color:var(--ink-2);line-height:1.6}
 .rc-item.off .wznm{color:var(--ink-3)}
-.rc-item .vl{display:block;color:var(--ink);margin-top:2px;line-height:1.7;word-break:break-word}
-.rc-empty{font-size:12px;color:var(--ink-3);line-height:1.9;text-align:center;padding:10px 6px}
-.rc-sum{display:flex;align-items:baseline;margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line)}
-.rc-sum .lb{font-size:13px;color:var(--ink)}
-.rc-sum .wzn{margin-left:auto;font-size:22px;font-weight:600;color:var(--ink)}
+.rc-item .vl{display:block;color:var(--ink);margin-top:2px;line-height:1.6;word-break:break-word;font-weight:500}
+.rc-empty{font-size:13px;color:var(--ink-3);line-height:1.8;padding:6px 0}
 .rc-out,.rc-kit{list-style:none;margin:0;padding:0}
-.rc-out li,.rc-kit li{font-size:12px;color:var(--ink-2);padding:5px 0 5px 12px;position:relative;line-height:1.7}
-.rc-out li::before,.rc-kit li::before{content:'';position:absolute;left:2px;top:12px;
-  width:4px;height:4px;border-radius:50%;background:var(--line)}
+.rc-out li,.rc-kit li{font-size:13px;color:var(--ink);padding:6px 0 6px 14px;position:relative;line-height:1.6}
+.rc-out li::before,.rc-kit li::before{content:'';position:absolute;left:2px;top:13px;
+  width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.rc-kit li{color:var(--ink-2)}
+.rc-kit li::before{background:var(--line)}
 .rc-kit li .sn{color:var(--ink);font-weight:500}
-.rc-kit li .wzsw{display:block;color:var(--ink-3);margin-top:1px}
+.rc-kit li .wzsw{display:block;color:var(--ink-3);margin-top:1px;font-size:12px}
 
 /* ── 底 ── */
-.wz-ft{display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--line);flex:0 0 auto}
+.wz-ft{display:flex;align-items:center;gap:10px;padding:16px 24px;flex:0 0 auto;
+  background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border-top:1px solid var(--glass-line)}
 .wz-prog{font-size:13px;color:var(--ink-2)}
-.wz-btn{font:inherit;font-size:13px;padding:9px 18px;border-radius:999px;cursor:pointer;
-  border:1px solid var(--ctl);background:var(--white);color:var(--ink)}
+.wz-btn{font:inherit;font-size:14px;padding:10px 20px;border-radius:var(--r-pill);cursor:pointer;
+  border:0;background:var(--white);color:var(--ink);box-shadow:var(--sh-1)}
 .wz-btn:hover{background:var(--soft)}
-.wz-btn.wzpri{background:var(--dark);border-color:var(--dark);color:#fff}
-.wz-btn.wzpri:hover{background:#000;border-color:#000}   /* primary/dark hover 真值 */
+.wz-btn.wzpri{background:var(--accent);color:#fff;box-shadow:none}
+.wz-btn.wzpri:hover{background:var(--accent-hover)}
 .wz-btn:disabled{opacity:.4;cursor:default}
 .wz-tip{font-size:12px;color:var(--ink-3)}
 
 /* ── 点文档名看原文 ── */
 .wz-peek{position:fixed;right:26px;bottom:26px;width:430px;max-height:50vh;z-index:220;
-  background:var(--white);border:1px solid var(--line);border-radius:var(--box-r);
-  box-shadow:0 18px 60px rgba(0,0,0,.2);display:none;flex-direction:column;overflow:hidden}
+  background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border:1px solid var(--glass-line);border-radius:var(--box-r);
+  box-shadow:var(--sh-2);display:none;flex-direction:column;overflow:hidden}
 .wz-peek.wzon{display:flex}
 .wz-ph{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-2);
   font-size:13px;color:var(--ink);flex:0 0 auto}
@@ -256,11 +235,18 @@ a.wz-doc:hover{border-color:var(--accent-line);background:var(--accent-fill);col
      真因是两个 flex-basis 打架：`.wz-main` 是 flex:1（basis 0%），而 `.wz-side`
      是 flex:0 1 auto（basis = 它自己 1100 多 px 的内容高）。竖排之后容器高度固定、
      可分配空间是负的，于是按 basis 收缩 —— main 的 basis 是 0，被压到只剩一条，
-     side 占掉整屏。而横向并没有溢出，所以「有没有横向溢出」这类检查一个字都报不出来。
-     改成整列一起滚：问题在上，任务单在下面接着，谁都不压谁。 */
+     side 占掉整屏。改成整列一起滚：问题在上，任务单在下面接着，谁都不压谁。 */
   .wz-body{flex-direction:column;overflow:auto}
-  .wz-main{flex:0 0 auto;overflow:visible}
-  .wz-side{flex:0 0 auto;width:auto;border-left:0;border-top:1px solid var(--line)}
+  .wz-rail{flex:0 0 auto;width:auto;flex-direction:row;overflow-x:auto;border-right:0;
+    border-bottom:1px solid var(--line-2);padding:10px 12px;gap:6px;scrollbar-width:none}
+  .wz-rail::-webkit-scrollbar{display:none}
+  .wz-rail .wzs{flex:0 0 auto;width:auto;padding:8px 12px;align-items:center;font-size:13px}
+  .wz-rail .wzs::before{display:none}
+  .wz-rail .wzs .wzs-got{display:none}
+  .wz-main{flex:0 0 auto;overflow:visible;padding:16px}
+  .wz-q{padding:20px 18px 6px}
+  .wz-qt{font-size:22px}
+  .wz-side{flex:0 0 auto;width:auto;border-left:0;border-top:1px solid var(--line-2)}
   .wz-peek{right:8px;left:8px;bottom:8px;width:auto}
 }
 '''
@@ -1299,18 +1285,15 @@ function wzDraw(){
   document.getElementById('wzT').textContent   = c.n;
 
   document.getElementById('wzMain').innerHTML = `
-    <div class="wz-steps">${d.steps.map((s,i)=>`
-      <button class="wzs ${i===W.step?'wzon':(i<W.step?'wzdone':'')}" onclick="wzGo(${i})">
-        <span class="i">${i<W.step?FQ_YES:i+1}</span>${s.t}</button>`).join('')}
-    </div>
     ${W.step===0 ? wzAutoHTML() : ''}
     <div class="wz-q">
-      <div class="wz-qt">第${W.step+1}步·${st.t}</div>
+      <div class="wz-qn">第${W.step+1}步 / 共${d.steps.length}步</div>
+      <div class="wz-qt">${st.t}</div>
       <div class="wz-qh">${st.h||''}</div>
       ${st.qs.map((q,i)=>wzQHTML(q,i)).join('')}
     </div>`;
 
-  wzSide(); wzProg();
+  wzRail(); wzSide(); wzProg();
   const last = W.step===d.steps.length-1;
   /* 🔴 最后一步隐藏「下一步」。原来它改文案成「完成填写」，可wzNext() 里
      `W.step < steps.length-1` 才前进 —— 那一步点它什么也不会发生，是个死按钮。
@@ -1323,6 +1306,19 @@ function wzDraw(){
   if(W.step===0 && W.state==='idle') wzAuto();
 }
 function wzGo(i){ if(i<=W.step || wzAllQs().length){ W.step=i; wzDraw(); } }
+/* 左侧步骤栏：每一步下面挂着这一步已经定下来的答案 ——
+   参考 CE 的做法「每一步交一份耐久产物」，走到第 3 步时前两步定了什么一眼可见，不用翻回去。 */
+function wzRail(){
+  const d=wzDef();
+  document.getElementById('wzRail').innerHTML = d.steps.map((s,i)=>{
+    const done=i<W.step, on=i===W.step;
+    const got=(s.qs||[]).filter(wzFilled).map(q=>{ let v=W.ans[q.k]; if(Array.isArray(v)) v=v.join('、'); return wzEsc(String(v)); });
+    return `<button class="wzs ${on?'wzon':(done?'wzdone':'')}" onclick="wzGo(${i})">
+      <span class="i">${done?FQ_YES:i+1}</span>
+      <span class="wzs-tx"><span class="wzs-tt">${s.t}</span>${got.length?`<span class="wzs-got">${got.map(g=>`<span>${g}</span>`).join('')}</span>`:''}</span>
+    </button>`;
+  }).join('');
+}
 
 /* ── 「已经替你查了」：真查 ───────────────────────────── */
 function wzAutoHTML(){
@@ -1459,7 +1455,7 @@ function wzQHTML(q,i){
 function wzSet(k,v,el){
   W.ans[k]=v;
   if(el) el.classList.toggle('has', !!String(v).trim());
-  wzSide(); wzProg();                 /* 🔴 只重画右栏和计数，不重画整个 main —— 否则输入框会失焦 */
+  wzRail(); wzSide(); wzProg();       /* 🔴 只重画左右两栏和计数，不重画整个 main —— 否则输入框会失焦 */
 }
 function wzPickOpt(k,multi,el){
   const v=el.dataset.v;
@@ -1472,16 +1468,21 @@ function wzPickOpt(k,multi,el){
     W.ans[k]=v;
     [...el.parentNode.children].forEach(x=>x.classList.toggle('wzon', x===el));
   }
-  wzSide(); wzProg();
+  wzRail(); wzSide(); wzProg();
 }
 
 /* ── 右侧任务单 ─────────────────────────────────────── */
 function wzSide(){
   const d=wzDef(), c=wzCard(), sc=wzScene(), all=wzAllQs();
   const f=all.filter(wzFilled), b=all.filter(q=>!wzFilled(q));
+  const pct = all.length ? Math.round(f.length/all.length*100) : 0;
   document.getElementById('wzSide').innerHTML=`
-    <div class="rcpt-t">任 务 单</div>
+    <div class="rcpt-t">任务单</div>
     <div class="rcpt-sub">${wzEsc(sc.name)} / ${wzEsc(c.n)}</div>
+    <div class="rc-sum"><i class="rc-bar"><b style="width:${pct}%"></b></i><span class="lb">确定</span><span class="wzn">${f.length} / ${all.length}</span></div>
+
+    <div class="rcpt-div">这一单会交出</div>
+    <ul class="rc-out">${d.out.map(o=>`<li>${wzEsc(o)}</li>`).join('')}</ul>
 
     <div class="rcpt-div">确定</div>
     ${f.length ? `<ul class="rc-list">${f.map(q=>{
@@ -1489,16 +1490,11 @@ function wzSide(){
         return `<li class="rc-item"><span class="mk">${FQ_YES}</span><span>
           <span class="wznm">${wzEsc(q.q)}</span><span class="vl">${wzEsc(v)}</span></span></li>`;
       }).join('')}</ul>`
-      : '<p class="rc-empty">尚未确定任何一项。<br>左侧填写后，此处同步生成。</p>'}
+      : '<p class="rc-empty">尚未确定任何一项。左侧填写后，此处同步生成。</p>'}
 
     ${b.length?`<div class="rcpt-div">待定</div>
     <ul class="rc-list">${b.map(q=>`<li class="rc-item off"><span class="mk">&#9675;</span>
       <span><span class="wznm">${wzEsc(q.q)}</span></span></li>`).join('')}</ul>`:''}
-
-    <div class="rc-sum"><span class="lb">确定</span><span class="wzn">${f.length} / ${all.length}</span></div>
-
-    <div class="rcpt-div">交付物</div>
-    <ul class="rc-out">${d.out.map(o=>`<li>${wzEsc(o)}</li>`).join('')}</ul>
 
     <div class="rcpt-div">调用的能力</div>
     <ul class="rc-kit">${d.skills.map(k=>`<li><span class="sn">${wzEsc(k[0])}</span>
@@ -1617,6 +1613,7 @@ MASK = '''
       <button class="wz-x" onclick="wzClose()">&times;</button>
     </div>
     <div class="wz-body">
+      <nav class="wz-rail" id="wzRail"></nav>
       <div class="wz-main" id="wzMain"></div>
       <div class="wz-side" id="wzSide"></div>
     </div>
@@ -1663,7 +1660,7 @@ def radius_gate():
     写死的数字一律拦（除了上面三个特例）—— 硬编码就是下一次不统一的起点。
     """
     import re
-    ok = {'var(--ctl-r)', 'var(--box-r)', '999px', '50%', '0'}
+    ok = {'var(--r-xs)', 'var(--ctl-r)', 'var(--box-r)', 'var(--r-lg)', 'var(--r-pill)', '999px', '50%', '0'}
     code = _css_code()
     bad = []
     for m in re.finditer(r'border-radius:\s*([^;}\n]+)', code):
@@ -1672,11 +1669,11 @@ def radius_gate():
             line = code[:m.start()].count('\n') + 1
             bad.append((line, v))
     if bad:
-        print('❌ 圆角门：这些值不在飞鹊阶梯里（只允许4控件 / 8容器 / pill / 整圆 / 0）')
+        print('❌ 圆角门：这些值不是全站 token（只允许 --r-xs / --ctl-r / --box-r / --r-lg / 胶囊 / 整圆 / 0）')
         for l, v in bad:
             print('   CSS第 %d行：border-radius:%s' % (l, v))
         sys.exit(1)
-    print('✅ 圆角门通过 · %d处border-radius全部落在4 / 8 / pill / 整圆 / 0'
+    print('✅ 圆角门通过 · %d处border-radius全部是全站 token（4 / 8 / 12 / 18 / 胶囊 / 整圆 / 0）'
           % len(re.findall(r'border-radius:', code)))
 
     # 🔴 这道门只查字面量，查不出「变量拿不到」——

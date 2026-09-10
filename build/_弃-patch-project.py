@@ -25,42 +25,35 @@ CSS = r'''
 .cfoot .pjb.on{color:var(--accent-ink);background:var(--accent-fill)}
 .cfoot .pjb.on .fq{color:var(--accent-ink)}
 /* 下拉：照 + 菜单那套（.ppop），宽一点，因为项目名比菜单项长 */
-.pjpop{position:absolute;bottom:calc(100% + 8px);left:0;width:268px;background:var(--white);
-  border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.14);
+.pjpop{position:absolute;bottom:calc(100% + 8px);left:0;width:268px;background:var(--glass);
+  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border:1px solid var(--glass-line);border-radius:var(--box-r);box-shadow:var(--sh-2);
   padding:6px;z-index:30}
-.pjsr{display:flex;align-items:center;gap:8px;margin:2px 2px 6px;padding:8px 10px;border-radius:8px;
-  background:var(--soft)}
+.pjsr{display:flex;align-items:center;gap:8px;margin:2px 2px 6px;padding:8px 10px;border-radius:var(--ctl-r);
+  background:rgba(0,0,0,.05)}
 .pjsr .fq{width:14px;height:14px;color:var(--ink-3);flex:0 0 14px}
 .pjsr input{flex:1;min-width:0;border:0;outline:0;background:none;font:12.5px/1 inherit;color:var(--ink)}
 .pjsr input::placeholder{color:var(--ink-3)}
 .pjlist{max-height:212px;overflow-y:auto}
-.pjrow{display:flex;align-items:center;gap:9px;width:100%;padding:8px;border-radius:8px;text-align:left}
-.pjrow:hover{background:var(--soft)}
-.pjrow.on{background:var(--sel)}
+.pjrow{display:flex;align-items:center;gap:9px;width:100%;padding:8px;border-radius:var(--ctl-r);text-align:left}
+.pjrow:hover{background:rgba(0,0,0,.05)}
+.pjrow.on{background:var(--accent-fill);color:var(--accent-ink)}
 .pjrow .fq{width:15px;height:15px;color:var(--ink-2);flex:0 0 15px}
 .pjrow .n{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pjrow .c{font-size:12px;color:var(--ink-3);flex:none}
 .pjempty{padding:14px 10px;text-align:center;font-size:12.5px;color:var(--ink-3);line-height:1.7}
-.pjhr{height:1px;background:var(--line);margin:5px 2px}
-.pjnew{display:flex;align-items:center;gap:9px;width:100%;padding:9px 8px;border-radius:8px;
+.pjhr{height:1px;background:var(--line-2);margin:5px 2px}
+.pjnew{display:flex;align-items:center;gap:9px;width:100%;padding:9px 8px;border-radius:var(--ctl-r);
   text-align:left;font-size:13px;color:var(--ink)}
-.pjnew:hover{background:var(--soft)}
+.pjnew:hover{background:rgba(0,0,0,.05)}
 .pjnew .fq{width:15px;height:15px;color:var(--ink-2);flex:0 0 15px}
 .pjnew b{font-weight:600}
 
 /* 「工作空间」页 */
-.prow{cursor:pointer}
 .prow.on{border-color:var(--accent-line);background:var(--accent-fill)}
-.pjtag{font-size:12px;color:var(--ink-3);background:#F2F2F2;border-radius:4px;padding:2px 7px;margin-left:8px;
+.pjtag{font-size:12px;color:var(--ink-3);background:var(--soft-2);border-radius:var(--r-xs);padding:2px 7px;margin-left:8px;
   font-weight:400;vertical-align:2px}
-.pjdel{margin-left:12px;font-size:12px;color:var(--ink-3);padding:4px 8px;border-radius:6px}
-.pjdel:hover{background:#F2F2F2;color:var(--ink-2)}
-.pjtasks{margin:-2px 0 12px;padding:4px 0 0}
-.pjtask{display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;border-radius:8px;text-align:left}
-.pjtask:hover{background:var(--soft)}
-.pjtask .fq{width:14px;height:14px;color:var(--ink-3);flex:0 0 14px}
-.pjtask .n{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pjtask .m{font-size:12px;color:var(--ink-3);flex:none}
+.pjdel{margin-left:12px;font-size:12px;color:var(--ink-3);padding:4px 8px;border-radius:var(--ctl-r)}
+.pjdel:hover{background:var(--soft-2);color:var(--ink-2)}
 '''
 
 JS = r'''
@@ -76,19 +69,6 @@ JS = r'''
   function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){
     return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
   function icon(n, px){ return window.fqIcon ? (fqIcon(n, px || 15) || '') : ''; }
-
-  /* 某个项目下有几条任务 —— 从任务记录里数，不另存一份计数。
-     另存计数就会出现「删了任务但计数没减」这类对不上的账。 */
-  function countOf(name){
-    var n = 0, t = (typeof S !== 'undefined' && S.tasks) || [];
-    for(var i = 0; i < t.length; i++) if(t[i] && t[i].proj === name) n++;
-    return n;
-  }
-  function tasksOf(name){
-    var out = [], t = (typeof S !== 'undefined' && S.tasks) || [];
-    for(var i = 0; i < t.length; i++) if(t[i] && t[i].proj === name) out.push({ t:t[i], i:i });
-    return out;
-  }
 
   window.wbProjects = load;
 
@@ -124,17 +104,10 @@ JS = r'''
   };
   window.wbPjDel = function(name, e){
     if(e) e.stopPropagation();
-    var used = countOf(name);
-    var msg = used ? ('「' + name + '」下面还有 ' + used + ' 条任务。删掉工作空间，那些任务会变回没有归属，任务本身不会丢。')
-                   : ('确定删掉工作空间「' + name + '」？');
+    var msg = '确定删掉工作空间「' + name + '」？';
     if(!confirm(msg)) return;
     save(load().filter(function(p){ return p.n !== name; }));
     if(S.proj === name) S.proj = '';
-    if(S.pjOpenRow === name) S.pjOpenRow = '';
-    render();
-  };
-  window.wbPjRow = function(name){
-    S.pjOpenRow = (S.pjOpenRow === name) ? '' : name;
     render();
   };
 
@@ -144,11 +117,9 @@ JS = r'''
     if(!a.length)
       return '<div class="pjempty">' + (q ? '未找到工作空间' : '还没有工作空间<br>在上面输入名字新建一个') + '</div>';
     return a.map(function(p){
-      var c = countOf(p.n);
       return '<button class="pjrow' + (S.proj === p.n ? ' on' : '') + '" onclick="wbPjPick(\'' +
         esc(p.n).replace(/'/g, "\\'") + '\')">' + icon('folder') +
-        '<span class="n">' + esc(p.n) + '</span>' +
-        '<span class="c">' + (c ? c + ' 条' : '') + '</span></button>';
+        '<span class="n">' + esc(p.n) + '</span></button>';
     }).join('');
   }
   function newHtml(){
@@ -183,30 +154,21 @@ JS = r'''
     btn.replaceWith(w);
   }
 
-  /* ── 「工作空间」页：自建的排前面、带真实任务数，预置的三个标成示例 ── */
+  /* ── 「工作空间」页：自建的排前面，预置的三个标成示例 ── */
   if(typeof viewProjects === 'function'){
     var origProjects = viewProjects;
     viewProjects = window.viewProjects = function(){
       var mine = load();
       var head = '<div class="page">' +
         '<div class="ph"><h2>工作空间</h2>' +
-        '<p>一个需求从调研到复盘的产出物都收在这里，继续上次的进度不用重新说明背景。' +
-        '在输入框下方的「选择工作空间」里选一个，这次任务就记到那个空间下。</p></div>';
+        '<p>一个需求从调研到复盘的产出物都收在这里，继续上次的进度不用重新说明背景。</p></div>';
 
       var body = mine.length ? mine.map(function(p){
-        var list = tasksOf(p.n), open = S.pjOpenRow === p.n;
-        var rows = open ? ('<div class="pjtasks">' + (list.length ? list.map(function(x){
-            return '<button class="pjtask" onclick="wbOpenTask(' + x.i + ')">' + icon('filltext', 14) +
-              '<span class="n">' + esc(x.t.n || '（无标题）') + '</span>' +
-              '<span class="m">' + esc(x.t.scene || '') + ' · ' + esc(x.t.time || '') + '</span></button>';
-          }).join('') : '<div class="pjempty">这个空间下还没有任务</div>') + '</div>') : '';
-        return '<button class="prow' + (open ? ' on' : '') + '" onclick="wbPjRow(\'' +
-            esc(p.n).replace(/'/g, "\\'") + '\')">' +
+        return '<div class="prow' + (S.proj === p.n ? ' on' : '') + '">' +
             '<div><div class="nm">' + esc(p.n) + '</div>' +
-            '<div class="m">' + (list.length ? list.length + ' 条任务' : '还没有任务') + '</div></div>' +
-            '<div class="st"><div class="s">' + (open ? '收起' : '展开') + '</div></div>' +
+            '<div class="m">' + (S.proj === p.n ? '当前选中' : '在输入框下方「选择工作空间」里可以选它') + '</div></div>' +
             '<span class="pjdel" onclick="wbPjDel(\'' + esc(p.n).replace(/'/g, "\\'") + '\',event)">删除</span>' +
-          '</button>' + rows;
+          '</div>';
       }).join('') :
         '<div class="libempty"><b>还没有工作空间。</b><br>' +
         '回到新建任务页，在输入框下面的「选择工作空间」里输入名字就能建一个。</div>';

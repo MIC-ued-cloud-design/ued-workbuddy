@@ -12,30 +12,32 @@ JS_B,  JS_E  = '/* ==FQ-UI-JS:BEGIN== */',  '/* ==FQ-UI-JS:END== */'
 CSS = r'''
 /* ── 资料库真数据视图 ── */
 .fqbar{display:flex;align-items:center;gap:10px;margin:0 0 16px}
-.fqtabs{display:flex;gap:4px;background:var(--soft);padding:3px;border-radius:999px}
-.fqtab{font:12px/1 inherit;color:var(--ink-2);background:none;border:0;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+/* 小号分段控件：跟首页场景 tab 同一个做法（灰轨 + 深色选中胶囊） */
+.fqtabs{display:flex;gap:2px;background:var(--soft-2);padding:3px;border-radius:var(--r-pill)}
+.fqtab{font:12px/1 inherit;color:var(--ink);background:none;border:0;padding:7px 13px;border-radius:var(--r-pill);cursor:pointer;white-space:nowrap}
 .fqtab:hover{color:var(--ink)}
-.fqtab.on{background:var(--white);color:var(--ink);font-weight:700;box-shadow:0 1px 2px -2px rgba(0,0,0,.1),0 3px 6px 0 rgba(0,0,0,.06)}
-.fqsr{flex:1;min-width:120px;display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;padding:0 11px;height:32px;background:var(--white)}
+.fqtab.on{background:var(--tab-on);color:#fff;font-weight:500}
+.fqsr{flex:1;min-width:120px;display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:var(--ctl-r);padding:0 11px;height:32px;background:var(--white)}
+.fqsr:focus-within{border-color:var(--accent)}
 .fqsr svg{color:var(--ink-3);flex:none}
 .fqsr input{flex:1;border:0;outline:0;font:13px/1 inherit;color:var(--ink);background:none}
 .fqsr input::placeholder{color:var(--ink-3)}
 .fqcnt{font-size:12px;color:var(--ink-3);white-space:nowrap}
 
 .fqsec{margin:0 0 28px}
-.fqsec-h{font-size:13px;font-weight:700;color:var(--ink);margin:0 0 4px}
+.fqsec-h{font-size:13px;font-weight:600;color:var(--ink);margin:0 0 4px}
 .fqsec-p{font-size:12px;color:var(--ink-2);line-height:1.7;margin:0 0 12px}
 
-/* 图标网格 */
+/* 图标网格：灰底瓷片，不描边 */
 .icgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
-.iccell{border:1px solid var(--line);border-radius:8px;padding:12px 6px 9px;text-align:center;cursor:pointer;background:var(--white)}
-.iccell:hover{border-color:var(--accent-line);background:var(--accent-fill)}
+.iccell{border-radius:var(--ctl-r);padding:12px 6px 9px;text-align:center;cursor:pointer;background:var(--soft)}
+.iccell:hover{background:var(--accent-fill)}
 .iccell svg{width:20px;height:20px;color:var(--ink);display:block;margin:0 auto 8px}
 .iccell span{display:block;font-size:12px;color:var(--ink-2);word-break:break-all;line-height:1.4}
 
 /* 色块 */
 .swgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px}
-.swcell{border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;background:var(--white);
+.swcell{border:1px solid var(--line-2);border-radius:var(--box-r);overflow:hidden;cursor:pointer;background:var(--white);
   display:flex;flex-direction:column;align-items:stretch;padding:0}   /* 卡片是 button：网格把同行卡片拉等高后 Chrome 默认把按钮内容垂直居中，色块会往下掉 10px 露白边（2026-09-09 吉吉截图，29 张里 5 张）。flex 纵向＝内容顶对齐 */
 .swcell:hover{border-color:var(--accent-line)}
 .swtop{height:52px}
@@ -45,7 +47,7 @@ CSS = r'''
 
 /* 刻度 */
 .scale{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
-.scitem{border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:66px;text-align:center;background:var(--white)}
+.scitem{border-radius:var(--ctl-r);padding:10px 12px;min-width:66px;text-align:center;background:var(--soft)}
 .scitem b{display:block;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
 .scitem i{display:block;font-style:normal;font-size:12px;color:var(--ink-3);margin-top:3px}
 .scbar{background:var(--accent);border-radius:2px;height:8px;margin:0 auto 8px}
@@ -53,9 +55,9 @@ CSS = r'''
 .fsrow b{font-size:12px;color:var(--ink-3);width:52px;flex:none;font-variant-numeric:tabular-nums}
 .fsrow span{color:var(--ink)}
 
-/* 阴影演示 */
+/* 阴影演示：这一格要留白底，阴影才看得出 */
 .shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
-.shcell{background:var(--white);border-radius:12px;padding:16px}
+.shcell{background:var(--white);border:1px solid var(--line-2);border-radius:var(--box-r);padding:16px}
 .shcell b{display:block;font-size:13px;color:var(--ink);margin-bottom:6px}
 .shcell p{font-size:12px;color:var(--ink-2);line-height:1.7;margin:0 0 10px}
 .shcell code{display:block;font-size:12px;color:var(--ink-3);word-break:break-all;line-height:1.6;cursor:pointer}
@@ -63,34 +65,34 @@ CSS = r'''
 /* 键值表 */
 .kv{width:100%;border-collapse:collapse}
 .kv td{border-bottom:1px solid var(--line-2);padding:11px 12px 11px 0;font-size:13px;color:var(--ink);vertical-align:top;line-height:1.7}
-.kv td.k{width:31%;font-weight:700;padding-right:20px}
+.kv td.k{width:31%;font-weight:600;padding-right:20px}
 .kv td.v{color:var(--ink-2)}
 .mono{font-size:12px;color:var(--ink-2);word-break:break-all;cursor:pointer}
 .mono:hover{color:var(--accent-ink)}
 
 /* 自查表 */
-.ckgrp{border:1px solid var(--line);border-radius:10px;margin:0 0 10px;overflow:hidden}
+.ckgrp{border:1px solid var(--line-2);border-radius:var(--box-r);margin:0 0 10px;overflow:hidden}
 .ckh{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--white);border:0;padding:13px 15px;cursor:pointer;font:13px/1.5 inherit}
 .ckh:hover{background:var(--soft)}
-.ckh b{flex:1;font-weight:700;color:var(--ink)}
+.ckh b{flex:1;font-weight:600;color:var(--ink)}
 .ckh i{font-style:normal;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .ckh svg{width:14px;height:14px;color:var(--ink-3);transition:transform .15s}
 .ckh.open svg{transform:rotate(180deg)}
-.ckbody{border-top:1px solid var(--line);padding:4px 15px 6px}
-.ckrow{display:flex;gap:11px;padding:10px 15px;align-items:flex-start}
+.ckbody{border-top:1px solid var(--line-2);padding:4px 15px 6px}
+.ckrow{display:flex;gap:11px;padding:10px 15px;align-items:flex-start;border-radius:var(--ctl-r)}
 .ckrow:hover{background:var(--soft)}
-.ckbox{width:15px;height:15px;flex:none;margin-top:2px;border:1px solid var(--ink-3);border-radius:4px;background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.ckbox{width:16px;height:16px;flex:none;margin-top:2px;border:1px solid var(--ctl);border-radius:var(--r-xs);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .ckbox.on{background:var(--accent);border-color:var(--accent)}
 .ckbox svg{width:11px;height:11px;color:#fff}
 .cktx{flex:1;font-size:13px;color:var(--ink);line-height:1.75}
 .cktx em{font-style:normal;display:block;font-size:12px;color:var(--ink-3);margin-top:3px}
 .cktx.done{color:var(--ink-3);text-decoration:line-through}
 .prog{display:flex;align-items:center;gap:11px;margin:0 0 16px}
-.progbar{flex:1;height:6px;background:var(--soft);border-radius:999px;overflow:hidden}
-.progbar i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .2s}
+.progbar{flex:1;height:6px;background:var(--soft-2);border-radius:var(--r-pill);overflow:hidden}
+.progbar i{display:block;height:100%;background:var(--accent);border-radius:var(--r-pill);transition:width .2s}
 
-/* 重点标记：不引入新颜色（WorkBuddy 自己就不用底色块高亮），只用字重和深一档的文字色 */
-.hot{font-weight:700;color:var(--ink);margin-right:6px}
+/* 重点标记：只用字重，不引入新颜色 */
+.hot{font-weight:600;color:var(--ink);margin-right:6px}
 /* 🔴 内边距要挂在 .ckbody 上，不能挂在 table 上 ——
    这张表是 border-collapse:collapse，CSS 规范规定这种模式下
    表格自身的 padding 被忽略。计算样式里查得到、实际没生效，
@@ -106,7 +108,7 @@ CSS = r'''
 .sb-card[hidden]{display:none!important}
 
 /* 复制提示 */
-#toast{position:fixed;left:50%;bottom:38px;transform:translateX(-50%) translateY(14px);background:var(--dark);color:#fff;font-size:12px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:99}
+#toast{position:fixed;left:50%;bottom:38px;transform:translateX(-50%) translateY(14px);background:var(--dark);color:#fff;font-size:12px;padding:9px 16px;border-radius:var(--r-pill);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:99}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 '''
 

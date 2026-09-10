@@ -13,17 +13,16 @@ CSS = r'''
 .mpop .row .nm>span:first-child{overflow:hidden;text-overflow:ellipsis}
 .mpop .row .rate{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* ── 跑任务：回答区 ── */
-.runwrap{max-width:824px;margin:0 auto;padding:34px 0 60px}
+.runwrap{max-width:920px;margin:32px auto;padding:48px 56px 56px;background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-1)}
 .qbox{display:flex;gap:12px;align-items:flex-start;margin:0 0 22px}
-/* 统一身份：内部工具没有登录态，所以不显示某个人的名字和姓氏首字，
-   用飞鹊的 person 图标 + 「UED 设计师」这个中性称呼。 */
+/* 统一身份：内部工具没有登录态，用飞鹊的 person 图标当头像 */
 .qava{width:26px;height:26px;flex:none;border-radius:999px;background:var(--accent);color:#fff;display:grid;place-items:center}
 .qava svg{width:14px;height:14px;display:block}
 .ava svg{width:15px;height:15px;display:block}
 .qtx{flex:1;font-size:15px;color:var(--ink);line-height:1.75;white-space:pre-wrap;word-break:break-word;padding-top:2px}
-.abox{border-top:1px solid var(--line);padding:22px 0 0}
+.abox{border-top:1px solid var(--line-2);padding:22px 0 0}
 .ahead{display:flex;align-items:center;gap:9px;margin:0 0 14px}
-.ahead b{font-size:13px;color:var(--accent-ink)}   /* 主题色。用 accent-ink 不用 accent —— 后者 13px 加粗在白底偏浅，token 里也标了 ink 那档是文字用 */
+.ahead b{font-size:13px;color:var(--accent-ink)}
 .ahead span{font-size:12px;color:var(--ink-3)}
 .atx{font-size:15px;color:var(--ink);line-height:1.85;word-break:break-word}
 .atx h3{font-size:15px;margin:22px 0 8px;color:var(--ink)}
@@ -31,75 +30,65 @@ CSS = r'''
 .atx ul,.atx ol{margin:0 0 12px;padding-left:22px}
 .atx li{margin:0 0 5px}
 .atx table{width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px}
-.atx th{background:var(--dark);color:#fff;font-weight:700;text-align:left;padding:10px 12px;font-size:12px}
-.atx td{border-bottom:1px solid var(--line);padding:10px 12px;color:var(--ink);vertical-align:top;line-height:1.7}
-.atx tr:first-child td:first-child,.atx td.c1{background:#F0F1F2}
-.atx code{background:var(--soft);padding:2px 6px;border-radius:4px;font-size:13px}
-.atx b{font-weight:700}
+.atx th{background:var(--soft);color:var(--ink);font-weight:600;text-align:left;padding:10px 12px;font-size:12px;border-bottom:1px solid var(--line)}
+.atx td{border-bottom:1px solid var(--line-2);padding:10px 12px;color:var(--ink);vertical-align:top;line-height:1.7}
+.atx tr:first-child td:first-child,.atx td.c1{background:var(--soft)}
+.atx code{background:var(--soft);padding:2px 6px;border-radius:var(--r-xs);font-size:13px}
+.atx b{font-weight:600}
 .atx .raw{white-space:pre-wrap;word-break:break-word}
 .caret{display:inline-block;width:7px;height:15px;background:var(--accent);vertical-align:-2px;animation:cb 1s steps(2) infinite}
 @keyframes cb{0%,50%{opacity:1}51%,100%{opacity:0}}
 .srcs{margin:22px 0 0;padding:14px 0 0;border-top:1px solid var(--line-2)}
 .srcs-h{font-size:12px;color:var(--ink-3);margin:0 0 9px}
 .srcs-l{display:flex;flex-wrap:wrap;gap:6px}
-.srcchip{font-size:12px;color:var(--ink-2);background:var(--soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srcchip{font-size:12px;color:var(--ink-2);background:var(--soft);border:0;border-radius:var(--r-pill);padding:6px 12px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .srcchip:hover{background:var(--accent-fill);color:var(--accent-ink)}
 .runfoot{margin:30px 0 0;display:flex;gap:9px;flex-wrap:wrap}
-.rbtn{font:13px/1 inherit;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:999px;padding:10px 18px;cursor:pointer}
-.rbtn:hover{border-color:var(--accent-line);background:var(--accent-fill);color:var(--accent-ink)}
-.rbtn.pri{background:var(--dark);color:#fff;border-color:var(--dark)}
-.rbtn.pri:hover{background:#000;color:#fff}
-
-/* 任务区折叠：原来那个箭头是纯装饰，taskHead 没绑任何事件 */
-.sb-sec-h{cursor:pointer;user-select:none}
-.sb-sec-h:hover{color:var(--ink)}
-.sb-sec-h svg{transition:transform .18s}
-.sb-sec-h.closed svg{transform:rotate(-90deg)}
-/* 🔴 显式写 —— [hidden] 打不过 .sb-list 自己的 display:flex，本项目栽过两次 */
-.sb-list[hidden]{display:none!important}
-
-/* 任务历史：选中态 + 清空入口 */
-.sb-item.on{background:var(--nav-on)}
-.sb-item.clr{text-align:left}
-.sb-item.clr .m{color:var(--ink-3)}
+/* 按钮两级：次级＝灰底胶囊，主级＝主色胶囊 */
+.rbtn{font:13px/1 inherit;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:var(--r-pill);padding:11px 20px;cursor:pointer}
+.rbtn:hover{background:var(--soft-2)}
+.rbtn.pri{background:var(--accent);color:#fff}
+.rbtn.pri:hover{background:var(--accent-hover);color:#fff}
 
 /* 接着问 */
-.askmore{margin:26px 0 0;border:1px solid var(--line);border-radius:14px;background:var(--soft);padding:8px}
-.askmore.focus{border-color:var(--accent-line)}
-.askin{background:var(--white);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-end;gap:10px}
+.askmore{margin:26px 0 0;border:1px solid transparent;border-radius:var(--r-lg);background:var(--soft);padding:4px;transition:border-color .15s}
+.askmore.focus{border-color:var(--accent)}
+.askin{background:var(--white);border-radius:var(--box-r);padding:12px 14px;display:flex;align-items:flex-end;gap:10px}
 .askin textarea{flex:1;border:0;outline:0;resize:none;font:14px/1.65 inherit;color:var(--ink);background:none;min-height:24px;max-height:180px}
 .askin textarea::placeholder{color:var(--ink-3)}
-.asksend{flex:none;width:30px;height:30px;border-radius:999px;border:0;background:var(--dark);color:#fff;display:grid;place-items:center;cursor:pointer}
-.asksend:disabled{background:#E0E0E0;cursor:default}
+.asksend{flex:none;width:30px;height:30px;border-radius:999px;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer}
+.asksend:hover{background:var(--accent-hover)}
+.asksend:disabled{background:var(--soft-2);color:var(--ink-4);cursor:default}
 .asksend svg{width:14px;height:14px}
 .asksend svg path{fill:currentColor}
 .askhint{font-size:12px;color:var(--ink-3);padding:7px 14px 3px}
-.turn{border-top:1px solid var(--line);padding:22px 0 0;margin:22px 0 0}
+.turn{border-top:1px solid var(--line-2);padding:22px 0 0;margin:22px 0 0}
 
 /* 提示条 / 报错 */
-.nbox{border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:0 0 20px;background:var(--white)}
+.nbox{border:0;border-radius:var(--box-r);padding:18px 20px;margin:0 0 20px;background:var(--soft)}
 .nbox b{display:block;font-size:13px;color:var(--ink);margin:0 0 6px}
 .nbox p{font-size:13px;color:var(--ink-2);line-height:1.8;margin:0 0 10px}
 .nbox p:last-child{margin:0}
-.nbox.warn{background:var(--soft)}
+.nbox.warn{background:#FFF7E6}
 .nbox ol{margin:6px 0 10px;padding-left:20px;font-size:13px;color:var(--ink-2);line-height:1.9}
 
 /* 设置弹层 */
-#wbmask{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:80;display:grid;place-items:center;padding:24px}
-.wbdlg{background:var(--white);border-radius:16px;width:100%;max-width:520px;max-height:88vh;overflow:auto;padding:26px 28px}
-.wbdlg h3{font-size:16px;color:var(--ink);margin:0 0 8px}
+#wbmask{position:fixed;inset:0;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:80;display:grid;place-items:center;padding:24px}
+.wbdlg{background:var(--white);border-radius:var(--r-lg);width:100%;max-width:520px;max-height:88vh;overflow:auto;padding:30px 32px;box-shadow:var(--sh-3)}
+.wbdlg h3{font-size:22px;color:var(--ink);margin:0 0 8px;letter-spacing:-.5px}
 .wbdlg .sub{font-size:13px;color:var(--ink-2);line-height:1.8;margin:0 0 20px}
 .fld{margin:0 0 16px}
-.fld label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin:0 0 7px}
+.fld label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:0 0 7px}
 .fld .hint{font-size:12px;color:var(--ink-3);line-height:1.7;margin:6px 0 0}
-.fld input,.fld select{width:100%;box-sizing:border-box;font:13px/1 inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:0 12px;height:38px;background:var(--white);outline:0}
+.fld input,.fld select{width:100%;box-sizing:border-box;font:13px/1 inherit;color:var(--ink);border:1px solid var(--ctl);border-radius:var(--ctl-r);padding:0 12px;height:40px;background:var(--white);outline:0;transition:border-color .12s,box-shadow .12s}
 .fld input:focus,.fld select:focus{border-color:var(--accent)}
 .dfoot{display:flex;gap:9px;justify-content:flex-end;margin:22px 0 0;align-items:center}
 .dfoot .msg{flex:1;font-size:12px;color:var(--ink-2);line-height:1.6}
 .prov{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.provb{text-align:left;background:var(--white);border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer}
-.provb.on{border-color:var(--accent);background:var(--accent-fill)}
-.provb b{display:block;font-size:13px;color:var(--ink);font-weight:700;margin:0 0 3px}
+.provb{text-align:left;background:var(--soft);border:1px solid transparent;border-radius:var(--box-r);padding:11px 13px;cursor:pointer}
+.provb:hover{background:var(--soft-2)}
+.provb.on{border-color:var(--accent-line);background:var(--accent-fill)}
+.provb b{display:block;font-size:13px;color:var(--ink);font-weight:600;margin:0 0 3px}
 .provb span{display:block;font-size:12px;color:var(--ink-3);line-height:1.5}
 '''
 
@@ -527,34 +516,8 @@ JS = r'''
             + '换手机热点试一次就能分清是网络策略还是别的问题。'];
   }
 
-  /* ── 任务历史 ──
-     原来三层都不对：条目没绑点击（点了没反应）、只存了标题不存问答内容、
-     只在内存里刷新就丢。这三条一起修。 */
-  var TKEY='wb.tasks', TMAX=20;
   function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function loadTasks(){
-    try{ var a=JSON.parse(localStorage.getItem(TKEY)||'[]'); return Array.isArray(a)? a : []; }
-    catch(e){ return []; }
-  }
-  function saveTasks(a){
-    /* localStorage 有 5MB 上限，所以只留最近 TMAX 条，
-       而且参考资料只存文档名不存正文（正文在 kb.js 里，要用再检索）。 */
-    try{ localStorage.setItem(TKEY, JSON.stringify(a.slice(0,TMAX))); }catch(e){}
-  }
-  window.wbOpenTask = function(x){
-    var t=(S.tasks||[])[x]; if(!t) return;
-    R.q=t.q||t.n||''; R.ans=t.ans||''; R.err=null; R.raw='';
-    R.srcs=(t.docs||[]).map(function(d){ return {d:d, t:'', x:'', s:t.srcKind&&t.srcKind[d]||'biz'}; });
-    R.state = t.ans? 'done' : 'error';
-    if(!t.ans) R.err=['这条没有存下回答','它是在加回放功能之前问的，或者当时没答完。重新问一次就会存了。'];
-    R.taskIdx=x; S.view='run'; render();
-    document.getElementById('main').scrollTop=0;
-  };
-  window.wbClearTasks = function(){
-    S.tasks=[]; saveTasks([]); fqToast('任务记录已清空'); renderNav();
-    if(S.view==='run') go('new');
-  };
 
   /* ── 跑任务视图 ── */
   var R = { q:'', ans:'', srcs:[], state:'idle', err:null, ctl:null, task:'', turns:[], status:'', web:null };
@@ -829,22 +792,6 @@ JS = r'''
       R.state='done';
       if(!R.ans){ R.state='error'; R.err=['没收到内容','平台接受了请求但没返回文字。换个模型或稍后再试。']; }
       paint();
-      var kinds={};
-      (R.srcs||[]).forEach(function(c){ kinds[c.d]=c.s; });
-      S.tasks.unshift({
-        q: q, n: q.slice(0,40), ans: R.ans,
-        proj: S.proj || '',                    // 「选择工作空间」选了哪个（build/patch-project.py）
-                                               // 🔴 不能写 window.S —— 顶层 const 不会挂到 window 上
-        docs: [].concat.apply([], [[]].concat((R.srcs||[]).map(function(c){ return c.d; })))
-                .filter(function(d,i,a){ return d && a.indexOf(d)===i; }),
-        srcKind: kinds,
-        scene: (sceneById(S.scene)||{}).name||'任务',
-        time: new Date().toTimeString().slice(0,5)
-      });
-      if(S.tasks.length>TMAX) S.tasks.length=TMAX;
-      saveTasks(S.tasks);
-      R.taskIdx=0;
-      renderNav();
     }).catch(function(e){
       stopStream();
       R.state = (e&&e.name==='AbortError' && R.ans)? 'done' : 'error';
@@ -1009,59 +956,6 @@ JS = r'''
     return html.indexOf(anchor)>0 ? html.replace(anchor, card + anchor) : html;
   };
 
-  /* 侧栏头像：静态 HTML 里拿不到 ic，在这里注入。
-     🔴 只能用 window.fqIcon —— svgOf 住在资料库那个 IIFE 里，这里取不到。
-     上一版我直接写 svgOf，抛 ReferenceError 把整个模块后半段（含 render 重载）
-     全带崩了，而且报错位置离真凶很远。跨模块只走 window 上暴露的那个。 */
-  (function(){
-    var a=document.getElementById('sbAva');
-    if(a && window.fqIcon) a.innerHTML = fqIcon('personal-f',15) || '';
-  })();
-
-  /* 任务区折叠。状态存起来，下次打开保持 */
-  var FKEY='wb.taskFold';
-  function foldClosed(){ try{ return localStorage.getItem(FKEY)==='1'; }catch(e){ return false; } }
-  window.wbToggleTasks = function(){
-    var closed = !foldClosed();
-    try{ localStorage.setItem(FKEY, closed?'1':'0'); }catch(e){}
-    applyFold();
-  };
-  function applyFold(){
-    var h=document.getElementById('taskHead'), l=document.getElementById('taskList');
-    var sec=h&&h.parentNode;
-    if(!h||!l) return;
-    var closed=foldClosed();
-    h.classList.toggle('closed', closed);
-    l.hidden = closed;
-    /* 🔴 不要动 .sb-sec 的 flex —— 它 flex:1 占着剩余空间，
-       正是它把下面的用户行推到底部的。收起时把它压掉，用户行会跟着上移 474px（实测）。
-       所以只隐藏列表，空白留在原处，用户行保持置底。 */
-  }
-
-  /* 任务列表补点击行为（原来那个 button 没绑任何事件），并从 localStorage 恢复 */
-  var origRenderNav = renderNav;
-  renderNav = function(){
-    origRenderNav();
-    var head=document.getElementById('taskHead');
-    if(head && !head.getAttribute('data-bound')){
-      head.setAttribute('data-bound','1');
-      head.setAttribute('title','点一下收起或展开');
-      head.addEventListener('click', wbToggleTasks);
-    }
-    applyFold();
-    var el=document.getElementById('taskList');
-    if(!el || !S.tasks.length) return;
-    el.innerHTML = S.tasks.map(function(t,x){
-      var on = (S.view==='run' && R.taskIdx===x);
-      return '<button class="sb-item'+(on?' on':'')+'" onclick="wbOpenTask('+x+')" title="点开看这次的问答">'+
-        '<div class="t">'+esc(t.q||t.n||'')+'</div>'+
-        '<div class="m"><span>'+esc(t.scene||'')+'</span><span>·</span><span>'+esc(t.time||'')+'</span></div>'+
-        '</button>';
-    }).join('') + '<button class="sb-item clr" onclick="wbClearTasks()"><div class="m">清空记录</div></button>';
-  };
-  S.tasks = loadTasks();          // 刷新之后任务还在
-  renderNav();                    // 🔴 恢复了数据必须重渲染 —— 脚本末尾那次 render() 跑在本模块之前，
-                                  //    那时 S.tasks 还是空的，所以侧栏显示的是空态。
 
   /* 回车发送、Shift + 回车换行。
      🔴 必须判 e.isComposing —— 中文输入法拼字时按回车是「确认候选词」，

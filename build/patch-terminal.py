@@ -32,137 +32,125 @@ DOM_B, DOM_E = '<!-- ==WB-TERM-DOM:BEGIN== -->', '<!-- ==WB-TERM-DOM:END== -->'
 #  CSS
 # ══════════════════════════════════════════════════════════════
 CSS = r'''
-/* ═══ 接力到终端 · 色值与圆角跟向导层同一套飞鹊 SOT ═══
-   .uwt-mask / .uwt-drawer 都挂 <body> 下、互不为后代，所以两个都要列 ——
-   2026-09-08 栽过：.wz-peek 挂在 body 下拿不到 .wizmask 上的变量，
-   var(--box-r) 静默失效成 0px，而圆角门查字面量查不出来。 */
-.uwt-mask,.uwt-drawer{
-  --line:#DAE0E6; --line-2:#E6ECF2;
-  --ink:#222; --ink-2:#555; --ink-3:#888;
-  --ctl:#CED3D9; --dark:#222;
-  --ctl-r:4px;         /* 控件级 · 选项卡片 / 按钮 / chip */
-  --box-r:8px;         /* 容器级 · 模态 / 抽屉 / 代码块 */
-}
+/* ═══ 接力到终端 · 用全站那一套 token（:root 上定义，这一层不再自己定色）═══
+   吉吉 2026-09-09：「内嵌式终端我希望不是完全分成两个区域，而是包在 UW 的风格里面」。
+   上一版是一根黑色半屏柱子直接贴到视口右边，跟左边的白页面是两个世界。
+   现在终端是页面里的一张圆角卡片：浅色卡头（标题 / 状态 / 按钮都是页面的样式），
+   卡片里再嵌一块深色终端区。分区机制不变（.uwt-split 收窄 .app），变的是外观。 */
 
 /* ── 选择界面 ─────────────────────────────────── */
-.uwt-mask{position:fixed;inset:0;z-index:240;background:rgba(26,26,26,.34);
+.uwt-mask{position:fixed;inset:0;z-index:240;background:rgba(0,0,0,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   display:none;align-items:center;justify-content:center;padding:28px}
 .uwt-mask.uwt-on{display:flex}
-.uwt-box{width:min(560px,100%);background:#fff;border-radius:var(--box-r);
-  box-shadow:0 12px 40px rgba(0,0,0,.16);overflow:hidden;
-  font:14px/1.6 Roboto,-apple-system,"PingFang SC",sans-serif;color:var(--ink)}
-.uwt-hd{padding:20px 22px 4px}
-.uwt-hd h3{margin:0;font-size:18px;font-weight:500;color:var(--ink)}
-.uwt-hd p{margin:6px 0 0;font-size:13px;color:var(--ink-3)}
-.uwt-opts{padding:14px 22px 4px;display:flex;flex-direction:column;gap:8px}
+.uwt-box{width:min(560px,100%);background:var(--white);border-radius:var(--r-lg);
+  box-shadow:var(--sh-3);overflow:hidden;
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;color:var(--ink)}
+.uwt-hd{padding:22px 24px 4px}
+.uwt-hd h3{margin:0;font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-.5px}
+.uwt-hd p{margin:6px 0 0;font-size:13px;color:var(--ink-2)}
+.uwt-opts{padding:14px 24px 4px;display:flex;flex-direction:column;gap:8px}
 .uwt-opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;
-  padding:13px 14px;border:1px solid var(--ctl);border-radius:var(--ctl-r);
-  background:#fff;cursor:pointer;font:inherit;color:inherit;transition:border-color .12s,background .12s}
-.uwt-opt:hover:not(:disabled){border-color:var(--dark);background:#FAFAFA}
-.uwt-opt:disabled{cursor:not-allowed;border-color:var(--line-2);background:#FAFAFA}
+  padding:13px 14px;border:1px solid var(--line);border-radius:var(--box-r);
+  background:var(--white);cursor:pointer;font:inherit;color:inherit;transition:border-color .12s,background .12s}
+.uwt-opt:hover:not(:disabled){border-color:var(--accent-line);background:var(--accent-fill)}
+.uwt-opt:disabled{cursor:not-allowed;border-color:transparent;background:var(--soft)}
 .uwt-opt:disabled .uwt-on1,.uwt-opt:disabled .uwt-on2{color:var(--ink-3)}
 .uwt-oi{flex:0 0 auto;width:18px;height:18px;margin-top:2px;color:var(--ink-2)}
-.uwt-opt:disabled .uwt-oi{color:#B3B3B3}
+.uwt-opt:disabled .uwt-oi{color:var(--ink-4)}
 .uwt-ot{flex:1 1 auto;min-width:0}
-.uwt-on1{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:var(--ink)}
+.uwt-on1{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--ink)}
 .uwt-on2{margin:3px 0 0;font-size:13px;color:var(--ink-2)}
 .uwt-on3{margin:3px 0 0;font-size:12px;color:var(--ink-3)}
-.uwt-rec{flex:0 0 auto;font-size:11px;font-weight:400;padding:1px 6px;border-radius:var(--ctl-r);
-  background:#F0F1F2;color:var(--ink-2)}
-.uwt-ft{display:flex;align-items:center;gap:8px;padding:14px 22px 20px}
+.uwt-rec{flex:0 0 auto;font-size:11px;font-weight:500;padding:1px 8px;border-radius:var(--r-pill);
+  background:var(--accent-fill);color:var(--accent-ink)}
+.uwt-ft{display:flex;align-items:center;gap:8px;padding:14px 24px 22px}
 .uwt-note{flex:1 1 auto;min-width:0;font-size:12px;color:var(--ink-3)}
-.uwt-btn{padding:8px 15px;border:1px solid var(--ctl);border-radius:var(--ctl-r);background:#fff;
-  cursor:pointer;font:14px/1.4 inherit;color:var(--ink-2)}
-.uwt-btn:hover{border-color:var(--dark);color:var(--ink)}
-.uwt-btn.uwt-pri{background:var(--dark);border-color:var(--dark);color:#fff}
+.uwt-btn{flex:0 0 auto;white-space:nowrap;padding:8px 16px;border:0;border-radius:var(--r-pill);background:var(--soft);
+  cursor:pointer;font:13px/1.4 inherit;color:var(--ink)}
+.uwt-btn:hover{background:var(--soft-2)}
+.uwt-btn.uwt-pri{background:var(--accent);color:#fff}
+.uwt-btn.uwt-pri:hover{background:var(--accent-hover)}
 
 /* ── 终端那一栏 ───────────────────────────────────
-   🔴 不是浮层。吉吉 2026-09-09 走查：「页面内的终端不要遮挡页面原有内容区，
-   打开页面内终端后可以给页面分区」—— 第一版是 position:fixed 盖在右边，
-   把向导弹层和主内容一起压在底下，等于「把终端换了个地方开」还挡了活。
-   现在是真分区：开终端 → <html> 挂 .uwt-split → 主容器 .app 和向导弹层一起收窄，
-   两边都完整可见。量过页面结构才敢这么改：body 下只有 .app 一个 static 主容器，
-   除我这两层和向导的两层之外没有别的 fixed 元素，所以收 .app 就够。
-   宽度用 --uwt-w 一个变量驱动，分隔条拖它，抽屉和被收窄的两边同时跟着变。 */
+   真分区：开终端 → <html> 挂 .uwt-split → 主容器 .app 和向导弹层一起收窄，两边都完整可见。
+   宽度用 --uwt-w 一个变量驱动，分隔条拖它，卡片和被收窄的两边同时跟着变。
+   这一栏自己是页面的白底，卡片留 12px 边距 —— 所以看起来是「页面里放了一张卡」。 */
 :root{--uwt-w:min(46vw,860px)}
 .uwt-drawer{position:fixed;top:0;right:0;bottom:0;z-index:250;
-  width:var(--uwt-w);
-  background:#1A1A1A;border-left:1px solid #000;
+  width:var(--uwt-w);padding:12px 12px 12px 6px;
+  background:var(--canvas);
   display:none;flex-direction:column;
-  font:13px/1.6 Roboto,-apple-system,"PingFang SC",sans-serif}
+  font:13px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;color:var(--ink)}
 .uwt-drawer.uwt-on{display:flex}
+.uwt-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  background:var(--white);border:1px solid var(--line-2);border-radius:var(--r-lg);
+  box-shadow:var(--sh-1);overflow:hidden}
 
 /* 分区：主内容和两个弹层都让出右边那一栏。
-   🔴 .uwt-mask（选三条路那个弹层）第一版漏了 —— 它自己 inset:0 在整个视口里居中，
-   白框右边 216px 正好压在终端底下（吉吉走查截图）。分区规则要**逐个列全**，
-   漏一个就是一个被压住的浮层；探针那条只断言了 .wizmask，覆盖不全才没抓到。 */
+   .uwt-mask（选三条路那个弹层）也要列 —— 它 inset:0 在整个视口里居中，不列就压在终端底下。 */
 html.uwt-split .app{width:calc(100% - var(--uwt-w))}
 html.uwt-split .wizmask{right:var(--uwt-w)}
 html.uwt-split .uwt-mask{right:var(--uwt-w)}
 html.uwt-split .wz-peek{max-width:calc(100vw - var(--uwt-w) - 40px)}
 
-/* 分隔条。12px 抓取区，但**常态就要看得见** ——
-   第一版 ::after 是 transparent、只在 hover 时才显线，吉吉的反馈是
-   「我希望有个功能，就是我可以自己拉动内容区宽度」：功能其实已经有了，
-   他看不出那儿能拖，所以等于没有。加一条常驻的细线 ＋ 中间一个握把。 */
+/* 分隔条：卡片左边那 12px 空隙就是抓取区，中间一枚常驻的小握把（看得见才知道能拖）。 */
 .uwt-grip{position:absolute;left:-6px;top:0;bottom:0;width:12px;cursor:col-resize;z-index:3;
   display:flex;align-items:center;justify-content:center}
-.uwt-grip::after{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:#3A3A3A;
-  transition:background .12s}
-.uwt-grip::before{content:"";position:relative;z-index:1;width:4px;height:32px;border-radius:var(--ctl-r);
-  background:#4A4A4A;box-shadow:0 0 0 3px #1A1A1A;transition:background .12s}
-.uwt-grip:hover::after,.uwt-grip.uwt-drag::after{background:#6B6B6B}
-.uwt-grip:hover::before,.uwt-grip.uwt-drag::before{background:#9A9A9A}
+.uwt-grip::before{content:"";width:4px;height:44px;border-radius:var(--r-pill);
+  background:var(--ink-4);transition:background .12s}
+.uwt-grip:hover::before,.uwt-grip.uwt-drag::before{background:var(--ink-3)}
 html.uwt-dragging{cursor:col-resize;user-select:none}
 
-/* 收起之后回去的把手。会话在桥上还活着 30 分钟，第一版收起了就没有任何入口 ——
-   吉吉：「点了收起终端的按钮，但没有再打开的按钮和途径」。
-   贴在右边缘、跟收起同一侧，只在真有活着的会话时出现。 */
-.uwt-reopen{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:239;
-  display:none;align-items:center;gap:7px;padding:11px 12px 11px 10px;
-  border:1px solid #333;border-right:0;border-radius:var(--box-r) 0 0 var(--box-r);
-  background:#222;color:#EDEDED;cursor:pointer;
-  font:12px/1.4 Roboto,-apple-system,"PingFang SC",sans-serif;
-  box-shadow:-2px 0 12px rgba(0,0,0,.22)}
+/* 收起之后回去的入口：右下角一枚白色胶囊（会话在桥上还活着 30 分钟，没入口就等于活丢了）。
+   只在真有活着的会话时出现。 */
+.uwt-reopen{position:fixed;right:20px;bottom:20px;z-index:230;
+  display:none;align-items:center;gap:8px;padding:9px 14px 9px 12px;
+  border:1px solid var(--glass-line);border-radius:var(--r-pill);
+  background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);color:var(--ink);cursor:pointer;
+  font:13px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  box-shadow:var(--sh-2)}
 .uwt-reopen.uwt-on{display:flex}
-.uwt-reopen:hover{background:#2C2C2C;border-color:#4A4A4A}
-.uwt-reopen .uwt-rdot{width:7px;height:7px;border-radius:50%;background:#4B9E5F;flex:0 0 auto}
-.uwt-reopen .uwt-rdot.uwt-run{background:#E6A23C;animation:uwt-pulse 1.1s ease-in-out infinite}
-.uwt-reopen b{font-weight:400;writing-mode:vertical-rl;letter-spacing:1px;max-height:150px;
-  overflow:hidden;text-overflow:ellipsis}
+.uwt-reopen:hover{background:rgba(255,255,255,.95)}
+.uwt-reopen .uwt-rdot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:0 0 auto}
+.uwt-reopen .uwt-rdot.uwt-run{background:var(--busy);animation:uwt-pulse 1.1s ease-in-out infinite}
+.uwt-reopen b{font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uwt-reopen .uwt-rgo{color:var(--accent-ink);font-size:12px;flex:0 0 auto}
+
+/* 🔴 向导开着的时候它要让开：向导右下角就是「下一步」，胶囊落在 20px 处正好盖住它
+   （2026-09-09 截图撞上）。压到遮罩底下也不行 —— 从向导起的终端、收起后就再点不到它。
+   所以向导开着时抬高到页脚之上（z 230 > 向导 200，< 选三条路那个弹层 240）。 */
+body:has(.wizmask.wzon) .uwt-reopen{bottom:92px}
+
+/* 卡头：跟页面同一套字号与色 */
 .uwt-dhd{flex:0 0 auto;display:flex;align-items:center;gap:10px;
-  padding:11px 14px;background:#222;border-bottom:1px solid #333;color:#EDEDED}
-.uwt-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#4B9E5F}
-.uwt-dot.uwt-run{background:#E6A23C;animation:uwt-pulse 1.1s ease-in-out infinite}
-.uwt-dot.uwt-dead{background:#777}
+  padding:12px 14px 12px 16px;border-bottom:1px solid var(--line-2);background:var(--white)}
+.uwt-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.uwt-dot.uwt-run{background:var(--busy);animation:uwt-pulse 1.1s ease-in-out infinite}
+.uwt-dot.uwt-dead{background:var(--ink-4)}
 @keyframes uwt-pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.uwt-dt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-size:13px;font-weight:500}
-.uwt-dsub{flex:0 0 auto;font-size:11px;color:#8C8C8C;max-width:38%;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.uwt-dbtn{flex:0 0 auto;padding:4px 9px;border:1px solid #3A3A3A;border-radius:var(--ctl-r);
-  background:transparent;color:#BDBDBD;cursor:pointer;font:12px/1.4 inherit}
-.uwt-dbtn:hover{border-color:#5A5A5A;color:#fff}
-.uwt-dbody{flex:1 1 auto;min-height:0;position:relative;padding:8px 4px 8px 10px;background:#1A1A1A}
-.uwt-xt{position:absolute;inset:8px 4px 8px 10px}
-.uwt-dtip{flex:0 0 auto;padding:8px 14px;background:#222;border-top:1px solid #333;
-  color:#8C8C8C;font-size:11px;display:flex;align-items:center;gap:10px}
-.uwt-dtip b{color:#BDBDBD;font-weight:400}
+.uwt-dtt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+.uwt-dt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:var(--ink)}
+.uwt-dsub{font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uwt-dbtn{flex:0 0 auto;padding:5px 12px;border:0;border-radius:var(--r-pill);
+  background:var(--soft);color:var(--ink);cursor:pointer;font:12px/1.4 inherit}
+.uwt-dbtn:hover{background:var(--soft-2)}
+/* 终端区：深色块嵌在白卡里，四边留 12px */
+.uwt-dbody{flex:1 1 auto;min-height:0;position:relative;margin:12px 12px 10px;
+  border-radius:var(--box-r);background:#1D1D1F;overflow:hidden}
+.uwt-xt{position:absolute;inset:10px 6px 10px 12px}
+.uwt-dtip{flex:0 0 auto;padding:0 16px 12px;color:var(--ink-3);font-size:12px;display:flex;align-items:center;gap:10px}
+.uwt-dtip b{color:var(--ink-2);font-weight:500}
 .uwt-boot{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  color:#8C8C8C;font-size:13px;text-align:center;padding:24px;line-height:1.8}
+  color:#A1A1A6;font-size:13px;text-align:center;padding:24px;line-height:1.8}
 /* 🔴 必须显式写。`[hidden]` 的 display:none 是浏览器默认样式表里的，
-   优先级低于上面这条 class 里的 display:flex —— 于是 el.hidden=true 之后
-   「正在起终端…」照样铺在终端上，一直挡着。
-   而探针查的是 .hidden 属性、不是实际可见性，所以它报绿、肉眼看红
-   （_verify/README 里记的第三类：只查 hidden 属性是 true，该量几何）。 */
+   优先级低于上面这条 class 里的 display:flex —— 不写的话 el.hidden=true 之后
+   「正在起终端…」照样铺在终端上。 */
 .uwt-boot[hidden]{display:none}
 
-/* 手机上抽屉占满，终端字号调小一档，不然 80 列放不下 */
 /* 🔴 视口不够宽就别硬分区：1100px 以下分完两边都不够用，
-   终端占满、主内容照旧留在底下（这时它本来就看不全，分区没意义）。
-   判据是「分完之后左边还够不够干活」，不是屏幕类别。 */
+   终端占满、主内容照旧留在底下。判据是「分完之后左边还够不够干活」，不是屏幕类别。 */
 @media (max-width:1100px){
-  .uwt-drawer{width:100vw}
+  .uwt-drawer{width:100vw;padding:8px}
   html.uwt-split .app{width:100%}
   html.uwt-split .wizmask{right:0}
   html.uwt-split .uwt-mask{right:0}
@@ -171,6 +159,7 @@ html.uwt-dragging{cursor:col-resize;user-select:none}
 @media (max-width:760px){
   .uwt-box{width:100%}
   .uwt-dsub{display:none}
+  .uwt-reopen{right:12px;bottom:calc(12px + env(safe-area-inset-bottom))}
 }
 '''
 
@@ -180,24 +169,25 @@ html.uwt-dragging{cursor:col-resize;user-select:none}
 DOM = '''
 <div class="uwt-mask" id="uwtMask"><div class="uwt-box" id="uwtBox"></div></div>
 <button class="uwt-reopen" id="uwtReopen" onclick="uwtReopen()" title="回到那个终端">
-  <span class="uwt-rdot" id="uwtRdot"></span><b id="uwtRlabel">终端还在跑</b>
+  <span class="uwt-rdot" id="uwtRdot"></span><b id="uwtRlabel">终端还在跑</b><span class="uwt-rgo">回到终端</span>
 </button>
 <div class="uwt-drawer" id="uwtDrawer">
   <div class="uwt-grip" id="uwtGrip" title="拖动改宽度"></div>
-  <div class="uwt-dhd">
-    <span class="uwt-dot" id="uwtDot"></span>
-    <span class="uwt-dt" id="uwtDt">终端</span>
-    <span class="uwt-dsub" id="uwtDsub"></span>
-    <button class="uwt-dbtn" id="uwtPaste" onclick="uwtPasteTask()">粘任务单</button>
-    <button class="uwt-dbtn" onclick="uwtHide()">收起</button>
-    <button class="uwt-dbtn" onclick="uwtKill()">结束</button>
-  </div>
-  <div class="uwt-dbody" id="uwtBody">
-    <div class="uwt-xt" id="uwtXt"></div>
-    <div class="uwt-boot" id="uwtBoot">正在起终端…</div>
-  </div>
-  <div class="uwt-dtip">
-    <span id="uwtTip">跟你自己在终端里敲 <b>claude</b> 是同一个东西：工具、MCP、钩子、技能全在。</span>
+  <div class="uwt-panel">
+    <div class="uwt-dhd">
+      <span class="uwt-dot" id="uwtDot"></span>
+      <span class="uwt-dtt"><span class="uwt-dt" id="uwtDt">终端</span><span class="uwt-dsub" id="uwtDsub"></span></span>
+      <button class="uwt-dbtn" id="uwtPaste" onclick="uwtPasteTask()">粘任务单</button>
+      <button class="uwt-dbtn" onclick="uwtHide()">收起</button>
+      <button class="uwt-dbtn" onclick="uwtKill()">结束</button>
+    </div>
+    <div class="uwt-dbody" id="uwtBody">
+      <div class="uwt-xt" id="uwtXt"></div>
+      <div class="uwt-boot" id="uwtBoot">正在起终端…</div>
+    </div>
+    <div class="uwt-dtip">
+      <span id="uwtTip">跟你自己在终端里敲 <b>claude</b> 是同一个东西：工具、MCP、钩子、技能全在。</span>
+    </div>
   </div>
 </div>
 '''
@@ -453,8 +443,8 @@ function uwtMakeTerm(){
     fontSize: narrow ? 11 : 13,
     fontFamily: 'SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace',
     lineHeight: 1.25, cursorBlink: true, scrollback: 5000,
-    /* 底色跟抽屉一致，不然滚到底会露出 xterm 自己的黑 */
-    theme: { background:'#1A1A1A', foreground:'#EDEDED', cursor:'#EDEDED',
+    /* 底色跟 .uwt-dbody 一致（#1D1D1F），不然滚到底会露出 xterm 自己的黑 */
+    theme: { background:'#1D1D1F', foreground:'#F5F5F7', cursor:'#F5F5F7',
              selectionBackground:'rgba(255,255,255,.22)' }
   });
   UWT.fit = new window.FitAddon.FitAddon();
@@ -690,12 +680,13 @@ def collision_gate(page):
 
 
 def radius_gate():
-    """圆角只准 4（控件）和 8（容器）+ 整圆。2026-09-08 量过飞鹊真组件：
-    只有 4/6/8/pill/整圆，12/16/20/24 各 0 次。写死量成的两档，别再冒出第三档。"""
+    """圆角只准写 :root 上那几个 token（4 小件 / 8 控件 / 12 卡片 / 18 大容器 / 胶囊 / 整圆）。
+    2026-09-09 全站换 Apple 那套之后，档位从飞鹊的 4/8 改成 8/12/18，
+    但原则不变：写死的数字一律拦 —— 硬编码就是下一次不统一的起点。"""
     # 🔴 要认四角简写。`border-radius:var(--box-r) 0 0 var(--box-r)` 是右边缘那个
     #    把手必须的写法（贴着屏幕右沿，右侧两角不该圆），第一版判据只认单值、
     #    把它当违规拦下来了。判据形式不完整 → 改成拆开逐值判，不加豁免。
-    OK = ('50%', 'var(--ctl-r)', 'var(--box-r)', '0', '0px')
+    OK = ('50%', 'var(--r-xs)', 'var(--ctl-r)', 'var(--box-r)', 'var(--r-lg)', 'var(--r-pill)', '0', '0px')
     lits = re.findall(r'border-radius:\s*([^;}]+)', _css_code())
     bad = []
     for v in lits:
@@ -706,7 +697,7 @@ def radius_gate():
     if bad:
         print('❌ 圆角门：出现了不在两档里的写法 —— %s' % '、'.join(bad))
         sys.exit(1)
-    print('✅ 圆角门通过 · 只用了var(--ctl-r)=4 / var(--box-r)=8 / 50%')
+    print('✅ 圆角门通过 · 只用了全站 token（--r-xs 4 / --ctl-r 8 / --box-r 12 / --r-lg 18 / 胶囊 / 整圆）')
 
 
 def syntax_gate(js):

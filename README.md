@@ -59,8 +59,8 @@ python3 build/gen-data.py    # 组件清册 / token / 自查表 / 目录 → 写
 python3 build/gen-kb.py      # 业务知识与方法论正文 → 写成 kb.js
 python3 build/patch-ui.py    # 资料库界面
 python3 build/patch-ai.py    # 检索与模型接入
-python3 build/patch-project.py # 选择工作空间
-python3 build/patch-auth.py  # 飞书登录（页面这一半）
+python3 build/patch-terminal.py # 接力到终端（两条路）—— 要在 patch-wizard 之前
+python3 build/patch-wizard.py  # 选项式向导（18 张卡）
 python3 build/patch-mobile.py # 手机版版面 —— 必须最后跑
 python3 build/secret-check.py # 提交前扫一遍有没有混进密钥
 node _verify/bridge.js out     # 动过模型接入或 bridge/ 就跑：三把锁 + 页面↔桥↔Claude 全程 + 桥不在时的退回
@@ -69,6 +69,14 @@ git commit -am "说明这次改了什么" && git push
 
 界面代码改 `build/patch-*.py` 里的CSS与JS，
 不要直接改 `index.html` 里标记之间的内容 —— 重跑脚本会覆盖掉。
+
+**全站只有一套视觉token**，定义在 `index.html` 开头 `<style>` 里的 `:root`
+（2026-09-09换成apple.com那套：文字 `#1D1D1F/#6E6E73/#86868B`、底 `#F5F5F7/#E8E8ED`、
+分隔 `#D2D2D7`、主色 `#0071E3`；圆角 `--r-xs 4 / --ctl-r 8 / --box-r 12 / --r-lg 18 / --r-pill`）。
+各层CSS只准引用这些变量，不准自己写颜色和圆角数字 —— `patch-terminal.py` 和 `patch-wizard.py`
+的圆角门会拦硬编码。要换主题只改 `:root` 那一处。
+
+飞书登录（`build/_弃-patch-auth.py` + `proxy/`）和左栏的任务历史2026-09-09已下线，页面不再有登录入口。
 每个脚本只替换自己那对标记之间的内容，互不干扰。
 **只有一条顺序要求：`patch-mobile.py` 最后跑** —— 它的CSS靠「同优先级后来者胜」
 覆盖前面所有区，位置被挤到中间就会失效。
