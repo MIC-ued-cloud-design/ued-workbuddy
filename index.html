@@ -178,8 +178,7 @@ h1{font-size:56px;line-height:1.07;font-weight:600;letter-spacing:-1.6px;text-al
 .filechip .x:hover{opacity:1}
 .filechip .x .fq{width:12px;height:12px}
 .filechip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fprev{position:absolute;bottom:calc(100% + 9px);left:-2px;display:none;background:var(--glass);
-  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+.fprev{position:absolute;bottom:calc(100% + 9px);left:-2px;display:none;background:var(--white);
   border:1px solid var(--glass-line);border-radius:var(--box-r);padding:5px;box-shadow:var(--sh-2);z-index:40}
 .filechip:hover .fprev{display:block}
 .fprev img{display:block;max-width:320px;max-height:240px;border-radius:var(--ctl-r)}
@@ -218,8 +217,10 @@ textarea::placeholder{color:var(--ink-3)}
 .cbar .plus{width:32px;height:32px;border-radius:50%;background:var(--soft);display:grid;place-items:center;color:var(--ink-2)}
 .cbar .plus.open{background:var(--soft-2);color:var(--ink)}
 /* 浮层：磨砂半透明 + 发丝线 + 大软影 */
-.ppop{position:absolute;bottom:calc(100% + 10px);left:0;width:198px;background:var(--glass);
-  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+/* 🔴 菜单类浮层用实色白底，不做磨砂 —— 吉吉 2026-09-10 截图：二级菜单下面输入框的字透了上来。
+   真因是嵌套：.ppop2 套在 .ppop 里，backdrop-filter 只会模糊父层的内容、不再模糊页面，
+   半透明底就成了「露底」。磨砂只留给下面没有正文的地方（左栏 / 向导头尾 / 收起胶囊）。 */
+.ppop{position:absolute;bottom:calc(100% + 10px);left:0;width:198px;background:var(--white);
   border:1px solid var(--glass-line);border-radius:var(--box-r);box-shadow:var(--sh-2);padding:6px;z-index:20}
 .ppop .row{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 8px;border-radius:var(--ctl-r);
   font-size:13px;color:var(--ink);text-align:left}   /* 只作用于 .row —— 写成 .ppop button 会连二级菜单的 .p2row 一起压成 32px */
@@ -233,8 +234,7 @@ textarea::placeholder{color:var(--ink-3)}
 .pitem>.row .ar{margin-left:auto;color:var(--ink-3);display:grid;place-items:center}
 .pitem>.row .ar .fq{width:13px;height:13px}
 .pitem:hover>.row{background:rgba(0,0,0,.05)}
-.ppop2{position:absolute;left:calc(100% + 6px);top:-6px;display:none;width:322px;background:var(--glass);
-  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+.ppop2{position:absolute;left:calc(100% + 6px);top:-6px;display:none;width:322px;background:var(--white);
   border:1px solid var(--glass-line);border-radius:var(--box-r);box-shadow:var(--sh-2);padding:6px;z-index:50}
 .pitem:hover>.ppop2{display:block}
 .p2search{display:flex;align-items:center;gap:8px;margin:2px 2px 6px;padding:8px 10px;border-radius:var(--ctl-r);
@@ -256,8 +256,7 @@ textarea::placeholder{color:var(--ink-3)}
 .model>button{display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:var(--r-pill);font-size:12.5px;color:var(--ink-2)}
 .model>button:hover{background:var(--soft)}
 .model.open>button{background:var(--soft);color:var(--ink)}
-.mpop{position:absolute;bottom:calc(100% + 10px);right:0;width:360px;background:var(--glass);
-  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+.mpop{position:absolute;bottom:calc(100% + 10px);right:0;width:360px;background:var(--white);
   border:1px solid var(--glass-line);border-radius:var(--box-r);box-shadow:var(--sh-2);padding:6px;z-index:20;
   max-height:436px;overflow-y:auto}
 .mpop .max{display:flex;align-items:center;gap:9px;padding:10px 10px 11px}
@@ -979,6 +978,7 @@ body:has(.wizmask.wzon) .uwt-reopen{bottom:92px}
 }
 
 /* ==WB-TERM-CSS:END== */
+
 /* ==WB-WIZ-CSS:BEGIN== */
 
 /* ═══ 向导层：用全站那一套 token（:root），只写结构 ═══
@@ -1148,8 +1148,7 @@ a.wz-doc:hover{background:var(--accent-fill);color:var(--accent-ink)}
 
 /* ── 点文档名看原文 ── */
 .wz-peek{position:fixed;right:26px;bottom:26px;width:430px;max-height:50vh;z-index:220;
-  background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
-  border:1px solid var(--glass-line);border-radius:var(--box-r);
+  background:var(--white);border:1px solid var(--glass-line);border-radius:var(--box-r);   /* 浮在正文上的浮层用实色，不磨砂（2026-09-10） */
   box-shadow:var(--sh-2);display:none;flex-direction:column;overflow:hidden}
 .wz-peek.wzon{display:flex}
 .wz-ph{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-2);
@@ -3524,6 +3523,8 @@ window.addEventListener('resize', function(){
 
 /* ==WB-TERM-JS:END== */
 
+
+
 /* ==WB-WIZ-JS:BEGIN== */
 
 /* =========================================================
@@ -4949,6 +4950,7 @@ function wzNext(){
   </div>
 </div>
 <!-- ==WB-TERM-DOM:END== -->
+
 <!-- ==WB-WIZ-DOM:BEGIN== -->
 <div class="wizmask" id="wizmask">
   <div class="wiz">

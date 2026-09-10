@@ -217,8 +217,7 @@ a.wz-doc:hover{background:var(--accent-fill);color:var(--accent-ink)}
 
 /* ── 点文档名看原文 ── */
 .wz-peek{position:fixed;right:26px;bottom:26px;width:430px;max-height:50vh;z-index:220;
-  background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
-  border:1px solid var(--glass-line);border-radius:var(--box-r);
+  background:var(--white);border:1px solid var(--glass-line);border-radius:var(--box-r);   /* 浮在正文上的浮层用实色，不磨砂（2026-09-10） */
   box-shadow:var(--sh-2);display:none;flex-direction:column;overflow:hidden}
 .wz-peek.wzon{display:flex}
 .wz-ph{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line-2);
