@@ -212,8 +212,13 @@ function uwtCan(){
   if(!B || !B.ok || !B.info) return { external:false, builtin:false,
     why:'要先把你电脑上的Claude Code接上（设置里有一行安装命令）' };
   var t = B.info.terminal;
-  if(!t) return { external:false, builtin:false, why:'桥的版本太旧，重跑一次安装命令就有这个功能' };
+  /* 桥旧了：说清是哪版、要哪版，命令由底下的「复制升级命令」按钮给 —— 光说「重跑一次安装命令」同事不知道命令是什么 */
+  if(!t) return { external:false, builtin:false, stale:true,
+    why:'桥是旧版'+(B.info.version||'1.0.0')+'，这个功能要'+(window.wbBridgeWant||'新版')+'：重跑一次安装命令就有' };
   return { external:!!t.external, builtin:!!t.ok, why:t.reason || '', root:t.workRoot || '' };
+}
+function uwtCopyCmd(){
+  if(window.copyTx && window.BRIDGE_CMD_PUB) copyTx(BRIDGE_CMD_PUB, '安装命令');
 }
 function uwtIcon(n){
   var P = {
@@ -261,6 +266,7 @@ function uwtRenderChooser(c, live){
            : (!c.builtin && c.why) ? uwtEsc(c.why)
            : (c.root ? '任务单会落到' + uwtEsc(c.root) + '/' : '');
   H.push('<div class="uwt-ft"><span class="uwt-note">' + note + '</span>'
+    + (c.stale ? '<button class="uwt-btn" onclick="uwtCopyCmd()">复制升级命令</button>' : '')
     + '<button class="uwt-btn" onclick="uwtCopyTask()">复制任务单</button>'
     + '<button class="uwt-btn" onclick="uwtCloseChooser()">取消</button></div>');
   document.getElementById('uwtBox').innerHTML = H.join('');

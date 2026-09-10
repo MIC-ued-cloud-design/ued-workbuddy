@@ -128,6 +128,29 @@ JS = r'''
         探了也是白探，还会在控制台留一条「连接被拒」。这样脱网门和移动端门都保持真绿，不靠豁免。
         本地联调想探：桥加 --dev 起，页面 localStorage 里放 wb.bridge.dev=1。 */
   var BRIDGE = { url:'http://127.0.0.1:17331', ok:false, info:null, checked:false, origin:'https://mic-ued-cloud-design.github.io' };
+  /* ── 桥的新旧：页面要的版本号在构建时从 bridge/uw-bridge.js 的 VERSION 抽进来（唯一源，别手写）──
+     原来只按功能开关（有没有 web / terminal 字段）判，三处「旧版」文案各说各的、都不带安装命令，
+     也不主动提；装过桥的同事升级后只会在点到读网页或接力终端时撞见一句「重跑一次安装命令」，
+     不知道命令是什么、也不知道旧在哪。现在版本比对一处算，设置 / 首次提示 / 终端选择弹层都从这里取。 */
+  var BRIDGE_WANT='__BRIDGE_WANT__';
+  function verLt(a,b){
+    var x=String(a||'0').split('.'), y=String(b||'0').split('.');
+    for(var i=0;i<Math.max(x.length,y.length);i++){
+      var p=parseInt(x[i]||'0',10)||0, q=parseInt(y[i]||'0',10)||0;
+      if(p!==q) return p<q;
+    }
+    return false;
+  }
+  function bridgeVer(){ return (BRIDGE.info && BRIDGE.info.version) || '1.0.0'; }   /* 1.0.0 起 health 就带 version；没有就当最老 */
+  function bridgeStale(){ return !!(BRIDGE.ok && verLt(bridgeVer(), BRIDGE_WANT)); }
+  /* 旧桥缺哪些功能 —— 按 health 里有没有那个字段判，给同事看「升了能多什么」，别只甩一个版本号 */
+  function bridgeMissing(){
+    var i=BRIDGE.info||{}, out=[];
+    if(!i.web) out.push('读网页');
+    if(!i.terminal) out.push('接力到终端（打开系统终端 / 页面内终端）');
+    return out;
+  }
+  window.wbBridgeWant = BRIDGE_WANT; window.wbBridgeStale = bridgeStale; window.wbBridgeMissing = bridgeMissing;
   function bridgeOff(){ return cfg().bridge === 'off'; }
   function bridgeDev(){ try{ return localStorage.getItem('wb.bridge.dev')==='1'; }catch(e){ return false; } }
   function probeBridge(){
@@ -149,7 +172,11 @@ JS = r'''
     syncModelList();
     if(BRIDGE.ok && !bridgeOff() && window.fqToast){
       var k='wb.bridge.toast';
-      try{ if(!sessionStorage.getItem(k)){ sessionStorage.setItem(k,'1'); fqToast('已连上你电脑上的 Claude Code，问答走它'); } }catch(e){}
+      /* 桥是旧版就把这句换掉 —— 只说「已连上」等于替人确认「一切正常」，而它少着功能 */
+      try{ if(!sessionStorage.getItem(k)){ sessionStorage.setItem(k,'1');
+        fqToast(bridgeStale()
+          ? '已连上你电脑上的Claude Code，但桥是旧版'+bridgeVer()+'：设置里重跑一次安装命令就能升到'+BRIDGE_WANT
+          : '已连上你电脑上的 Claude Code，问答走它'); } }catch(e){}
     }
     if(typeof render==='function') render();
   }
@@ -776,7 +803,7 @@ JS = r'''
     var kind = chatKind(q);
     R.kind = kind;
     if(webUrlsIn(q).length && !webReady() && window.fqToast){   /* 网址给了但这条路不通，先说清楚，别让人以为它看过 */
-      fqToast(mode()==='bridge' ? '要读网页得把本机桥升到新版：重跑一次安装命令' : '读网页要走本机桥（设置里有装法），这次只按知识库答');
+      fqToast(mode()==='bridge' ? '要读网页得把本机桥升到'+BRIDGE_WANT+'：设置里有安装命令，重跑一次就行' : '读网页要走本机桥（设置里有装法），这次只按知识库答');
     }
     R.state = (kind==='ask') ? 'loadkb' : 'run'; render();
     (kind==='ask'
@@ -821,14 +848,28 @@ JS = r'''
      三种状态：探到了且在用 / 探到了但这台电脑选了智谱 / 没探到（给装法）。
      手机上不给装法 —— 桥只能装在电脑上，手机看见一条 curl 命令只是噪音。 */
   var BRIDGE_CMD='curl -fsSL https://mic-ued-cloud-design.github.io/ued-workbuddy/bridge/install.sh | bash';
+  function cmdLine(){
+    return '<p><code class="mono" style="cursor:pointer;font-size:12px;word-break:break-all" onclick="copyTx(BRIDGE_CMD_PUB,\'安装命令\')">'+BRIDGE_CMD+'</code></p>';
+  }
+  /* 桥是旧版：把「旧在哪 / 升了多什么 / 命令是哪一行 / 升完怎么确认」四件事一次说完。
+     升级就是重跑同一行安装命令（install.sh 自己会停掉旧的再起新的，不用先卸载）。 */
+  function staleBox(){
+    var miss=bridgeMissing();
+    return '<p><b>桥是旧版'+bridgeVer()+'，这个页面需要'+BRIDGE_WANT+'。</b>'
+      + (miss.length ? '升上去才有：'+miss.join('、')+'。' : '新版带着提速和修复。')
+      + '在终端重跑一次安装命令就升级了，不用先卸载；页面里正在跑的终端会被带走。</p>'
+      + cmdLine()
+      + '<p><button class="rbtn pri" onclick="wbBridgeRecheck()">升级好了，再探一次</button></p>';
+  }
   function bridgeBox(){
     if(BRIDGE.ok){
+      var stale=bridgeStale();
       return '<div class="nbox" style="margin:0 0 18px"><b>'+(bridgeOff()? '你电脑上的 Claude Code 可用，但这台电脑选了智谱' : '已连上你电脑上的 Claude Code')+'</b>'+
         '<p>走它的时候用的是你自己的席位，模型比免费的强，出网仍经公司的 FCF 通道。手机上没有这条路，会自动退回共享通道。</p>'+
-        ((BRIDGE.info&&BRIDGE.info.web&&BRIDGE.info.web.ok)
+        (stale ? staleBox()
+          : (BRIDGE.info&&BRIDGE.info.web&&BRIDGE.info.web.ok)
           ? '<p>问题里带 made-in-china.com 或 vemic.com 的网址时，桥会开一个独立的 Chrome 窗口读页面正文给它看。那个窗口可以最小化，别关。</p>'
-          : (BRIDGE.info&&BRIDGE.info.web) ? '<p>这台电脑没找到 Google Chrome，读网页那一步用不了。</p>'
-          : '<p>你装的桥是旧版，重跑一次安装命令就能读网页。</p>')+
+          : (BRIDGE.info&&BRIDGE.info.web) ? '<p>这台电脑没找到 Google Chrome，读网页那一步用不了。</p>' : '')+
         '<p>'+(bridgeOff()
           ? '<button class="rbtn pri" onclick="wbBridgeUse(true)">改回用本机 Claude</button>'
           : '<button class="rbtn" onclick="wbBridgeUse(false)">这台电脑改用智谱</button>')+'</p></div>';
@@ -837,7 +878,7 @@ JS = r'''
     return '<div class="nbox" style="margin:0 0 18px"><b>想让 Claude 来回答？装一次「本机桥」</b>'+
       '<p>电脑上装了 Claude Code 的话，在终端粘这一行。装完刷新页面会自动改用它。'+
       '桥只在你的电脑上跑、只服务这个页面，所有请求照旧经公司 FCF 通道出网。</p>'+
-      '<p><code class="mono" style="cursor:pointer;font-size:12px;word-break:break-all" onclick="copyTx(BRIDGE_CMD_PUB,\'安装命令\')">'+BRIDGE_CMD+'</code></p>'+
+      cmdLine()+
       '<p><button class="rbtn" onclick="wbBridgeRecheck()">装好了，再探一次</button></p></div>';
   }
   window.BRIDGE_CMD_PUB = BRIDGE_CMD;
@@ -847,6 +888,8 @@ JS = r'''
   };
   window.wbBridgeRecheck = function(){
     probeBridge().then(function(ok){
+      /* 探到了但还是旧版 ≠ 升好了 —— 别在这里给假绿。设置弹层留着不关，命令还在眼前 */
+      if(ok && bridgeStale()){ fqToast('探到桥了，但还是'+bridgeVer()+'。安装命令跑完了吗？看看终端那一行有没有报错'); wbCloseSet(); wbSettings(); return; }
       fqToast(ok? '连上了，已改用本机 Claude' : '还没探到桥。看看终端那一行有没有报错');
       if(ok){ wbCloseSet(); render(); }
     });
@@ -1040,13 +1083,29 @@ def syntax_gate():
     print('✅ JS 语法门通过')
 
 
+def bridge_version():
+    """页面要的桥版本号只有一个源：bridge/uw-bridge.js 里的 VERSION。
+    抽不到就中止 —— 手写一个版本号进页面，桥一升版页面就落后，正是这次要修的病。"""
+    import re
+    src = os.path.join(os.path.dirname(HERE), 'bridge', 'uw-bridge.js')
+    m = re.search(r"^const VERSION\s*=\s*'(\d+\.\d+\.\d+)'", open(src, encoding='utf-8').read(), re.M)
+    if not m:
+        print('❌ 在 bridge/uw-bridge.js 里没抽到 VERSION，已中止'); sys.exit(1)
+    return m.group(1)
+
+
 def main():
+    global JS
+    ver = bridge_version()
+    if '__BRIDGE_WANT__' not in JS:
+        print('❌ JS 里没有 __BRIDGE_WANT__ 占位，已中止'); sys.exit(1)
+    JS = JS.replace('__BRIDGE_WANT__', ver)
     syntax_gate()
     page = open(PAGE, encoding='utf-8').read()
     page, a1 = splice(page, CSS_B, CSS_E, CSS, '</style>')
     page, a2 = splice(page, JS_B, JS_E, JS, '</script>')
     open(PAGE, 'w', encoding='utf-8').write(page)
-    print(f'CSS {a1} · JS {a2} · index.html {os.path.getsize(PAGE)/1024:.0f} KB')
+    print(f'CSS {a1} · JS {a2} · 桥版本 {ver} · index.html {os.path.getsize(PAGE)/1024:.0f} KB')
 
 
 if __name__ == '__main__':

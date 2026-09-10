@@ -19,6 +19,11 @@ bash <(curl -fsSL https://mic-ued-cloud-design.github.io/ued-workbuddy/bridge/in
 bash <(curl -fsSL https://mic-ued-cloud-design.github.io/ued-workbuddy/bridge/install.sh) --uninstall   # 卸载
 ```
 
+**升级**：重跑上面同一行安装命令就行，不用先卸载（`install.sh`会停掉旧的再起新的；页面里正在跑的终端会被带走）。
+桥的版本号在`uw-bridge.js`顶上的`VERSION`，页面构建时（`build/patch-ai.py`）把它抽进去当目标版本：
+装的桥比页面要的旧，页面会在首次连上时提示、在设置里写出「现在几版 / 需要几版 / 缺哪些功能」并给出这行命令、在「交给谁做」弹层里给「复制升级命令」。
+所以**升了桥的版本号，页面要一起重新构建并发布**，否则页面认的还是旧号。
+
 ## 它是什么、不是什么
 
 - 一个几百行的Node脚本，一直在后台跑着，只监听本机的 `127.0.0.1:17331`。
