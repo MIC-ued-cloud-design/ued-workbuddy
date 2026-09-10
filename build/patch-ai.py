@@ -49,6 +49,9 @@ CSS = r'''
 .rbtn:hover{background:var(--soft-2)}
 .rbtn.pri{background:var(--accent);color:#fff}
 .rbtn.pri:hover{background:var(--accent-hover);color:#fff}
+/* 灰块（.nbox 底色就是 --soft）里的次级按钮改白底加描边 —— 跟块面同色时它就不像按钮了（吉吉 2026-09-10 截图） */
+.nbox .rbtn:not(.pri){background:var(--white);border-color:var(--line)}
+.nbox .rbtn:not(.pri):hover{background:var(--soft-2);border-color:var(--ctl)}
 
 /* 接着问 */
 .askmore{margin:26px 0 0;border:1px solid transparent;border-radius:var(--r-lg);background:var(--soft);padding:4px;transition:border-color .15s}
