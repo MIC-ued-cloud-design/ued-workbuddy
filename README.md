@@ -76,7 +76,7 @@ git commit -am "说明这次改了什么" && git push
 各层CSS只准引用这些变量，不准自己写颜色和圆角数字 —— `patch-terminal.py` 和 `patch-wizard.py`
 的圆角门会拦硬编码。要换主题只改 `:root` 那一处。
 
-飞书登录（`build/_弃-patch-auth.py` + `proxy/`）和左栏的任务历史2026-09-09已下线，页面不再有登录入口。
+飞书登录（`build/_弃-patch-auth.py` + `proxy/`）、左栏的任务历史、工作空间（`build/_弃-patch-project.py`）2026-09-09～10已下线，页面不再有登录入口。
 每个脚本只替换自己那对标记之间的内容，互不干扰。
 **只有一条顺序要求：`patch-mobile.py` 最后跑** —— 它的CSS靠「同优先级后来者胜」
 覆盖前面所有区，位置被挤到中间就会失效。
