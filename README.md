@@ -52,20 +52,26 @@ UED部门的AI设计工作台。
 ## 怎么更新
 
 页面里的数据**不要手改** —— 它是从 `mic-fullstack` 技能库生成的，技能库才是正本。
-技能库更新之后重跑生成脚本：
+源头更新之后，跑这一条：
 
 ```bash
-python3 build/gen-data.py    # 组件清册 / token / 自查表 / 目录 → 写进 index.html
-python3 build/gen-kb.py      # 业务知识与方法论正文 → 写成 kb.js
-python3 build/patch-ui.py    # 资料库界面
-python3 build/patch-ai.py    # 检索与模型接入
-python3 build/patch-terminal.py # 接力到终端（两条路）—— 要在 patch-wizard 之前
-python3 build/patch-wizard.py  # 选项式向导（18 张卡）
-python3 build/patch-mobile.py # 手机版版面 —— 必须最后跑
-python3 build/secret-check.py # 提交前扫一遍有没有混进密钥
-node _verify/bridge.js out     # 动过模型接入或 bridge/ 就跑：三把锁 + 页面↔桥↔Claude 全程 + 桥不在时的退回
-git commit -am "说明这次改了什么" && git push
+bash build.sh          # 重建 + 跑门 + 出摘要，不提交
+bash build.sh --push   # 上面都过了再提交推送（会先问一次）
+bash build.sh --check-only   # 只看源头新不新，不重建
 ```
+
+它按焊死的顺序跑那七个生成脚本，**任何一步挂了立刻停**（不会留半截产物），
+跑完扫密钥、验内联JS语法，最后报这次kb多了几份、页面大了多少、有哪些文件待提交。
+`--full` 会多跑 `_verify/bridge.js`（要开浏览器，慢）。
+
+**业务知识读的是仓库、不是你的电脑。** 优先级：`$UW_KB_SRC` → `ued-skill` 仓的
+`biz-knowledge/payload/` → 本机auto-memory兜底（见 `build/_src.py`）。
+这样换任何一台机器、或者将来挂到内网GitLab CI上，构建出来的都是同一份。
+本机memory里沉淀了新知识但还没进仓库时，`build.sh` 的源头体检会报出来，
+提示你先跑 `sync-to-repo.sh` —— 这次构建仍然用仓库那份，因为**仓库里没有的东西
+不该进发布产物**，否则同事pull不到、CI也复现不出同一份。
+
+反复跑 `build.sh` 产出的字节完全相同（幂等），源头没变就不会产生git diff。
 
 界面代码改 `build/patch-*.py` 里的CSS与JS，
 不要直接改 `index.html` 里标记之间的内容 —— 重跑脚本会覆盖掉。

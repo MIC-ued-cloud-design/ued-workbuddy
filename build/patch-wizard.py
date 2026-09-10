@@ -40,7 +40,12 @@ def strip_between(page, b, e):
         if j < 0:
             print('❌ 找到 %s但没找到配对的 %s，页面被手改过？已中止' % (b, e))
             sys.exit(1)
-        page = page[:i] + page[j + len(e):]
+        # 🔴 连着把标记外面紧挨的空行一起吃掉。注入时在标记前后各加了 '\n'，
+        #    只删标记之间的内容，那些换行每跑一轮就留一个 —— 页面每次构建长 8 字节，
+        #    源头一个字没改也会产生 git diff。自动构建天天跑，那就是天天一个假提交。
+        head = page[:i].rstrip('\n')
+        tail = page[j + len(e):].lstrip('\n')
+        page = head + '\n' + tail
         n += 1
     return page, n
 

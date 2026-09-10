@@ -8,11 +8,14 @@ script 标签不会，这样双击本地文件也能用。页面首屏不加载�
 
 用法：python3 build/gen-kb.py
 """
-import os, re, glob, json, datetime
+import os, re, glob, json, datetime, sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import _src                      # 业务知识读哪里 —— 见 build/_src.py 文件头
 
 SK   = os.path.expanduser('~/.claude/skills/mic-fullstack')
-MEM  = glob.glob(os.path.expanduser('~/.claude/projects/*/memory'))
-HERE = os.path.dirname(os.path.abspath(__file__))
+BIZ_DIRS, BIZ_HOW = _src.biz_dirs()
 OUT  = os.path.join(os.path.dirname(HERE), 'kb.js')
 
 MAXC = 1400          # 单块最大字符
@@ -278,18 +281,12 @@ def collect():
     chunks = []
 
     # ① MIC 业务知识（正文）
-    pats = ['mic-biz-*.md', 'reference-mic-*.md', '_index-mic-*.md']
-    seen = set()
-    for base in MEM:
-        for pat in pats:
-            for f in sorted(glob.glob(os.path.join(base, pat))):
-                n = os.path.basename(f)[:-3]
-                if n in seen:
-                    continue
-                seen.add(n)
-                chunks += split_doc(n, open(f, encoding='utf-8').read(), 'biz')
+    files = _src.biz_files(BIZ_DIRS)
+    for f in files:
+        n = os.path.basename(f)[:-3]
+        chunks += split_doc(n, open(f, encoding='utf-8').read(), 'biz')
     nbiz = len(chunks)
-    print(f'  业务知识  {len(seen):3d} 份 → {nbiz:5d} 块')
+    print(f'  业务知识  {len(files):3d} 份 → {nbiz:5d} 块   [来源：{BIZ_HOW}]')
 
     # ② fullstack skill 的方法论与判据
     k = len(chunks)

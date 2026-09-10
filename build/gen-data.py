@@ -10,8 +10,12 @@ skill 更新后重跑本脚本即可同步，不要手改 index.html 里两个�
 """
 import json, re, os, sys, glob, datetime
 
-SK   = os.path.expanduser('~/.claude/skills/mic-fullstack')
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import _src                      # 业务知识读哪里 —— 见 build/_src.py 文件头
+
+SK   = os.path.expanduser('~/.claude/skills/mic-fullstack')
+BIZ_DIRS, BIZ_HOW = _src.biz_dirs()
 PAGE = os.path.join(os.path.dirname(HERE), 'index.html')
 
 BEGIN = '/* ==FQ-DATA:BEGIN== 由 build/gen-data.py 生成，勿手改 == */'
@@ -352,19 +356,13 @@ def build_memrefs():
 
 def build_biz():
     """业务知识只取目录级：文件名 + 一句话摘要。正文不进页面。"""
-    pats = ['mic-biz-*.md', 'reference-mic-*.md', '_index-mic-*.md']
-    seen, rows = set(), []
-    for base in glob.glob(os.path.expanduser('~/.claude/projects/*/memory')):
-        for pat in pats:
-            for f in sorted(glob.glob(os.path.join(base, pat))):
-                n = os.path.basename(f)[:-3]
-                if n in seen:
-                    continue
-                seen.add(n)
-                d, hi = clean(front(f))
-                rows.append({'n': n, 'd': d[:300], 'hi': hi, 'sz': os.path.getsize(f)})
+    rows = []
+    for f in _src.biz_files(BIZ_DIRS):
+        d, hi = clean(front(f))
+        rows.append({'n': os.path.basename(f)[:-3], 'd': d[:300], 'hi': hi,
+                     'sz': os.path.getsize(f)})
     rows.sort(key=lambda r: r['n'])
-    print(f'  业务知识（目录级）: {len(rows)} 份')
+    print(f'  业务知识（目录级）: {len(rows)} 份   [来源：{BIZ_HOW}]')
     return rows
 
 
