@@ -26,6 +26,33 @@ EMOJI = re.compile(
     '\U00002190-\U000021FF\U00002B00-\U00002BFF️⃣]+')
 
 
+# ── 发布脱敏（2026-09-15 立）────────────────────────────────────
+# kb.js 是**公网可直接下载**的（GitHub Pages 上 HTTP 200，无需登录）。
+# 业务文档里会夹带两类跟「个人」有关的东西，它们对知识库毫无用处，
+# 但公开出去就是个人信息，所以在**生成的唯一出口**这里统一去掉，
+# 而不是事后去改 kb.js —— 改产物下次重建就回来了。
+#
+# 🔴 只清「属于某个人」的东西。PRD 自己写的脱敏规则示例
+#    （如 `13712345678` `137****5678`、`focuschina@…` `f********@…`）
+#    是业务规则的一部分，动了等于改业务内容 —— 一律不碰。
+PERSONAL_EMAILS = [
+    '852821880@qq.com',        # 吉吉个人 QQ 号，出现在「Figma PAT 配的是个人账号」那条笔记里
+]
+
+
+def redact(t):
+    """去掉本机绝对路径与个人邮箱。传什么类型都安全，只处理字符串。"""
+    if not isinstance(t, str) or not t:
+        return t
+    # 本机家目录 → ~，连带把登录名一起去掉
+    t = re.sub(r'/Users/[A-Za-z0-9_.\-]+/', '~/', t)
+    t = re.sub(r'/Users/[A-Za-z0-9_.\-]+\b', '~', t)
+    for e in PERSONAL_EMAILS:
+        local, _, dom = e.partition('@')
+        t = t.replace(e, '***@' + dom)
+    return t
+
+
 def load(path):
     with open(path, encoding='utf-8') as f:
         return json.load(f)
@@ -402,6 +429,10 @@ def build_dict(chunks):
 def main():
     print('══ 切检索块 ══')
     chunks = collect()
+    for c in chunks:                      # 发布脱敏：见文件上方 redact()
+        for k in ('x', 't', 'd'):
+            if k in c:
+                c[k] = redact(c[k])
     chars = sum(len(c['x']) for c in chunks)
     docs = len(set(c['d'] for c in chunks))
 
