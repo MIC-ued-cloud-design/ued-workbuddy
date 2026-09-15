@@ -1,0 +1,2366 @@
+{
+  "_meta": {
+    "什么": "飞鹊 Edition2026【移动端】组件清册。做移动端视觉稿 / MIC 移动端 demo 开工先读这份。",
+    "fileKey": "iP6IPga9cD6kVWH8AgJxrR",
+    "文件名": "[飞鹊Edition2026]-移动端",
+    "抓取日期": "2026-09-01",
+    "范围": "页名带 ✅ 的 43 页 + 吉吉 2026-09-01 授权加入的「产品组件」「Navbar页头」两页 + 基础规范三页(Space/Corner/Shadow) + 「+Image 图片 ✍️」(在写,已发布) = 49 页",
+    "🔴 别跟 Web 端混用": "Web 端清册是 assets/feique-component-catalog.json，fileKey gcanH38jg2SMmXwrcC6FP8。两端字号/间距/触控热区/圆角/图标名都不一样，component key 也完全不同。跨端引用前查本文件的 webVsMobile 段。",
+    "figma-verify": "✅ 已装（2026-09-01，指纹 35910-468224b6，装完 match:true）。之后跑门只贴 /tmp/fv-call.js（769 字节）。冒烟测过：对 divider set 跑出 8 违规 8 通过，违规全是库里既有的（description 为空 / set 缺紫色描边 / 矢量零件默认名），不是新造成的。",
+    "基准画布": "375 × 812 (iPhone X)。通栏组件宽 375,卡片型宽 343 (375 - 16×2),抽屉左右向宽 300。",
+    "sampleFieldCaveat": "本文件里凡是写具体颜色的地方都注明了取自哪个态。children[0] 不是默认 variant —— 要默认态看 props 里的 def=。"
+  },
+  "tokens": {
+    "_权威": "paint / text / effect style 是 token 层。variables 只有 spacing 一组(7 个)有用,另一组 Collection 1 是个占位垃圾(1 个 STRING 变量,三个 mode 值全是 'String value')。",
+    "paintStyles": {
+      "_数量": 33,
+      "_跟Web端": "33 个名字和值全部一致,一个不差。跨端配色可以直接复用。",
+      "primary/buyer": {
+        "v": "#E64545",
+        "id": "S:902a0becbe826724cc8adcc9eed3822f94ec4292,",
+        "用在": "买家侧主题色"
+      },
+      "primary/buyer hover": {
+        "v": "#CF3E3E",
+        "id": "S:8b7dd0cce13f9910adc6bea671d661341a14f24c,"
+      },
+      "primary/buyer background": {
+        "v": "#FDF1F1",
+        "id": "S:d6862e4cdf156794c4f60ce4a13d6bb7139dd502,"
+      },
+      "primary/supplier": {
+        "v": "#007DFA",
+        "id": "S:b6d405c9a76321ae84b9a269f7f25708de6f68e6,",
+        "用在": "供应商侧主题色"
+      },
+      "primary/supplier hover": {
+        "v": "#0071E1",
+        "id": "S:7076dcea06576bf3b85a8a6b024624174ffe9443,"
+      },
+      "primary/supplier background": {
+        "v": "#EBF5FF",
+        "id": "S:159a715fcf1fdcd081e6cb331b88e581667ea59a,"
+      },
+      "primary/dark": {
+        "v": "#222222",
+        "id": "S:5c015dc60693f76ef4f06369f5640423cf2da96c,"
+      },
+      "primary/dark hover": {
+        "v": "#000000",
+        "id": "S:9a8e01e7691f5d81c0bb332975f67f061c80d9c6,"
+      },
+      "primary/dark background": {
+        "v": "#F4F4F4",
+        "id": "S:9d486e386f661e836ff903f49f9c8a9b74c88904,"
+      },
+      "function/normal": {
+        "v": "#007DFA",
+        "id": "S:1cc7b49efffd63b0019e15bd7fe3399fb4fdeaed,"
+      },
+      "function/normal background": {
+        "v": "#EBF5FF",
+        "id": "S:bce0425641e69bc1f8ed456425e8f53d51d4fab9,"
+      },
+      "function/tag green": {
+        "v": "#00A170",
+        "id": "S:c29af1b4576423faecb5dd11ce6b2bbbafdafdf6,"
+      },
+      "function/success": {
+        "v": "#00C88C",
+        "id": "S:2886182690fdae0085ba60a5aeafb6142d93cb08,"
+      },
+      "function/success background": {
+        "v": "#EBFBF6",
+        "id": "S:144625de55c7d57340431a946f8bbaac462fa8e9,"
+      },
+      "function/tag yellow": {
+        "v": "#BF8200",
+        "id": "S:61d0e53408498340cf12b3037f67967da4a7d0a2,"
+      },
+      "function/warning": {
+        "v": "#FAAA00",
+        "id": "S:9ee3618add1e7cd93301967912f7f9291c5d1010,"
+      },
+      "function/warning background": {
+        "v": "#FEF6E5",
+        "id": "S:bad6d3c4c5e76aa776d303f67ae144734f1cd6af,"
+      },
+      "function/error": {
+        "v": "#FF5252",
+        "id": "S:3ba96ef0830a441978531b2aebfde4c6775271fa,",
+        "🔴": "错误色是 #FF5252,不是品牌红 #E64545。表单必填星号和 helper text 用它。"
+      },
+      "function/error background": {
+        "v": "#FFF2F2",
+        "id": "S:3ad042a978bd74dd22d012470604e23c5c7b2409,"
+      },
+      "function/file gray": {
+        "v": "#A3B8CC",
+        "id": "S:420da5ad1302d271c1e97bf1abadf70502ccfe74,"
+      },
+      "text/title": {
+        "v": "#222222",
+        "id": "S:e1c767ff29603a9724a7753a11f3c5402594d7fd,"
+      },
+      "text/main": {
+        "v": "#555555",
+        "id": "S:5d3b0ed7127d0509bc7236fe5707bfa4e84f9a0d,"
+      },
+      "text/auxiliary": {
+        "v": "#888888",
+        "id": "S:a04fba2b2ea12204ea545781571ce84aaa47fd8a,"
+      },
+      "text/disable": {
+        "v": "#B3B3B3",
+        "id": "S:5f09edf7e12f65c57432ea67a18d31fe1901deab,"
+      },
+      "dividing line/button": {
+        "v": "#CED3D9",
+        "id": "S:da606a9fb871e920fe63e3e1f9197179375df762,",
+        "用在": "按钮描边 / 输入框描边"
+      },
+      "dividing line/list": {
+        "v": "#DAE0E6",
+        "id": "S:1b7669fea551b0bf3f8625a0497c3f9e44d88e9c,"
+      },
+      "dividing line/border": {
+        "v": "#E6ECF2",
+        "id": "S:e2177e4a91a509d8be784eb97079bce7333a556e,"
+      },
+      "dividing line/module": {
+        "v": "#E6E6E6",
+        "id": "S:8052025e903b722bcccb3d7c1e16803f62897316,",
+        "用在": "列表行底分割线 / 模块分割"
+      },
+      "background/background 01": {
+        "v": "#F5F7FA",
+        "id": "S:66183d249570831fddc6f24233f06abfe24eb269,"
+      },
+      "background/background 02": {
+        "v": "#F0F1F2",
+        "id": "S:0e4d01f1e5e40959f1d4576f458bce7ad941fe93,"
+      },
+      "background/background 03": {
+        "v": "#FFFFFF",
+        "id": "S:a386512ff03efd54abc895ce4b685dfb40c4c512,"
+      },
+      "other/black": {
+        "v": "#000000",
+        "id": "S:05524533b38cdacc622b50ace4d304a9019430d9,"
+      },
+      "other/white": {
+        "v": "#FFFFFF",
+        "id": "S:5dfbe1d7f140d04ddbc9cc87917683d263c96e9d,"
+      }
+    },
+    "textStyles": {
+      "_数量": 19,
+      "_跟Web端": "Web 端 16 个,移动端 19 个。多出来的三个是 body/2xl(20)、body/2xl_bold(20)、footnote/es(10)。",
+      "_🔴 字号铁律差异": "Web 端『body 正文级最大 18』『禁用 10px』这两条是 Web 端专属,移动端不成立 —— 移动端 20 和 10 都是正式 text style。",
+      "_字重": "只有 Roboto Regular 和 Roboto Bold 两档,跟 Web 端一样。没有 Medium / SemiBold 的 style。",
+      "heading/heading1": {
+        "font": "Roboto Regular",
+        "size": 36,
+        "lh": "42px",
+        "id": "S:f36edfaa8695b343a10a7eeb78e1b46d826e2466,"
+      },
+      "heading/heading1_bold": {
+        "font": "Roboto Bold",
+        "size": 36,
+        "lh": "42px",
+        "id": "S:d03b2d4382ffa13ea79f6ea91afa302811673e52,"
+      },
+      "heading/heading2": {
+        "font": "Roboto Regular",
+        "size": 32,
+        "lh": "38px",
+        "id": "S:ba7b06fec457145ea117c1625267fbf3cbcac2b0,"
+      },
+      "heading/heading_bold": {
+        "font": "Roboto Bold",
+        "size": 32,
+        "lh": "38px",
+        "id": "S:6b7898a30bd9b24852a92e87099892c3fd9b4c86,",
+        "🔴": "名字漏了数字,叫 heading_bold 不叫 heading2_bold。按名字找会 miss。"
+      },
+      "heading/heading3": {
+        "font": "Roboto Regular",
+        "size": 24,
+        "lh": "30px",
+        "id": "S:7c63eecd1293315c65e6b84f92a5448cebd8fcd5,"
+      },
+      "heading/heading3_bold": {
+        "font": "Roboto Bold",
+        "size": 24,
+        "lh": "30px",
+        "id": "S:ae80507037fb84cc9a9b95892acd631420dc809b,"
+      },
+      "heading/heading4": {
+        "font": "Roboto Regular",
+        "size": 22,
+        "lh": "28px",
+        "id": "S:f8a284b6a801939415f68d8f0bb6676aa2b66305,"
+      },
+      "heading/heading4_bold": {
+        "font": "Roboto Bold",
+        "size": 22,
+        "lh": "28px",
+        "id": "S:fa18a1091bb3797990fcf274e615b5188c388981,"
+      },
+      "body/2xl": {
+        "font": "Roboto Regular",
+        "size": 20,
+        "lh": "28px",
+        "id": "S:c1e0e232967f788b48e1d26e54ff0e205c08c11d,",
+        "🔴": "移动端独有。Web 端没有 20px 的 text style。"
+      },
+      "body/2xl_bold": {
+        "font": "Roboto Bold",
+        "size": 20,
+        "lh": "28px",
+        "id": "S:872d3c3de8fda71a4e8107f612f6698b76b732da,"
+      },
+      "body/xl": {
+        "font": "Roboto Regular",
+        "size": 18,
+        "lh": "26px",
+        "id": "S:522f582d78b06d01688688626e3a734d114c1450,"
+      },
+      "body/xl_bold": {
+        "font": "Roboto Bold",
+        "size": 18,
+        "lh": "26px",
+        "id": "S:5ac480852e5161c8b2a36a4e1efd2db8cd982e76,"
+      },
+      "body/lg": {
+        "font": "Roboto Regular",
+        "size": 16,
+        "lh": "24px",
+        "id": "S:6ec2c2a248b3dbb172a8de16e8a6c989d41e163b,",
+        "🔴": "移动端最高频正文,实测 773 次。Web 端主力是 14。"
+      },
+      "body/lg_bold": {
+        "font": "Roboto Bold",
+        "size": 16,
+        "lh": "24px",
+        "id": "S:0ba30662d55e24757d3f8df3735bcdfd79386e80,"
+      },
+      "body/base": {
+        "font": "Roboto Regular",
+        "size": 14,
+        "lh": "22px",
+        "id": "S:23412238d36319612ea181bf69c56563a3e22dd2,"
+      },
+      "body/base_bold": {
+        "font": "Roboto Bold",
+        "size": 14,
+        "lh": "22px",
+        "id": "S:86a9a0ef885e8824727182efe86e666e58255900,"
+      },
+      "footnote/sm": {
+        "font": "Roboto Regular",
+        "size": 12,
+        "lh": "18px",
+        "id": "S:1dd4ff6df9e2104947b7aac51f64e0f70d97363c,"
+      },
+      "footnote/sm_bold": {
+        "font": "Roboto Bold",
+        "size": 12,
+        "lh": "18px",
+        "id": "S:8eb53c6c243a8f9ad0d3081df19c4e9687d55393,"
+      },
+      "footnote/es": {
+        "font": "Roboto Regular",
+        "size": 10,
+        "lh": "12px",
+        "id": "S:75cc464aeb997fd1a3c4ae2a55db6181da3ecd49,",
+        "🔴": "移动端独有的 10px。实测只用了 6 次,是个冷门档。"
+      }
+    },
+    "effectStyles": {
+      "_数量": 3,
+      "_三级语义(取自 Shadow 规范页原文)": "1级=物体位于低层级,被操作时触发悬浮,操作完成即消失,如下拉面板;贴近背景,阴影柔和微弱。2级=物体位于中层级,由地面元素展开产生,跟随所在层级移动,如卡片 hover;浮起一定高度,阴影清晰。3级=运动与其他层级无关,如对话框/模态框/通知/抽屉;显著突出于界面,阴影强烈且扩散。",
+      "box shadow": {
+        "级": 1,
+        "id": "S:f0ddd4c799a7eae93d1a16ed74a24ebbe13b2f5a,",
+        "真值": [
+          "Y5 B12 S4 #000@8%",
+          "Y3 B6 S0 #000@12%",
+          "Y1 B2 S-2 #000@10%"
+        ]
+      },
+      "box shadow secondary": {
+        "级": 2,
+        "id": "S:8c608096e7ae524036710190e1beb1d4624cab9e,",
+        "真值": [
+          "Y9 B28 S8 #000@5%",
+          "Y6 B16 S0 #000@8%",
+          "Y3 B6 S-4 #000@12%"
+        ]
+      },
+      "box shadow tertiary": {
+        "级": 3,
+        "id": "S:5d1e74bc651748f27a6f6a56907f866693af0fa5,",
+        "真值": [
+          "Y12 B48 S16 #000@3%",
+          "Y9 B28 S0 #000@5%",
+          "Y6 B16 S-8 #000@8%"
+        ]
+      }
+    },
+    "spacingVariables": {
+      "_🔴 比 Web 端强的一点": "移动端把间距做成了真 variables(FLOAT,scopes=[WIDTH_HEIGHT,GAP]),可以 setBoundVariable 绑。Web 端只有语义描述没有变量。",
+      "collection": "spacing (单 mode)",
+      "spacing/xxs": 4,
+      "spacing/xs": 8,
+      "spacing/s": 12,
+      "spacing/m": 16,
+      "spacing/l": 24,
+      "spacing/xl": 32,
+      "spacing/2xl": 48,
+      "规则(取自 Space 页原文)": "基于 4px 网格。水平严格 7 个 token;垂直允许所有 4px 倍数(20/28/36/40 等)。禁止非 4px 倍数(5/10/15/25)。作者给的理由:『页面垂直层级比水平复杂,7 个值不够覆盖所有场景』。",
+      "语义": {
+        "xxs=4": "icon 内间距 / 紧凑元素间隙",
+        "xs=8": "组件内 padding / 相关元素间距",
+        "s=12": "卡片内 padding / 表单字段间距",
+        "m=16": "区块内 padding / 段落间距",
+        "l=24": "区块间距 / 卡片间距",
+        "xl=32": "大区块间距 / 页面区域分隔",
+        "2xl=48": "页面级间距 / 首屏到内容区"
+      }
+    },
+    "cornerRadius": {
+      "_🔴 规范页跟实测对不上,以实测为准": "Corner 规范页写的阶梯是 0/4/6/12/20/9999,实测(12 页 7526 节点)完全是另一回事。",
+      "规范页写的": {
+        "阶梯": [
+          0,
+          4,
+          6,
+          12,
+          20,
+          9999
+        ],
+        "规则": "标签+小型按钮→4px;默认按钮+输入框+卡片→6px;大型卡片+模态框→12px",
+        "公式": "外圆角 = 内圆角 + padding(如 内16 + padding8 = 外24)"
+      },
+      "实测分布": {
+        "1000": 390,
+        "4": 157,
+        "8": 48,
+        "5": 46,
+        "6": 44,
+        "999": 38,
+        "11": 32,
+        "15": 24,
+        "10": 20,
+        "2": 13,
+        "13": 9,
+        "20": 8,
+        "16": 1,
+        "13.5": 1,
+        "12": 0
+      },
+      "对账结论": [
+        "① 规范页的 12 实测 0 次 —— 规范页点名给『大型卡片、模态框』的值,一次都没用。",
+        "② 圆形按钮规范页写 9999,实测是 1000(390 次)+ 999(38 次)。三个值并存,1000 是事实标准。写 9999 会跟库里全部对不上。",
+        "③ 实测第三高频的 8(48 次)规范页里根本没有。",
+        "④ 一堆非阶梯值在真组件里:5 / 10 / 11 / 13 / 15 / 2,还有非整数 13.5。",
+        "🔴 跟 Web 端一样的结论:『圆角阶梯』这个模型本身不成立。要圆角去查具体组件的实测值,别套阶梯。"
+      ],
+      "跟Web端差异": "Web 端是 sm(高24)=4 · md(高32)=6 · lg(高40)=8 · round=1000。移动端 round 也是 1000,但控件高度档位不同(见 button),且规范页写的阶梯两端完全不同。",
+      "🔴 吉吉 2026-09-01 拍板：按实测走": "规范页作废，不去找组件库的人对。做移动端稿的圆角一律查本段「实测分布」和具体组件的实测值，不套规范页的阶梯。圆形按钮写 1000（不是 9999）。",
+      "该用哪个值": {
+        "圆形/胶囊": "1000（390 次·事实标准；库里另有 999×38，别跟着写）",
+        "小控件/标签": "4（157 次）",
+        "卡片/列表卡": "8（48 次）",
+        "默认按钮/输入框": "6（44 次）",
+        "其余": "查具体组件实测值，别推算"
+      }
+    },
+    "实测统计": {
+      "_口径": "扫了 12 个高频组件页(button/input/textarea/radio/checkbox/dialog/card/tabs/list/form/产品组件/Navbar页头),7526 个节点、1746 个文字节点。",
+      "字号分布": {
+        "16": 773,
+        "14": 659,
+        "12": 262,
+        "20": 20,
+        "18": 16,
+        "10": 6,
+        "9": 5,
+        "22": 3,
+        "13": 1,
+        "15": 1
+      },
+      "字号结论": [
+        "移动端正文主力是 16(Web 端是 14) —— 直接照 Web 端习惯写 14 会偏小。",
+        "20 确实在用(20 次)且有 body/2xl 撑腰,移动端合法。",
+        "🔴 7 处奇数违规:9px×5 · 13px×1 · 15px×1。这三个值没有对应 text style。"
+      ],
+      "字重分布": {
+        "Regular": 1694,
+        "Bold": 41,
+        "SemiBold": 11
+      },
+      "字重结论": "🔴 text style 层只有 Regular/Bold,但库里有 11 处硬编码 SemiBold(没绑 style)。跟 Web 端同款问题。看到 SemiBold 不要当成有这么一档 token,那是硬编码。",
+      "textStyle绑定率": {
+        "bound": 1712,
+        "unbound": 34,
+        "率": "98.1%"
+      }
+    }
+  },
+  "components": {
+    "_按页组织": "下面每条 = 一个 component set 或 component。key 可直接 importComponentByKeyAsync。id 是本文件内节点 id。",
+    "divider": {
+      "key": "627aade20972e583023542a2232639754fdddfaa",
+      "id": "5895:3568",
+      "页": "Divider 分割线✅",
+      "v": 6,
+      "props": "dash[off|on]def=off ; color[default|dark|light]def=default",
+      "尺寸": "375x0",
+      "🔴": "同一个 set 内逗号分隔符混用:dash=off,color=default 无空格,dash=on, color=dark 有空格。按名字 find 前必须 dump 真名。"
+    },
+    "Bottom reached": {
+      "key": "6048f5fa7fb8c73e37042f670ceea3af06d125bb",
+      "id": "7542:62",
+      "页": "Divider 分割线✅",
+      "v": "single",
+      "尺寸": "253x26",
+      "文案": "No more date",
+      "🔴": "文案拼错,应是 No more data。"
+    },
+    "brand logo": {
+      "key": "ee7544e804e5193881360410dc0308d985bfb7ff",
+      "id": "2005:9039",
+      "页": "icon图标🌞✅",
+      "v": 16,
+      "props": "brand[diamond|gold|audited|STS|rating|certificate|leading-factory|supplier-star] ; form[icon|group|score|stars|with-desc|with-text|wordmark|wordmark-box]",
+      "sample": "16x16",
+      "说明": "供应商资质标。8×8 理论组合只做了 16 个,不是全矩阵 —— 配之前查 variantList。",
+      "variantList": [
+        "diamond/icon",
+        "diamond/with-text",
+        "gold/icon",
+        "gold/with-text",
+        "audited/with-text",
+        "audited/wordmark",
+        "leading-factory/wordmark",
+        "STS/icon",
+        "STS/with-text",
+        "STS/with-desc",
+        "STS/wordmark",
+        "STS/wordmark-box",
+        "certificate/group",
+        "supplier-star/icon",
+        "supplier-star/stars",
+        "rating/score"
+      ]
+    },
+    "attachment icon": {
+      "key": "e5e463d49c88eb30a4353790b3bd9c021588648f",
+      "id": "5167:2",
+      "页": "icon图标🌞✅",
+      "v": 18,
+      "props": "attachment[DOC|DOCX|ZI|PDF|PIC|PPT|XLS|TEXT|ZIP|FILE] ; size[large|small]",
+      "尺寸": "large=48x48 / small(见实测)",
+      "🔴": "属性值有拼写错:ZIP 只有 large 档,small 档叫 ZI(少了 P)。传 ZIP+small 会 miss。"
+    },
+    "移动端icon": {
+      "key": "a178b2d461558481f53dc0c25a66ef49f31354ae",
+      "id": "5148:5",
+      "页": "icon图标🌞✅",
+      "v": 302,
+      "props": "icon[302 个值,见 assets/feique-mobile-icon-variants.txt]",
+      "sample": "16x16",
+      "🔴 set名": "叫「移动端icon」不叫「icon」。findOne(n=>n.name==='icon') 会 miss。",
+      "🔴 默认值": "品牌图形&标准功能图标-android —— import 后不显式 setProperties 会冒出一堆安卓图标。"
+    },
+    "scrollbar": {
+      "key": "5ad991b7e7f8b80389439371c36e08b230c133a8",
+      "id": "2019:24778",
+      "页": "Scrollbar滚动条🌞✅",
+      "v": 6,
+      "props": "size[large|medium|small]def=large ; state[default|hover]def=default",
+      "尺寸": "large=8x40"
+    },
+    "mask": {
+      "key": "a65d96fbadfc9d82ffc41b557ec11280eead2912",
+      "id": "5247:8",
+      "页": "Mask背景蒙版🌞✅",
+      "v": 3,
+      "props": "opacity[0.35|0.55|0.75]def=0.35",
+      "尺寸": "375x812(满屏)"
+    },
+    "button": {
+      "key": "ec52ddfd414e4b7b17e00ec31351337cd7622154",
+      "id": "2019:24969",
+      "页": "Button 按钮🌞✅",
+      "v": 405,
+      "props": "type[primary|secondary|dashed|link|text]def=primary ; size[large|medium|small]def=small ; State[default|press|disabled]def=default ; content[basic|icon only]def=basic ; color[red|blue|dark]def=red ; shape[default|round]def=round",
+      "🔴🔴 最要紧的一条": "content=basic(带文字)的变体【只有 shape=round】,没有 shape=default。也就是说移动端带文字的按钮只有圆角胶囊形态。shape=default 只存在于 content=icon only。照 Web 端习惯传 {content:'basic', shape:'default'} 会直接 miss。",
+      "🔴 属性名大小写": "State 首字母大写,其余六个属性全小写。全库唯一的混用。",
+      "🔴 跟Web端的高度差异": "移动端 large=44 / medium=32 / small=24。Web 端是 lg=40 / md=32 / sm=24。44 是移动端触控热区,别照 Web 端写 40。",
+      "尺寸矩阵(type/size/content/shape => WxH)": {
+        "primary|secondary|dashed|text 四种 type 同尺寸": {
+          "*/large/basic/round": "80x44",
+          "*/large/icon only/*": "44x44",
+          "*/medium/basic/round": "74x32",
+          "*/medium/icon only/*": "32x32",
+          "*/small/basic/round": "58x24",
+          "*/small/icon only/*": "24x24"
+        },
+        "link 单独一档(比其他都小)": {
+          "link/large/basic/round": "48x24",
+          "link/large/icon only/*": "22x22",
+          "link/medium/basic/round": "42x22",
+          "link/medium/icon only/*": "16x16",
+          "link/small/basic/round": "42x22",
+          "link/small/icon only/*": "16x16"
+        }
+      },
+      "健康度": "零重复 variant(已逐条查过)。405 / 540 理论组合 = 稀疏但不是坏 set,可正常 setProperties。",
+      "已知异类": "dashed/large/icon only/round 这一组里有一个 40×40,其余同组是 44×44。用之前对一下。",
+      "色的作用范围": "🔴 未看图核实。Web 端实测是『color=red|blue|dark 只作用于 primary 的填充,secondary/dashed 是深灰描边不是红的,link 恒定蓝』—— 移动端【不能直接继承这条结论】,要单独看图。"
+    },
+    "button bottom fixed": {
+      "key": "4aee57958d5461cc360dd73054809356b8774785",
+      "id": "5225:541",
+      "页": "Button 按钮🌞✅",
+      "v": 6,
+      "props": "layout[single|double|triple|1+1icon|1+2icon|1+3icon]def=single",
+      "尺寸": "全部 375x64",
+      "说明": "移动端底部固定操作栏。六种排布,高度恒定 64。做移动端 demo 的底部 CTA 直接用它,别自己拼。"
+    },
+    "input": {
+      "key": "0ef5cbe7fdb0aeb02c75b38974184733b10744df",
+      "id": "5209:988",
+      "页": "Input 输入框✅",
+      "v": 28,
+      "props": "full-width[yes|no]def=yes ; state[error|default|filled|diabled]def=default ; icon[none|front|after]def=none ; required[no|yes]def=no",
+      "🔴 拼写错": "state 的禁用档叫 diabled(少个 s),不是 disabled。传 disabled 会 miss。",
+      "🔴 无空格分隔": "全部 28 个 variant 名用 `,` 不带空格。",
+      "高度": "default/filled 48 · error 74(多出错误提示行) · 有一个 diabled+required 是 56(异类,其余 diabled 都是 48)",
+      "宽度": "全部 375(full-width=no 也是 375,这个属性只改内部构造不改外框宽)"
+    },
+    "stepper": {
+      "key": "c4886dbf6298d357fb1e9338fd27b91541ace06b",
+      "id": "6073:230",
+      "页": "Stepper 步进器 ✅",
+      "v": 8,
+      "props": "type[stepper|number]def=stepper ; state[default|focus|disabled|error]def=default",
+      "尺寸": "stepper=112x32 / number=88x32"
+    },
+    "textarea": {
+      "key": "bc93d0672a2c4f87983e677d054669edf6e6a985",
+      "id": "5433:2",
+      "页": "Textarea 文本域 ✅",
+      "v": 24,
+      "props": "full-width[yes|no]def=yes ; state[default|filled|error]def=default ; counter[no|yes]def=no ; required[no|yes]def=no",
+      "高度": "base 96 · counter=yes +26 → 122 · error +26 → 122 · error+counter → 148",
+      "作者写的构造说明": "full-width=yes → 375 通栏 + 底部 1px dividing line/module #E6E6E6,padding 16;full-width=no → 343 紧凑 + 四周 1px dividing line/button #CED3D9,padding 12。state=default 用 text/disable #B3B3B3 占位;filled 用 text/title #222;error 追加 14px 红色 Error message。counter 右下角 12px,default 态 #888、filled 态 #555、超限红。required 左侧 16px 红星,itemSpacing=2。",
+      "🔴 说明里的矛盾": "textarea 说明写 error message 用 primary/buyer #E64545,但 form-item-title 说明写星号用 function/error #FF5252。两处错误色不一致,用之前看图确认。"
+    },
+    "radio": {
+      "key": "2656827b1985ff3a1f912884278e4978b6b03c1f",
+      "id": "5050:3350",
+      "页": "Radio 单选框 ✅",
+      "v": 8,
+      "props": "state[default|selected]def=default ; disabled[no|yes]def=no ; title[yes|no]def=yes",
+      "尺寸": "title=yes → 57x22 · title=no → 22x22",
+      "说明": "圆点式单选,表单用。"
+    },
+    "selecter-single": {
+      "key": "12d6409830888c4cb6889f3a498cc1774f8838b1",
+      "id": "5050:3286",
+      "页": "Radio 单选框 ✅",
+      "v": 24,
+      "props": "state[default|selected]def=default ; disabled[no|yes]def=no ; shape[default|round]def=default ; color[default|red|blue]def=default",
+      "尺寸": "全部 121x30",
+      "说明": "按钮式单选,筛选用。🔴 跟 radio 长得完全不一样,别混。移动端比 Web 端多了 shape 和 color 两个轴。",
+      "🔴 set名拼写": "selecter 应为 selector,照原样才配得上。"
+    },
+    "checkbox": {
+      "key": "fe670ee32edbbc33b8a00356f39b30078a5555b5",
+      "id": "5050:3409",
+      "页": "Checkbox 复选框 ✅",
+      "v": 8,
+      "props": "state[default|selected]def=default ; disabled[no|yes]def=no ; title[yes|no]def=yes",
+      "尺寸": "title=yes → 57x22 · title=no → 22x22",
+      "🔴 跟Web端差异": "Web 端 checkbox 的属性名是拼错的 statues,移动端是正确的 state。两端不能照抄属性名。"
+    },
+    "selecter-multiple": {
+      "key": "8b428f12b74fb3a520104e228902f97d3bf6de17",
+      "id": "5050:3360",
+      "页": "Checkbox 复选框 ✅",
+      "v": 16,
+      "props": "type[text|dropdown|badge|icon]def=text ; state[default|selected]def=default ; disabled[no|yes]def=no",
+      "尺寸": "text=121x30 · dropdown=141x30 · badge=70x30 · icon=30x30"
+    },
+    "chip-icon-text/m": {
+      "key": "51ea40c008fd8c7454463e2df944c0827a78eb87",
+      "id": "8719:2549",
+      "页": "Checkbox 复选框 ✅",
+      "v": 2,
+      "props": "state[default|active]def=default",
+      "尺寸": "76x30",
+      "说明": "无 description。名字带 /m 后缀,是较新加的。"
+    },
+    "image-uploader-cell": {
+      "key": "2d50262ed659e12f80a20b1815c472d677273d37",
+      "id": "5344:473",
+      "页": "Image Uploader图片上传 🌹✅",
+      "v": 10,
+      "props": "state[default|pic|file|uploading|interrupt]def=default ; size[default|small]def=default",
+      "尺寸": "default=100x100 · small=75x75",
+      "🔴 状态别自己编": "上传中断有专门的 interrupt 态,文件类型有 file 态。"
+    },
+    "image uploader": {
+      "key": "9e50db11503262747a9cb278fa5c70c99c9fa2be",
+      "id": "5391:1549",
+      "页": "Image Uploader图片上传 🌹✅",
+      "v": 4,
+      "props": "error[off|on]def=off ; size[default|small]def=default",
+      "尺寸": "default=375x266 · small=375x216"
+    },
+    "image viewer": {
+      "key": "5f369cfa1d6911169c1ac9e5b655630a2bdf9ba5",
+      "id": "5391:2514",
+      "页": "+ImageView 图片查看器 🌹✅",
+      "v": 2,
+      "props": "multiple[false|true]def=false",
+      "尺寸": "375x812(全屏)"
+    },
+    "image": {
+      "key": "12c2395c1129d5509c0a7fc9df6f1802083a6346",
+      "id": "5434:26",
+      "页": "+Image 图片 ✍️(未打勾·在写)",
+      "v": 15,
+      "props": "ratio[16:9|4:3|1:1] ; state[with image|hover|placeholder image|no image|loading]",
+      "sample": "375x211",
+      "🔴": "页名带 ✍️ = 作者标注在写。已发布可 import,但用之前对一下线上。",
+      "🔴 状态别自己编": "占位图 placeholder image / 无图 no image 都是现成的。"
+    },
+    "image/1:1/Supplier without logo": {
+      "key": "bbd88b1dfc94750c3da558a081dc992e52e6214a",
+      "id": "6231:470",
+      "页": "+Image 图片 ✍️",
+      "v": "single",
+      "尺寸": "175x175",
+      "说明": "供应商无 logo 的占位图,单独一个组件不在 image set 里。"
+    },
+    "switch": {
+      "key": "b197998070efd413e39350c547bee61121bddfe8",
+      "id": "5253:743",
+      "页": "Switch 开关 🌞✅",
+      "v": 12,
+      "props": "switch[off|on]def=off ; disable[on|off]def=off ; loading[on|off]def=off ; color[red|blue]def=red",
+      "尺寸": "全部 52x30",
+      "🔴 属性名": "disable 不是 disabled。",
+      "🔴 开启色": "Web 端实测『switch 开启是品牌蓝不是红』。移动端 color 默认 red —— 是不是真红要看图,不能继承 Web 端结论。"
+    },
+    "panel header": {
+      "key": "d48896eecc790569e658563da47806f5eb7d5c10",
+      "id": "5091:40",
+      "页": "Piker选择器 ✅",
+      "v": 4,
+      "props": "title[show|hide]def=show ; divider[none|bottom]def=none",
+      "尺寸": "375x40",
+      "作者写的构造说明": "弹层/面板头部,40px 高,左右内边距 13px。根 SPACE_BETWEEN auto-layout,默认 375,实例上设 layoutSizingHorizontal=FILL 可跟随父容器。配色 other/white 背景、text/main(Cancel)、text/title(Title)、primary/buyer(OK)、dividing line/module(底分割线)。字号 body/base(Cancel/OK Regular)、body/base_bold(Title)。",
+      "🔴 说明有误": "说明写 Title 是 SemiBold,但 body/base_bold 这个 style 是 Roboto Bold。库里没有 SemiBold 的 style。"
+    },
+    "picker": {
+      "key": "ed8a7b5a1637baedb7ae2b26b31e3934944af7c3",
+      "id": "5110:2",
+      "页": "Piker选择器 ✅",
+      "v": "single",
+      "尺寸": "375x812",
+      "说明": "底部选择器完整浮层 = 半透明 backdrop(other/black @55%,满屏)+ 底部 panel(panel-header 在 y=529 + picker-body 2列9项在 y=569)。",
+      "🔴 页名拼错": "页面叫「Piker选择器」,少个 c。"
+    },
+    "picker view": {
+      "key": "3f622d3a734893f9e543ff5df2c29319ccb21b4d",
+      "id": "5810:5088",
+      "页": "Piker选择器 ✅",
+      "v": 3,
+      "props": "Property 1[picker view-1|picker view-2|picker view-3]",
+      "尺寸": "375x244",
+      "🔴": "属性从未命名(Property 1),值也是默认图层名。setProperties 要传 {'Property 1':'picker view-2'}。"
+    },
+    "checklist style1": {
+      "key": "a8a6a361c9b3dc5d1c7e765ed68b6b918434d69c",
+      "id": "5459:52",
+      "页": "+CheckList 可勾选列表 🌹✅",
+      "v": 4,
+      "props": "state[default|selected]def=default ; disabled[no|yes]def=no",
+      "尺寸": "375x48"
+    },
+    "checklist style2": {
+      "key": "7691670d726a470fe06b740044f495bcfb423b5c",
+      "id": "5459:208",
+      "页": "+CheckList 可勾选列表 🌹✅",
+      "v": 6,
+      "props": "state[default|selected]def=default ; disabled[no|yes]def=no ; arrow[no|yes]def=no",
+      "尺寸": "375x48"
+    },
+    "_form表单族": {
+      "_说明": "Form 页共 17 个组件,是全库结构最完整的一族。分 vertical(标题在上)/horizontal(标题在左)两套,各覆盖 input/select/steper/switch/selector/radio/textarea。",
+      "_🔴 属性名首字母全大写": "Required / Filled / Disabled / Error / Extra / Count —— 跟全库小写惯例相反,跟 Web 端 Steps 那族一样。",
+      "form-item-title": {
+        "key": "b14963aa31a2f00b72882fb6213c9e44c0c489d9",
+        "id": "6348:274",
+        "v": 8,
+        "props": "asterisk[true|false]def=true ; text-required[false|true]def=false ; optional[false|true]def=false ; tooltip[false|true]def=false",
+        "尺寸": "347x24",
+        "🔴 业务规则": "前 3 个 marker 互斥,只能有一个 true。四种标记形态:红星号 / 文字 Required / 无 / (Optional)。",
+        "构造": "HORIZONTAL HUG gap=4 居中。星号 body/lg 16 + function/error #FF5252;label body/lg 16 + text/main #555;Required 与 (Optional) 用 body/base 14 + text/auxiliary #888;tooltip 是 info 图标 16×16。"
+      },
+      "vertical-form-item-input": {
+        "key": "3b45d1cb68919f00a7ce9124ca860a21ab2bd388",
+        "id": "6353:370",
+        "v": 8,
+        "props": "Required × Filled × Disabled",
+        "尺寸": "375x102",
+        "构造": "VERTICAL FIXED 375 · padding 12/16 · gap=4 · fill=other/white。input-box 底部 strokeBottomWeight=1 dividing line/module。helper 用 footnote/sm 12 + function/error。Disabled=true → opacity 0.4。"
+      },
+      "vertical-form-item-select": {
+        "key": "c7a482b6a7d44cc7291a0223288275155b5f6be2",
+        "id": "6382:554",
+        "v": 8,
+        "props": "Required × Filled × Disabled",
+        "尺寸": "375x102"
+      },
+      "vertical-form-item-steper": {
+        "key": "f0fa439ed0ad8563c2d4f8281e9a5e71c082e3fc",
+        "id": "6399:562",
+        "v": 4,
+        "props": "Required × Disabled",
+        "尺寸": "375x110",
+        "🔴": "steper 拼错,应 stepper。而 Stepper 页那个组件名是对的。"
+      },
+      "vertical-form-item-switch": {
+        "key": "cfca5fc0669897e45cca844a1328b641a4cec2ed",
+        "id": "6405:422",
+        "v": 4,
+        "props": "Required × Disabled",
+        "尺寸": "375x108"
+      },
+      "vertical-form-item-selector": {
+        "key": "ecbe0faf363f5f12d84124bf23697fc461daf9ef",
+        "id": "6414:677",
+        "v": 8,
+        "props": "Required × Filled × Disabled",
+        "尺寸": "375x108"
+      },
+      "vertical-form-item-radio": {
+        "key": "1753341b43be54eadbb61fee8f8d143b516d6198",
+        "id": "6423:1122",
+        "v": 8,
+        "props": "Required × Disabled × ↓[on|off]def=on × →[off|on]def=off",
+        "尺寸": "↓=on → 375x164 · →=on → 375x100",
+        "🔴🔴 全库最坑的属性名": "两个属性名就是箭头符号 ↓ 和 →,表示选项纵排还是横排。setProperties 必须写 {'↓':'off','→':'on'}。手打不出来就从这份清册复制。"
+      },
+      "vertical-form-item-textarea": {
+        "key": "af3747b4f7b4ba506f86d55694d69661270df18d",
+        "id": "6442:1284",
+        "v": 16,
+        "props": "Required × Filled × Disabled × Count",
+        "尺寸": "Count=false 375x175 · Count=true 375x201"
+      },
+      "horizontal-form-item-input": {
+        "key": "17ae6555d19c57e3d9f66da090c49aa9b7adae2a",
+        "id": "6456:1705",
+        "v": 24,
+        "props": "Required × Filled × Disabled × Error × Extra",
+        "尺寸": "Error=false 375x48 · Error=true 375x74",
+        "🔴": "只有 horizontal-form-item-input 有 Error 和 Extra 两个轴,vertical 那套没有。两套不对称。"
+      },
+      "horizontal-form-item-select": {
+        "key": "4f653b8b669264b88988c41d4d4c61b04c962284",
+        "id": "6463:1356",
+        "v": 12,
+        "props": "Required × Filled × Error × Disabled",
+        "尺寸": "Error=false 375x48 · Error=true 375x74"
+      },
+      "horizontal-form-item-steper": {
+        "key": "b13cb3fa3a7f575caa20274b7d26546bed350f13",
+        "id": "6466:1184",
+        "v": 4,
+        "尺寸": "375x78"
+      },
+      "horizontal-form-item-switch": {
+        "key": "08fc107c19f27b2290bce89d5dfc429f2360dc33",
+        "id": "6467:1044",
+        "v": 4,
+        "尺寸": "375x76"
+      },
+      "horizontal-form-item-selector": {
+        "key": "48ef29ead6dd2b445f4affe6631700f9366083cc",
+        "id": "6468:1088",
+        "v": 4,
+        "尺寸": "375x160"
+      },
+      "horizontal-form-item-radio": {
+        "key": "d89b6bceaed98fabbfcefc9959390f3ff22ad86b",
+        "id": "6469:1350",
+        "v": 4,
+        "尺寸": "375x142"
+      },
+      "horizontal-form-item-textarea": {
+        "key": "82ee3dcea6cf796e49a2339ff7437e5fdb9457ea",
+        "id": "6475:1716",
+        "v": 16,
+        "props": "Required × Filled × Disabled × Count",
+        "尺寸": "Count=false 375x146 · Count=true 375x172"
+      },
+      "form-item-captcha": {
+        "key": "0eb8f9adf6f530d7212a77f17d7966087e4bc826",
+        "id": "6473:1152",
+        "v": 4,
+        "props": "Filled[false|true] ; Counting[false|true]",
+        "尺寸": "375x48",
+        "说明": "验证码输入行,Counting=true 是倒计时中(重发按钮禁用)。"
+      },
+      "form": {
+        "key": "4761ca61e4b871b57f5b198d338e4f1ac698e706",
+        "id": "6480:3785",
+        "v": 8,
+        "props": "Layout[vertical|Layout6|Layout8|horizontal|Layout7]def=vertical ; CardMode[true|false] ; Title[true|false]",
+        "尺寸": "375x620~798",
+        "🔴🔴 属性值里混进了 Figma 默认图层名": "Layout 的合法值里有 Layout6 / Layout7 / Layout8,那是没改的默认名,不是设计意图。真正有语义的只有 vertical 和 horizontal。"
+      },
+      "list/image": {
+        "key": "3b437ffb3993fbd62f3d76638cedea0f3b3901e8",
+        "id": "6490:1922",
+        "v": "single",
+        "尺寸": "375x316",
+        "说明": "图片九宫格上传区。header(标题+底分割线)+ grid(HORIZONTAL WRAP,gap=10,6 个 image-uploader-cell 100×100)+ footer(计数 8/9)。"
+      }
+    },
+    "swiper": {
+      "key": "d04b20ec99eebed345da45796f22bbd78d1104cf",
+      "id": "5269:6605",
+      "页": "Swiper 轮播 🌞✅",
+      "v": 4,
+      "props": "Property 1[Bottom|Left|Right|Top]def=Bottom",
+      "尺寸": "Bottom/Left/Right=355x140 · Top=355x150",
+      "🔴": "属性从未命名(Property 1),跟 Web 端同一个坑。"
+    },
+    "carousel dot": {
+      "key": "b8550828166f57ad2434db622d1cf0d7ed076af3",
+      "id": "5269:6622",
+      "页": "Swiper 轮播 🌞✅",
+      "v": 24,
+      "props": "state[active|default|hover]def=active ; shape[line|round]def=line ; color[light|dark|red|blue]def=light",
+      "尺寸": "line active=20x2 / line default=12x2 / round=6x6",
+      "已知异类": "state=hover,shape=line,color=dark 是 12x3,其余 line 都是高 2。"
+    },
+    "Carousel Dots": {
+      "key": "3c514f4e60169ed9605700290271e085406c2e69",
+      "id": "5269:6674",
+      "页": "Swiper 轮播 🌞✅",
+      "v": 16,
+      "props": "vertical[false|True]def=false ; shape[line|round]def=line ; color[light|dark|red|bule]def=light",
+      "🔴 两个坑": "① color 拼错成 bule(而单数的 carousel dot 是正确的 blue)—— 跟 Web 端一模一样地继承了。② vertical 的值是 false 和 True,大小写不一致。"
+    },
+    "Flip button": {
+      "key": "b2748c425339c32425e39dcd585b267d9072cd8d",
+      "id": "5269:6787",
+      "页": "Swiper 轮播 🌞✅",
+      "v": 8,
+      "props": "state[default|hover]def=default ; color[light|dark]def=light ; position[left|right]def=left",
+      "尺寸": "36x36"
+    },
+    "popover(Popover页)": {
+      "key": "0549b3deb45e968322e6057a2fd9cd4f9cf58d88",
+      "id": "5471:254",
+      "页": "Popover 气泡卡片 ✅",
+      "v": 24,
+      "props": "placement[top|bottom|left|right]def=top ; align[start|center|end]def=start ; theme[light|dark]def=light",
+      "尺寸": "102~271 宽 × 46~90 高,逐 variant 不同"
+    },
+    "popover(Tooltip页)": {
+      "key": "6888255bfe18b9bb55b6829797fc1e673db2dc49",
+      "id": "5694:207",
+      "页": "Tooltip 提示✅",
+      "v": 24,
+      "props": "同上",
+      "🔴🔴 两个不同的 set 都叫 popover": "Popover 页一个、Tooltip 页一个,属性完全一样但 key 和尺寸不同(Tooltip 那个每档窄 25px 左右)。按名字找必然抓错。认 key 不认名 —— 跟 Web 端一模一样的坑。"
+    },
+    "popover-list": {
+      "key": "b819768705a4bb60dc283e20e20de58b464398e3",
+      "id": "5518:317",
+      "页": "Popover 气泡卡片 ✅",
+      "v": 3,
+      "props": "placement[bottom]def=bottom ; align[start|center|end]def=start",
+      "尺寸": "162x166",
+      "🔴": "placement 只有一个值 bottom,等于没这个轴。"
+    },
+    "card": {
+      "key": "bb9b7c53dc4198ba3cd0ff32db9809ac8e745372",
+      "id": "5539:113",
+      "页": "Card 卡片 ✅",
+      "v": 4,
+      "props": "type[full|header|body|footer]def=full",
+      "尺寸": "full=343x164 · header=343x48 · body=343x48 · footer=343x68",
+      "🔴 宽度": "卡片是 343 不是 375(375 - 左右 16 边距)。"
+    },
+    "card-header": {
+      "key": "aeacc280a77365b50fb5bda34f56c67fa7b81976",
+      "id": "5544:92",
+      "页": "Card 卡片 ✅",
+      "v": 2,
+      "props": "icon[none|front]def=none",
+      "尺寸": "343x48"
+    },
+    "card-body": {
+      "key": "874c17bb832428e7bd33524d984fc7ba32d66aca",
+      "id": "5544:93",
+      "页": "Card 卡片 ✅",
+      "v": "single",
+      "尺寸": "343x48",
+      "说明": "单行 14px Roboto Regular text/title,padding 16,无背景(依赖外层卡片白底)。"
+    },
+    "card-footer": {
+      "key": "d046b71f9a8d314ec0e81e16e197a9ffa2b04124",
+      "id": "5544:95",
+      "页": "Card 卡片 ✅",
+      "v": "single",
+      "尺寸": "343x68",
+      "说明": "右对齐,padding 水平 16 垂直 12,含按钮实例(type=primary,color=red,size=default,shape=round)。",
+      "🔴 说明有误": "说明写 size=default,但 button 的 size 合法值是 large|medium|small,没有 default。"
+    },
+    "drawer": {
+      "key": "0b8d576b4aa9fac42748eb93ddc0360059a4645c",
+      "id": "6865:46",
+      "页": "Drawer 抽屉✅",
+      "v": 8,
+      "props": "direction[left|bottom|right|top]def=left ; footer[no|yes]def=no",
+      "尺寸": "left/right=300x812 · top/bottom=375x480",
+      "🔴 跟Web端差异": "Web 端 drawer 有 narrow320/default400/wide560 三档宽,移动端只有 300 一档(左右向)。"
+    },
+    "toast": {
+      "key": "8486fa8b6632fbd0bd06748467774482fadb96a3",
+      "id": "5522:298",
+      "页": "Toast 轻提示✅",
+      "v": 5,
+      "props": "style[text|icon]def=text ; state[success|fail|warning|loading|normal]def=normal",
+      "尺寸": "icon 档=84x84 方块 · text 档=187x42",
+      "🔴 稀疏矩阵": "2×5=10 理论组合只做了 5 个:icon 只有 loading/warning/fail/success,text 只有 normal。传 style=text,state=success 会 miss。"
+    },
+    "spin": {
+      "key": "ccdc96aa130d35aae3caaa9fc5546a1c9293aeb3",
+      "id": "5561:65",
+      "页": "Loading 加载中 ✅",
+      "v": 10,
+      "props": "color[red|dark|blue|gray|white]def=red ; size[small|large]def=small",
+      "尺寸": "small=24x24 · large=32x32",
+      "🔴 跟Web端差异": "Web 端 spin 是 size[small|default|large] 三档 × color 五档 = 15 个,移动端只有 small/large 两档 = 10 个。"
+    },
+    "spin-description": {
+      "key": "1965d6eb2fd43f280165b5c7a2d69eb15214be06",
+      "id": "5566:66",
+      "页": "Loading 加载中 ✅",
+      "v": 2,
+      "props": "direction[vertical|horizontal]def=vertical",
+      "尺寸": "vertical=75x86 · horizontal=107x48"
+    },
+    "dialog": {
+      "key": "33e09fe9176a8edcc4acd628870b73d3c30af1c4",
+      "id": "5574:164",
+      "页": "Dialog 对话框 ✅",
+      "v": 10,
+      "props": "状态[单按钮|双按钮|带输入框|检验码|自定义弹框01|自定义弹框02]def=双按钮 ; 标题[yes|no]def=yes",
+      "🔴🔴 属性名和值全是中文": "全库唯一。setProperties({'状态':'带输入框','标题':'no'})。Web 端是英文,不能照抄。",
+      "🔴 值里有错别字": "「检验码」应为「验证码」。",
+      "🔴 分隔符混用": "只有『状态=带输入框, 标题=no』这一个带空格,其余九个不带。",
+      "尺寸": "宽恒 270。单/双按钮+标题=143 · 无标题=133 · 带输入框/检验码+标题=188 · 无标题=154 · 自定义01=278 · 自定义02=328"
+    },
+    "skeleton": {
+      "key": "91a7d8ec686669d1b6661bc192ddc3cd594e4c3a",
+      "id": "6458:3284",
+      "页": "Skeleton 骨架屏✅",
+      "v": 3,
+      "props": "shape[image|avatar|text]def=text",
+      "尺寸": "text=375x30 · image=375x52 · avatar=375x76"
+    },
+    "action-sheet-item": {
+      "key": "aaee088b9e9bf4a4e79de6ede84d8a6126f7daa0",
+      "id": "5592:17",
+      "页": "ActionSheet 动作面板 ✅",
+      "v": 6,
+      "props": "state[default|red|disabled]def=default ; description[yes|no]def=yes",
+      "尺寸": "description=yes 336x64 · no 336x58"
+    },
+    "action-sheet-list": {
+      "key": "07caba8433463ac8efc7bbad83c784dfad6132cf",
+      "id": "5595:2",
+      "页": "ActionSheet 动作面板 ✅",
+      "v": "single",
+      "尺寸": "375x232",
+      "说明": "内嵌 4 个 action-sheet-item 实例 FILL 撑满,每个实例可单独切 state/description。"
+    },
+    "actionsheet": {
+      "key": "eb00b89ee4b965b250c628630171204a5b682016",
+      "id": "5535:2654",
+      "页": "ActionSheet 动作面板 ✅",
+      "v": "single",
+      "尺寸": "375x812",
+      "说明": "完整浮层含全屏 mask(黑 50%)+ 底部 sheet(header title 14 灰 / list / 8px gap / Cancel 18 黑居中 / safe area + home indicator)。"
+    },
+    "action sheet body": {
+      "key": "4ccb3bb6c8d5e48644a79df54850bc634c191f26",
+      "id": "5535:2545",
+      "页": "ActionSheet 动作面板 ✅",
+      "v": 5,
+      "props": "Extra[true|false] ; Cancel[true|false] ; share[no|yes]",
+      "尺寸": "232~358 高",
+      "🔴 稀疏": "2×2×2=8 只做了 5 个,share=yes 只有 Extra=true,Cancel=true 一档。"
+    },
+    "badge": {
+      "key": "5c4c3d749890de7ba0903463ac839910980a996c",
+      "id": "6099:20",
+      "页": "Badge 徽标✅",
+      "v": 8,
+      "props": "Type[number|dot|text|count]def=number ; Bordered[false|true]def=false",
+      "尺寸": "number=16x16 · dot=8x8 · text=30x16 · count=25x16"
+    },
+    "tabs": {
+      "key": "8a0ad27ad4faeba60ab45a641df1cd1fbda6691d",
+      "id": "6573:482",
+      "页": "Tabs 标签页✅",
+      "v": 8,
+      "props": "color[black|red]def=black ; layout[equal|mixed]def=equal ; menu[none|collapsed|expanded]def=none",
+      "尺寸": "menu=none/collapsed 375x44 · expanded 375x139",
+      "🔴 跟Web端差异": "移动端 tabs 【没有 position 属性】。Web 端那条『position 的值跟横线画在哪边是反的』在移动端不适用 —— 移动端下划线固定在底部。"
+    },
+    "tab": {
+      "key": "c1bd8e1c9ce419676170f3be5eb6f6eb291881f8",
+      "id": "6573:1087",
+      "页": "Tabs 标签页✅",
+      "v": 3,
+      "props": "checked[on|off|Little Red Dot]def=on",
+      "尺寸": "off=31x44 · on=36x44 · Little Red Dot=41x44",
+      "🔴": "checked 这个属性混装了两件事 —— 选中态(on/off)和有没有小红点。三选一,所以做不到『未选中+有红点』。"
+    },
+    "tabs_02": {
+      "key": "27ec4bdfade54942ea50d48458bacd301902a890",
+      "id": "6628:136",
+      "页": "Tabs 标签页✅",
+      "v": 9,
+      "props": "color[buyer|sales system|supplier]def=buyer ; tab[3|4|2]def=4",
+      "尺寸": "tab=2 172x26 · tab=3 256x26 · tab=4 340x26",
+      "🔴🔴 业务语义直接进了 variant": "color 的值不是颜色名而是身份:buyer / supplier / sales system。前两个对应 paint style 的 primary/buyer 红和 primary/supplier 蓝;【sales system 是第三套,paint style 层里没有对应 token】,它到底是什么色要看图。",
+      "🔴🔴 三档身份色实测（2026-09-01 看图+取值）": {
+        "buyer": "#E64545（绑 primary/buyer style）",
+        "supplier": "#007DFA（绑 primary/supplier style）",
+        "sales system": "#4973F2 —— 🔴 硬编码，没绑任何 paint style，因为 style 层根本没有这个色。用它会被视觉自检报违规。",
+        "长相": "白底圆角胶囊分段控件，选中项白底彩字，未选中项彩底白字。整体高 26。"
+      }
+    },
+    "tag / colorful (legacy)": {
+      "key": "51d6bf4c091b57b8ea8df84995e9a3373fc8ea9e",
+      "id": "8800:1217",
+      "页": "Tabs 标签页✅",
+      "v": 15,
+      "props": "type[areal|line]def=line ; preset[red|orange|blue|green|deep blue|dark gray|light gray|light blue|light green|light orange|light red]def=red",
+      "尺寸": "高恒 18,宽 61~75",
+      "🔴 三个问题": "① 名字带 legacy,别用。② type 值 areal 应为 area(跟 Web 端一样地拼错)。③ 【它被放在 Tabs 页】,移动端没有独立的 tag 页 —— 这是我按名字找不到 tag 组件的原因。",
+      "🔴 移动端没有 tag / basic": "Web 端有 tag / basic(中性灰底灰字)可用,移动端整个库只有这个 legacy 的。要标签得自己拼或用 selecter-multiple 的 badge 档。"
+    },
+    "notice bar": {
+      "key": "bdebb61002956ffd9bac994229b56bc09ae3768a",
+      "id": "6125:290",
+      "页": "NoticeBar 通知栏✅",
+      "v": 10,
+      "props": "type[error|info|success|warning|default]def=error ; banner[false]def=false ; description[false|true]def=false",
+      "尺寸": "description=false 375x38 · true 375x84",
+      "🔴": "banner 这个属性只有一个值 false,是个死轴。"
+    },
+    "letter": {
+      "key": "965e78d66e446b9488dc95978d4c0c5a4bc5d44d",
+      "id": "5825:3376",
+      "页": "AreaPicker✅",
+      "v": 2,
+      "props": "state[default|selected]def=default",
+      "尺寸": "14x14",
+      "说明": "国家列表右侧 A-Z 索引字母。"
+    },
+    "country picker": {
+      "key": "fd82948078b6da4ab1eb8e50dfd8b34f329a1059",
+      "id": "5926:1577",
+      "页": "AreaPicker✅",
+      "v": "single",
+      "尺寸": "375x812"
+    },
+    "area picker": {
+      "key": "5c48683e8976dc156149172638045e3ac71080db",
+      "id": "5926:1534",
+      "页": "AreaPicker✅",
+      "v": "single",
+      "尺寸": "375x812"
+    },
+    "date picker": {
+      "key": "4688de54d66710aff9baf753adf06ea50ed7db7c",
+      "id": "5926:869",
+      "页": "Datepicker 日期选择器✅",
+      "v": 2,
+      "props": "datepicker[CN|EN]def=CN",
+      "尺寸": "375x812",
+      "🔴": "只有中英两个语言档。MIC 是 16 语种站,做多语稿这个组件不够用。"
+    },
+    "swipe-action-button": {
+      "key": "07bad405d89ef525aba00e7b3100103c147150b0",
+      "id": "6510:1179",
+      "页": "Swipecell 滑动操作✅",
+      "v": 4,
+      "props": "Color[warning|danger|light|primary]def=light",
+      "尺寸": "121x50"
+    },
+    "swipe action": {
+      "key": "38bf157b1aa928e829e6b64787c1a556c5fc8db9",
+      "id": "6510:1192",
+      "页": "Swipecell 滑动操作✅",
+      "v": 3,
+      "props": "View[default|Actions Left|Actions Right]def=Actions Right",
+      "尺寸": "default 375x48 · 展开态 375x50",
+      "🔴": "属性值带空格且首字母大写(Actions Left),不是 kebab 也不是小写。"
+    },
+    "accordion": {
+      "key": "4ee6685a9becf18935435a1429c054401f9affe3",
+      "id": "6510:1476",
+      "页": "Accordion 手风琴✅",
+      "v": 2,
+      "props": "state[expand|collapse]def=collapse",
+      "尺寸": "collapse 375x48 · expand 375x216"
+    },
+    "cascader-menu-item": {
+      "key": "e443d86504c3bc2df449770a3c8da3e792540037",
+      "id": "5895:2743",
+      "页": "Cascader 层级选择✅",
+      "v": 2,
+      "props": "Active[true|false]def=false",
+      "尺寸": "false 57x40 · true 58x40"
+    },
+    "cascader menu": {
+      "key": "16b38cc5866a6148c5f99b5d4a6c6c553ab861db",
+      "id": "5895:2750",
+      "页": "Cascader 层级选择✅",
+      "v": 4,
+      "props": "Level[1|2|3|4]def=4",
+      "尺寸": "273x40"
+    },
+    "cascader body": {
+      "key": "a6dba17b028903360bbefe8e973a8d544f538e7f",
+      "id": "5895:2816",
+      "页": "Cascader 层级选择✅",
+      "v": "single",
+      "尺寸": "375x520"
+    },
+    "cascader": {
+      "key": "126ea022b7e28b984319c6db09cb75785496b345",
+      "id": "5900:4863",
+      "页": "Cascader 层级选择✅",
+      "v": "single",
+      "尺寸": "375x812"
+    },
+    "_videoPlayer族": {
+      "_页": "VideoPlayer 视频播放器✅",
+      "not started": {
+        "key": "1b78ab5eae5fc9e62822223c8f66e125412bb512",
+        "id": "6551:1035",
+        "尺寸": "375x374"
+      },
+      "playing": {
+        "key": "63b5cad79a5e69df97591e81d32bac1a2b081cde",
+        "id": "6551:1037",
+        "尺寸": "375x374"
+      },
+      "loading": {
+        "key": "0d0a3cd1257d796385ec4b831ac135c931d8fd4c",
+        "id": "6551:1038",
+        "尺寸": "375x374"
+      },
+      "timeline": {
+        "key": "2f5cdbed9ee122dd4421feb17692729c9b669f9b",
+        "id": "6551:718",
+        "v": 3,
+        "props": "timeline[end|drag|start]def=start",
+        "尺寸": "308x20"
+      },
+      "volume": {
+        "key": "e6581c45683264354f823c3f2130cfe8d565807d",
+        "id": "6551:737",
+        "v": 2,
+        "props": "mute[no|yes]def=no",
+        "尺寸": "24x24"
+      },
+      "play status": {
+        "key": "9640f84708e48aff09aec7d421840e8cdbf0300f",
+        "id": "6551:746",
+        "v": 3,
+        "props": "state[loading|pause|play]def=play",
+        "尺寸": "60x60"
+      },
+      "screen": {
+        "key": "bc73217a44cbc4f3b1ac2e8c49d31a6c75fcc693",
+        "id": "6551:761",
+        "v": 2,
+        "props": "fullscreen[no|yes]def=no",
+        "尺寸": "24x24"
+      },
+      "ic_询盘": {
+        "key": "031ebf308de268113eb5926daa057682e8695f15",
+        "id": "6551:622",
+        "尺寸": "30x30",
+        "🔴": "图层名用中文且带 ic_ 前缀,全库唯一的命名风格。"
+      },
+      "ic_收藏": {
+        "key": "b837fee63b7cf80e0ee99b1dc825fb0d10e5c69b",
+        "id": "6551:647",
+        "尺寸": "30x30"
+      }
+    },
+    "_list族": {
+      "_页": "List 列表 🤖✅",
+      "_🔴 这一族是做移动端 demo 用得最多的": "MIC 移动端大量页面就是列表。四种 list-item 覆盖了纯文本 / 带开关 / 带头像 三种形态。",
+      "list-item": {
+        "key": "45bd70ee8a335260909b78e2da4fc8f1ea593818",
+        "id": "6307:2748",
+        "v": 64,
+        "props": "Title × Description × Prefix × Extra × Arrow × Disabled(全是 false|true)",
+        "尺寸": "375x52 / 70 / 88(取决于 Title 和 Description 各开几个)",
+        "构造": "外 wrapper paddingLeft=12(分隔线左缩进);inner-row HORIZONTAL,padding 14/16/14/0,gap=12,strokeBottomWeight=1 dividing line/module。Disabled=true → opacity 0.4。"
+      },
+      "list-item/switch": {
+        "key": "3409c7b169d2c23abea9ce66ef32164294bf54b3",
+        "id": "6318:204",
+        "v": 8,
+        "props": "Disabled × Title × Description",
+        "尺寸": "375x58 / 74 / 96",
+        "🔴 高度不单调": "Description=false 的那两档反而更高(96/74),不是想当然的『少东西就矮』。别推算,查这张表。"
+      },
+      "list-item/user": {
+        "key": "529ae0ddb0af9d33421dd692298523cc13493a3c",
+        "id": "6332:212",
+        "v": 8,
+        "props": "Disabled × Title × Description",
+        "尺寸": "375x50 / 68 / 86"
+      },
+      "list": {
+        "key": "3c7258b23b5ef51d75443bf5eb0b556c1335cf19",
+        "id": "6337:1886",
+        "v": 8,
+        "props": "CardMode[false|true] × Title × Prefix",
+        "尺寸": "CardMode=false 375 通栏 · true 343 卡片(cornerRadius=8 + clipsContent)",
+        "🔴 CardMode 同时改宽度和圆角": "不是只加个圆角,是换成 343 宽的卡片。排版位置要跟着变。"
+      },
+      "slot__list-items": {
+        "key": "25908e34b865309a9377c4ae930642c713d6a34e",
+        "id": "6286:50",
+        "v": "single",
+        "尺寸": "375x260",
+        "说明": "5 行示例列表,每行 48 高。做 demo 可直接当占位。"
+      }
+    },
+    "affix": {
+      "key": "69034314c647f2df4dccb012d348d452782bec6e",
+      "id": "2189:670",
+      "页": "Affix 固钉 ✅",
+      "v": 4,
+      "props": "state[default] ; icon[suggestion|top|calendar|category] ; text[no] ; platform[touch] ; round[yes] ; size[large]",
+      "尺寸": "42x42",
+      "🔴": "六个属性里五个是单值死轴(state/text/platform/round/size),真正能变的只有 icon。这是从 Web 端那套多档 affix 裁下来的残留。"
+    },
+    "rate star": {
+      "key": "6e981ed4029035e2986c87f8e6503b968ef349c1",
+      "id": "3565:809",
+      "页": "Rate评分🤖✅",
+      "v": 3,
+      "props": "state[full|zero|half]def=full",
+      "尺寸": "20x20"
+    },
+    "rate": {
+      "key": "b7fe9c75dd15a6f72db5805c6814eb0b9af41868",
+      "id": "3566:1657",
+      "页": "Rate评分🤖✅",
+      "v": 11,
+      "props": "score[0|0.5|1|…|5]def=0",
+      "尺寸": "116x20",
+      "构造": "5 个 rate star 水平排,gap=4(xxs token)。full=primary/buyer 红 · half=左红右灰 · zero=dividing line/button 灰。内部用 icon star-f。"
+    },
+    "avatar text": {
+      "key": "d0f738e28342c99171ac6eb1bb334ad43f43587e",
+      "id": "6751:2",
+      "页": "Avatar 头像🤖✅",
+      "v": 24,
+      "props": "size[small|default|large]def=small ; language[arabic|russian|korean|latin|japanese|thai|hindi|chinese]def=arabic",
+      "尺寸": "small=32 · default=48 · large=64",
+      "🔴 8 个语种档": "首字母头像按语种分档(阿/俄/韩/拉丁/日/泰/印地/中)。MIC 多语站直接可用,别自己画。"
+    },
+    "avatar default": {
+      "key": "fc420c53d33a34c4ab59272206625280de463a2f",
+      "id": "6765:34",
+      "页": "Avatar 头像🤖✅",
+      "v": 42,
+      "props": "size[small|default|large] ; role[buyer|saler|supplier|none] ; gender[female|male|none] ; circular[yes|no]",
+      "尺寸": "small=32 · default=48 · large=64",
+      "🔴 角色三分": "buyer / saler / supplier —— 跟 tabs_02 的『sales system』呼应,平台确实有第三方角色(销售)。role=none 时 gender 必须也是 none(所以是 42 个不是 72 个)。",
+      "🔴 拼写": "saler 不是标准英文(应 salesperson/sales),照原样才配得上。"
+    },
+    "empty-state": {
+      "key": "424e33090ffb1d369525b454a0577f09fce9cb53",
+      "id": "6981:458",
+      "页": "Empty 缺省图✅",
+      "v": 64,
+      "props": "scene[custom|general]def=general ; theme[26 个]def=no-records ; color[supplier|buyer|general]def=general ; size[default|small]def=default",
+      "尺寸": "general 主题 120x120(default) / 72x72(small) · custom 主题 120x105(default) / 72x63(small)",
+      "🔴 description 过时": "组件说明写『31 个变体 · 15 种场景』,实测是 64 个变体 · 26 种主题。跟 Web 端一样,说明没跟上。以实测为准。",
+      "🔴 空态别自己编,26 个业务场景现成": {
+        "通用色 general(120×120)": [
+          "no-records 无记录",
+          "no-image 暂无图片",
+          "empty-inquiry-basket 空询盘篮",
+          "empty-inbox 空收件箱",
+          "task-success 任务成功",
+          "task-failed 任务失败",
+          "task-pending 任务等待中",
+          "error-404",
+          "error-500",
+          "network-error 网络/接口异常",
+          "no-product-results 产品搜索无结果",
+          "no-company-results 公司搜索无结果",
+          "inquiry-sent 询盘发送成功",
+          "no-downloads 无下载内容",
+          "order-submitted 订单提交成功",
+          "no-favorites 无收藏"
+        ],
+        "分买家/供应商双色(120×120)": [
+          "no-filter-results 筛选无结果",
+          "no-permission 没有权限(只有 buyer 一档)"
+        ],
+        "custom 个性场景(120×105,买家/供应商双色)": [
+          "guide-to-main-site 引导去主站(只有 buyer)",
+          "onboarding-download 引导下载 App",
+          "onboarding-complete 新手引导完成",
+          "link-account 关联账号",
+          "buyer-app-download 买家 App 下载(只有 buyer)",
+          "supplier-app-download 供应商 App 下载(只有 supplier)",
+          "no-messages 暂无消息",
+          "no-products-orders 无产品/订单"
+        ]
+      },
+      "🔴 不是全矩阵": "26 主题 × 3 色 × 2 尺寸 ≠ 64。每个主题只做了它该有的色档(通用类只有 general,引导类只有 buyer 或 supplier)。传之前对照上面这张表。"
+    }
+  },
+  "_businessComponents": {
+    "_说明": "「产品组件」和「Navbar页头」两页。页名没打绿勾,但里面 17 个组件全部已发布(有正式 key)。吉吉 2026-09-01 授权纳入。🔴 做 MIC 移动端 demo 主要就用这两页,通用控件页里一个业务组件都没有。",
+    "产品组件页": {
+      "product-card-result": {
+        "key": "f6f824bf1eedad8b18deb3f2f99550007b1095be",
+        "id": "7219:1537",
+        "尺寸": "166x286",
+        "说明": "图搜结果商品卡。166 宽 HUG 高。商品图 166×166 + 标题(body/base 单行省略号) + 价格(body/lg_bold + /Piece auxiliary) + MOQ(footnote/sm auxiliary) + 标签行(Audited 蓝 / Secured Trading 绿) + Send Inquiry 按钮(165×27 白底 dividing line/button 边)。",
+        "🔴": "说明写『HUG 高约 303』但实测是 286,对不上。以实测为准。",
+        "🔴 description 过时（2026-09-01 看图）": "说明写「+ Send Inquiry 按钮(165×27 白底 dividing line/button 边)」，实际截图里没有这个按钮。看到的是：左上运营标(Amazing April 蓝红双色) · 商品图左下角图搜放大镜按钮 · 右下角视频播放按钮 · Secured Trading 绿标 + 3 个认证图标 · 标题单行截断 · 价格粗体 US$3.00-6.04 · MOQ · Audited + 3yrs。用之前以图为准。"
+      },
+      "product-card-list": {
+        "key": "76e2bd143fd2acf808031913f4ef6eab33e87bcf",
+        "id": "7219:1484",
+        "尺寸": "375x174",
+        "说明": "列表型商品卡(通栏)。"
+      },
+      "supplier-card-list": {
+        "key": "674b1e1dc8d07f7d398627ff02119c328fbbc3e8",
+        "id": "7219:1507",
+        "尺寸": "375x255",
+        "说明": "列表型供应商卡。"
+      },
+      "similar-product-card": {
+        "key": "42b27628d0eea6e43869b32ea51cb76f3590d0cf",
+        "id": "7219:1478",
+        "尺寸": "355x80",
+        "说明": "Similar Products 顶部最相似产品卡。355×80 白底圆角 8,60×60 缩略图 + 标题 + 价格(body/base_bold) + MOQ。"
+      },
+      "feed-card": {
+        "key": "4caa96dc3cfad90224e5fa3dd897c448274482ca",
+        "id": "7224:338",
+        "v": 7,
+        "props": "type[product-NoSTS|promo|supplier|feedback|rank-hot-searches|rank-recommended|product-NoResponse]",
+        "尺寸": "宽恒 175(双列瀑布流),高 256~310",
+        "🔴 七种业务卡型直接可用": "product-NoSTS(无 STS 商品) · product-NoResponse(无响应商品) · promo(促销) · supplier(供应商) · feedback(反馈收集) · rank-hot-searches(热搜榜) · rank-recommended(推荐榜)。",
+        "🔴": "NoSTS / NoResponse 这两个名字暗示还有 STS 版和有响应版,但 set 里没有 —— 要么没做要么在别处。"
+      },
+      "filter-bar/m": {
+        "key": "5ce386f0f98086453cc15a53f5cb02ae6ef26130",
+        "id": "7522:1655",
+        "v": 2,
+        "props": "page[products|suppliers]",
+        "尺寸": "375x46",
+        "说明": "搜索结果页顶部筛选条,商品页和供应商页两套。"
+      },
+      "filter-content": {
+        "key": "97a69f31ddc1045f2853117db27166be126c35ef",
+        "id": "7558:464",
+        "v": 4,
+        "props": "type[MOQ|Price|OEM-ODM|empty]",
+        "尺寸": "MOQ/Price 375x108 · OEM-ODM 375x364 · empty 375x174",
+        "🔴": "OEM-ODM 那档高 364,是其他档的三倍多。做筛选浮层要按最高的排版。"
+      },
+      "filter-popover": {
+        "key": "3c569cfc048091acb76349603fa9c65a31352132",
+        "id": "7559:4",
+        "尺寸": "375x172",
+        "props": "content:INSTANCE_SWAP ; showFooter:BOOLEAN",
+        "🔴 插槽组件": "content 是 INSTANCE_SWAP,把 filter-content 换进去用。页面上有一份『📘 插槽组件教程 · filter-popover』的说明框。"
+      },
+      "sheet-header": {
+        "key": "84099a179fe16f022877fe2c7d97d70a4800f5ed",
+        "id": "7219:1460",
+        "尺寸": "375x129",
+        "说明": "抽屉头(P0 改造)。VERTICAL 固定 375 宽自动高:header-bar(44,handle+close+compare) + category-tabs(38,横向 tab,All active 红下划线) + filter-buttons(HUG,MOQ/Price/OEM·ODM/Audited/Manufacturer) + separator(1,dividing line/module)。"
+      },
+      "activity-tag": {
+        "key": "62227d94d08e990098c0e983691298d27a9f17dd",
+        "id": "7132:294",
+        "v": 4,
+        "props": "终端[web|mobile] ; size[large|medium|small]",
+        "尺寸": "web/large=120x20 · web/medium=108x18 · web/small=84x14 · mobile/large=82x15",
+        "🔴 属性名是中文「终端」": "而且 mobile 档只做了 large 一个,web 档做了三个。做移动端稿只有 82×15 这一个尺寸可用。"
+      }
+    },
+    "Navbar页头页": {
+      "_🔴 这一页用的是 component property 不是 variant": "title / subtitle / centerLabel 是 TEXT 型,showSubtitle / showArrow / showCenterLabel / showStatusDot 是 BOOLEAN 型,leading icon 是 INSTANCE_SWAP 型。setProperties 时属性名必须带 #id 后缀(如 'title#7427:0'),跟 Web 端 Steps 那族一样的写法。",
+      "page-header/m": {
+        "key": "a92219635fbb73db999e22692d8ba441a7fc7eae",
+        "id": "7427:4",
+        "v": 20,
+        "尺寸": "全部 375x44",
+        "variant轴": "leading[back|close|cancel|none] × trailing[icon|none|icon-2|text|button] = 20 个全矩阵",
+        "非variant属性": [
+          "title#7427:0 TEXT def='Title'",
+          "showSubtitle#7427:5 BOOLEAN def=false",
+          "subtitle#7427:6 TEXT def='Subtitle'",
+          "showArrow#7430:0 BOOLEAN def=false",
+          "showCenterLabel#7475:0 BOOLEAN def=false",
+          "centerLabel#7475:21 TEXT def='Location'",
+          "showStatusDot#7475:42 BOOLEAN def=false"
+        ],
+        "🔴 页头高度 44": "移动端页头恒 44,不像 Web 端有 5 族不同高度。"
+      },
+      "page-header-search/m": {
+        "key": "3d5b7c20e7a12692b827f4e8e805ace8d718da1b",
+        "id": "7439:4",
+        "v": 8,
+        "尺寸": "375x44",
+        "variant轴": "leading[back|none|logo] × trailing[icon|cancel|none],8 个(logo 档只有 icon 和 none)",
+        "非variant属性": [
+          "searchPlaceholder#7439:0 TEXT def='Search Products'",
+          "showCamera#7439:1 BOOLEAN def=true",
+          "showScan#7439:2 BOOLEAN def=false"
+        ],
+        "🔴 图搜和扫码是两个独立开关": "showCamera 默认 true(拍照搜),showScan 默认 false(扫码)。跟 Web 端『搜索框自带图搜』对得上。"
+      },
+      "page-header-webview/m": {
+        "key": "586c69525479f32d146add282135553f6b709f91",
+        "id": "7712:7337",
+        "v": 16,
+        "尺寸": "375x44",
+        "props": "color[white|blue] × align[center|left] × trailing[more-close|close] × state[default|pressed],16 个全矩阵",
+        "非variant属性": [
+          "leading icon#7722:0 INSTANCE_SWAP"
+        ],
+        "说明": "App 内嵌 webview 的页头(带关闭/更多胶囊)。"
+      },
+      "page-header-webview-control/m": {
+        "key": "d1423c7eb6a712d211ba004cc079eca668d849d9",
+        "id": "7733:7361",
+        "v": 8,
+        "props": "type[more-close|close] × color[white|blue] × state[default|pressed]",
+        "尺寸": "more-close=73x28 · close=28x28"
+      },
+      "header-logo/m": {
+        "key": "afe8b16f6d9d205f075a07dff3566a8857941972",
+        "id": "7492:9",
+        "尺寸": "134x26"
+      },
+      "header-actions/m": {
+        "key": "25279e99a6d9a5e04da4cf87b9e02ff7812d00b8",
+        "id": "7287:8",
+        "尺寸": "100x22",
+        "props": "showIcon2#7287:0 BOOLEAN ; showIcon3#7287:1 BOOLEAN",
+        "说明": "右侧功能图标组,可显示 1~3 个。"
+      },
+      "header-text-action/m": {
+        "key": "e7c914b23056cc4ce65b71e54676136defcc5d1a",
+        "id": "7286:12",
+        "v": 2,
+        "props": "label#7286:0 TEXT def='Text' ; state[default|disabled]",
+        "尺寸": "31x32"
+      }
+    }
+  },
+  "_emptyPages": {
+    "_说明": "🔴 打绿勾 ≠ Figma 里有可 import 的组件。绿勾表示设计已定,不代表组件做出来了。这三页里一个组件都没有,以后要用别白找。",
+    "Refresh 下拉刷新 ✅": {
+      "id": "5038:7249",
+      "组件数": 0
+    },
+    "LoadMore 上拉加载 ✅": {
+      "id": "5038:7250",
+      "组件数": 0
+    },
+    "AutoComplete 自动完成🤖": {
+      "id": "0:9860",
+      "组件数": 0,
+      "备注": "本来就没打勾"
+    },
+    "怎么办": "下拉刷新 / 上拉加载 / 自动完成这三个交互要用时,得自己拼或者去 Web 端库看有没有可借的。吉吉 2026-09-01 决定先按『打勾≠有组件』记下来,不去追问是漏做还是故意不放。"
+  },
+  "_variantNameTraps": {
+    "_用法": "🔴 按名字匹配 variant 之前先扫这一段。移动端这批坑跟 Web 端【有重叠但不相同】,不能照搬 Web 端的清单。",
+    "1_逗号分隔符不统一_而且同一个set内部会混": {
+      "严重度": "最高 —— 这是 Web 端那轮 6 个 variant 全 miss 的根因",
+      "用无空格 `,` 的 set": [
+        "input(28 个全部)",
+        "selecter-single",
+        "selecter-multiple",
+        "checkbox",
+        "radio",
+        "checklist style1",
+        "checklist style2",
+        "scrollbar",
+        "form 族全部(Required=false,Filled=false…)",
+        "page-header-webview-control/m"
+      ],
+      "用带空格 `, ` 的 set": [
+        "button(405 个全部)",
+        "textarea",
+        "stepper",
+        "switch",
+        "popover(两个)",
+        "toast",
+        "spin",
+        "drawer",
+        "action-sheet-item",
+        "image-uploader-cell",
+        "image uploader(部分)",
+        "avatar text",
+        "avatar default",
+        "tabs",
+        "tabs_02",
+        "page-header/m",
+        "page-header-search/m",
+        "page-header-webview/m",
+        "swipe-action-button 无逗号(单属性)"
+      ],
+      "同一个 set 内部混用的(最阴)": {
+        "divider": "dash=off,color=default 无空格 / dash=on, color=dark 有空格,6 个里 2 个带空格",
+        "dialog": "只有『状态=带输入框, 标题=no』这一个带空格,其余 9 个不带",
+        "image uploader": "error=off,size=default 无空格 / error=on, size=default 有空格"
+      },
+      "怎么办": "别自己拼名字。先 dump 该 set 的 children.map(c=>c.name),再从 dump 结果里选。或者直接用 setProperties({属性:值}) —— 它按属性名匹配不按整串名字,能绕开这个坑。"
+    },
+    "2_属性名或属性值拼写错(照原样才配得上)": {
+      "input": "state 的禁用档是 `diabled`(少 s),不是 disabled",
+      "attachment icon": "ZIP 的 small 档叫 `ZI`(少 P),large 档才是 ZIP",
+      "Carousel Dots": "color 值 `bule`(应 blue)。而单数的 carousel dot 是正确的 blue —— 两个都在,选错就 miss",
+      "tag / colorful (legacy)": "type 值 `areal`(应 area)",
+      "switch": "属性名 `disable`(应 disabled)",
+      "selecter-single / selecter-multiple": "set 名 `selecter`(应 selector)",
+      "vertical-form-item-steper": "组件名 `steper`(应 stepper)。但 Stepper 页那个组件名是对的",
+      "avatar default": "role 值 `saler`(非标准英文)",
+      "dialog": "属性值 `检验码`(应 验证码)",
+      "Bottom reached": "文案 `No more date`(应 data)",
+      "行业图标-ind-industrail-equipment": "industrial 拼成 industrail",
+      "行业图标-ind-agriculture-hardwar": "hardware 少个 e",
+      "行业图标-ind-apprel": "apparel 少个 a",
+      "社媒-instagrame": "instagram 多个 e"
+    },
+    "3_属性名是非 ASCII 字符": {
+      "vertical-form-item-radio": "两个属性名就是 `↓` 和 `→`。setProperties({'↓':'off','→':'on'})。手打不出来就从本文件复制",
+      "dialog": "属性名 `状态` `标题`,值也全中文。全库唯一",
+      "activity-tag": "属性名 `终端`,值是 web|mobile"
+    },
+    "4_属性从来没命名(叫 Property 1)": [
+      "swiper(值 Bottom|Left|Right|Top)",
+      "picker view(值 picker view-1/2/3,连值都是默认图层名)"
+    ],
+    "5_属性值里混进 Figma 默认图层名": {
+      "form": "Layout 的合法值里有 `Layout6` `Layout7` `Layout8` —— 那是没改的默认名。真正有语义的只有 vertical 和 horizontal"
+    },
+    "6_大小写不一致": {
+      "button": "六个属性里只有 `State` 首字母大写,其余全小写",
+      "form 族": "Required / Filled / Disabled / Error / Extra / Count 全部首字母大写",
+      "Carousel Dots": "vertical 的值是 `false` 和 `True`",
+      "swipe action": "View 的值是 `Actions Left` / `Actions Right`(带空格 + 首字母大写)",
+      "badge": "Type / Bordered 首字母大写",
+      "list 族": "Title / Description / Prefix / Extra / Arrow / Disabled 全部首字母大写",
+      "cascader-menu-item": "Active 首字母大写",
+      "cascader menu": "Level 首字母大写",
+      "swipe-action-button": "Color 首字母大写"
+    },
+    "7_同名不同 set(认 key 不认名)": {
+      "popover": "两个 —— Popover 页 5471:254(宽 102~271) 和 Tooltip 页 5694:207(每档窄 25px 左右)。属性完全一样。跟 Web 端一模一样的坑",
+      "loading": "Loading 页有 set 叫 spin,VideoPlayer 页有单组件叫 loading(375x374)。名字不同但语义撞车"
+    },
+    "8_死轴(属性只有一个合法值_等于没这个属性)": {
+      "notice bar": "banner[false] 只有 false",
+      "popover-list": "placement[bottom] 只有 bottom",
+      "affix": "六个属性里五个是死轴(state/text/platform/round/size),只有 icon 能变"
+    },
+    "9_稀疏矩阵(理论组合远大于实际_传了不存在的组合会 miss)": {
+      "button": "540 理论 / 405 实际。content=basic 只有 shape=round",
+      "toast": "10 理论 / 5 实际。icon 只有 loading/warning/fail/success,text 只有 normal",
+      "action sheet body": "8 理论 / 5 实际",
+      "brand logo": "64 理论 / 16 实际",
+      "empty-state": "156 理论 / 64 实际",
+      "avatar default": "72 理论 / 42 实际(role=none 时 gender 必须也是 none)",
+      "input": "48 理论 / 28 实际"
+    },
+    "10_组件放错页": {
+      "tag / colorful (legacy)": "标签组件放在 Tabs 页。移动端没有独立的 tag 页,也没有 tag / basic",
+      "chip-icon-text/m": "放在 Checkbox 页"
+    }
+  },
+  "webVsMobile": {
+    "_用法": "🔴 做跨端稿子或从 Web 端稿改移动端稿之前读这段。判据:两端同名组件不能假设长一样、不能假设属性名一样、不能假设值一样。",
+    "文件": {
+      "web": "gcanH38jg2SMmXwrcC6FP8",
+      "mobile": "iP6IPga9cD6kVWH8AgJxrR",
+      "🔴": "component key 完全不同,一个都不能跨文件复用。"
+    },
+    "画布": {
+      "web": "1024 / 1280 / 1366 / 1440 / 1920 多断点",
+      "mobile": "375 单基准(卡片 343,抽屉 300)"
+    },
+    "token层": {
+      "paint": "🟢 33 个名字和值完全一致,可放心跨端复用",
+      "text": "🔴 Web 16 个 / 移动 19 个。移动端多 body/2xl(20)、body/2xl_bold(20)、footnote/es(10)",
+      "effect": "🟢 3 个,名字一样",
+      "spacing": "🔴 移动端做成了真 variables(7 个 FLOAT 可绑),Web 端只有语义描述"
+    },
+    "字号铁律": {
+      "🔴 Web 端专属_移动端不成立": [
+        "『body 正文级最大 18』—— 移动端有 body/2xl = 20",
+        "『Web 端禁用 10px』—— 移动端 footnote/es 就是 10"
+      ],
+      "正文主力": "Web 端 14 · 移动端 16(实测 773 次 vs 659 次)。照 Web 端习惯写 14 会偏小"
+    },
+    "圆角": {
+      "web": "sm(高24)=4 · md(高32)=6 · lg(高40)=8 · round=1000",
+      "mobile": "规范页写 0/4/6/12/20/9999,但实测 1000 才是圆形按钮的事实值(390 次),8 用了 48 次,12 用了 0 次"
+    },
+    "button": {
+      "size 值名": "🔴 Web 端 lg/default/sm(CSS 里 md)· 移动端 large/medium/small",
+      "高度": "🔴 Web lg=40 · 移动 large=44(触控热区)。medium/small 两端都是 32/24",
+      "shape": "🔴 移动端 content=basic 只有 shape=round(带文字的按钮只有胶囊形态);Web 端方角圆角都有",
+      "属性名": "移动端 State 大写,Web 端 state 小写"
+    },
+    "checkbox": {
+      "属性名": "🔴 Web 端拼错成 statues,移动端是正确的 state。不能照抄"
+    },
+    "tabs": {
+      "🔴": "Web 端 tabs 有 position 属性,且『position 的值跟横线画在哪边是反的』(top→线在底部)。移动端 tabs 【没有 position 属性】,下划线固定底部。那条坑在移动端不适用"
+    },
+    "spin": {
+      "🔴": "Web 15 个(size 三档) · 移动 10 个(size 只有 small/large)"
+    },
+    "drawer": {
+      "🔴": "Web 三档宽(narrow320/default400/wide560) · 移动只有 300 一档(左右向),上下向 375x480"
+    },
+    "tag": {
+      "🔴": "Web 端有 tag / basic(中性灰底灰字,推荐用)+ tag / colorful(legacy)。移动端只有 legacy 那个,而且被放在 Tabs 页。移动端要标签得自己拼或用 selecter-multiple 的 badge 档"
+    },
+    "icon": {
+      "set名": "🔴 Web 叫 `icon`(key 403824504e…) · 移动叫 `移动端icon`(key a178b2d4…)。findOne 按名字找会 miss",
+      "数量": "Web 301 · 移动 302 · 共有 296",
+      "🔴🔴 同一个图标两端名字不一样(第四套命名)": {
+        "loading": "Web `功能图标-loading` / 移动 `功能图标-Loading`(大小写)",
+        "vector-left / vector-right": "Web 用连字符 `符号&箭头-vector-left` / 移动用下划线 `符号&箭头-vector_left`",
+        "vector": "Web `符号&箭头-vector` / 移动 `符号&箭头-vector2`",
+        "轻工业": "Web `行业图标-ind-light-industy`(连字符) / 移动 `行业图标-ind-lightIndusty`(驼峰)"
+      },
+      "移动端独有": [
+        "功能图标-report-f"
+      ],
+      "🔴 结论": "以前记的是『三套命名并存:Figma / 本地 SVG / CSS 变量』。现在是【四套】—— 移动端 Figma 是第四套。跨端搬图标名必然出空图标"
+    },
+    "已知Web端坑_在移动端要重新验不能继承": [
+      "✅ 已验：switch 开启色 —— Web 蓝 / 移动红，**相反**",
+      "✅ 已验：button 的 color 只作用于 primary 填充，secondary/dashed/text 是黑描边黑字、link 恒定蓝 —— **两端一致**",
+      "🔴 未验：Web 端「tag 是中性灰不是红」—— 移动端没有 tag / basic，无从对照；移动端只有 legacy 版，areal 是红底白字",
+      "🚫 不适用：Web 端「position=bottom 线在顶部」—— 移动端 tabs 没有 position 属性",
+      "🚫 不适用：Web 端「alert 的 description=true 是坏的」—— 移动端没有 alert 组件"
+    ],
+    "🔴 两端结论相反的（最危险）": {
+      "switch 开启色": "Web 端实测是**蓝**，移动端实测是**红**。",
+      "dialog 按钮顺序": "飞鹊 Web 端规则是**主按钮在左**（figma-verify 有这条判据），移动端 dialog 是 **Cancel 左 / 主按钮右**（iOS 惯例）。→ 对移动端 dialog 跑 verify，「按钮顺序」那条会误报。",
+      "为什么记这条": "「两端同名组件不能假设长一样」这条判据，最贵的不是「长得不一样」，是**两端结论正好相反** —— 照 Web 端记忆做移动端稿，会稳定地做反。",
+      "悬停 vs 按下·两端互斥": "Web 端 button 有 hover 没有 press；移动端有 press 没有 hover。各缺对方那一个（已实测 variantOptions）。做移动端稿标注 hover 是错的，做 Web 端稿找 press 找不到。详见 _statesReference。",
+      "secondary 中间态的表达方式": "Web 端 hover 靠**换底色**（变浅灰 #F4F4F4）；移动端 press 靠**加重描边**（描边变黑加粗，底仍白）。同一个语义两端用了不同的视觉手段。"
+    }
+  },
+  "nameLookup": {
+    "_用法": "吉吉说中文口语名 → 直接查到是哪个组件。👁 = 真看过截图能说出长什么样;📖 = 只读过名字/属性/尺寸,别凭属性名下判断。",
+    "_🔴 目前全部是 📖": "已补一轮截图（2026-09-01）：**15 个转成 👁**，其余仍是 📖。👁 的那些在 _visualFindings 里写了长什么样。🔴 剩下的 📖 别凭属性名下判断 —— 这轮光读名字实测错了四处（switch 开启色 / radio 选中态 / filter-bar 选中态 / dialog 按钮顺序）。",
+    "按钮": [
+      {
+        "n": "button",
+        "k": "ec52ddfd414e4b7b17e00ec31351337cd7622154",
+        "s": "👁",
+        "注": "带文字的只有圆角胶囊(shape=round)",
+        "见": "红底白字圆角胶囊；color 只影响 primary"
+      },
+      {
+        "n": "button bottom fixed",
+        "k": "4aee57958d5461cc360dd73054809356b8774785",
+        "s": "📖",
+        "注": "底部固定操作栏 375×64"
+      }
+    ],
+    "输入框": [
+      {
+        "n": "input",
+        "k": "0ef5cbe7fdb0aeb02c75b38974184733b10744df",
+        "s": "📖"
+      },
+      {
+        "n": "textarea",
+        "k": "bc93d0672a2c4f87983e677d054669edf6e6a985",
+        "s": "📖",
+        "注": "多行"
+      },
+      {
+        "n": "form-item-captcha",
+        "k": "0eb8f9adf6f530d7212a77f17d7966087e4bc826",
+        "s": "📖",
+        "注": "验证码行"
+      }
+    ],
+    "单选": [
+      {
+        "n": "radio",
+        "k": "2656827b1985ff3a1f912884278e4978b6b03c1f",
+        "s": "👁",
+        "注": "圆点式,表单用",
+        "见": "黑色实心圆+白勾（不是红点）"
+      },
+      {
+        "n": "selecter-single",
+        "k": "12d6409830888c4cb6889f3a498cc1774f8838b1",
+        "s": "📖",
+        "注": "按钮式,筛选用"
+      },
+      {
+        "n": "checklist style1",
+        "k": "a8a6a361c9b3dc5d1c7e765ed68b6b918434d69c",
+        "s": "📖",
+        "注": "整行可勾的列表"
+      }
+    ],
+    "多选": [
+      {
+        "n": "checkbox",
+        "k": "fe670ee32edbbc33b8a00356f39b30078a5555b5",
+        "s": "📖",
+        "注": "方框式"
+      },
+      {
+        "n": "selecter-multiple",
+        "k": "8b428f12b74fb3a520104e228902f97d3bf6de17",
+        "s": "📖",
+        "注": "按钮式,四种形态含 badge"
+      }
+    ],
+    "开关": [
+      {
+        "n": "switch",
+        "k": "b197998070efd413e39350c547bee61121bddfe8",
+        "s": "👁",
+        "见": "开启是品牌红（Web 端是蓝）"
+      }
+    ],
+    "步进器/数量": [
+      {
+        "n": "stepper",
+        "k": "c4886dbf6298d357fb1e9338fd27b91541ace06b",
+        "s": "📖"
+      }
+    ],
+    "下拉/选择器": [
+      {
+        "n": "picker",
+        "k": "ed8a7b5a1637baedb7ae2b26b31e3934944af7c3",
+        "s": "📖",
+        "注": "底部弹起的滚轮选择器(整屏浮层)"
+      },
+      {
+        "n": "picker view",
+        "k": "3f622d3a734893f9e543ff5df2c29319ccb21b4d",
+        "s": "📖",
+        "注": "只有滚轮那块"
+      },
+      {
+        "n": "cascader",
+        "k": "126ea022b7e28b984319c6db09cb75785496b345",
+        "s": "📖",
+        "注": "多级联动"
+      },
+      {
+        "n": "vertical-form-item-select",
+        "k": "c7a482b6a7d44cc7291a0223288275155b5f6be2",
+        "s": "📖",
+        "注": "表单里那行"
+      }
+    ],
+    "日期/地区": [
+      {
+        "n": "date picker",
+        "k": "4688de54d66710aff9baf753adf06ea50ed7db7c",
+        "s": "📖",
+        "注": "只有中英两档"
+      },
+      {
+        "n": "country picker",
+        "k": "fd82948078b6da4ab1eb8e50dfd8b34f329a1059",
+        "s": "📖"
+      },
+      {
+        "n": "area picker",
+        "k": "5c48683e8976dc156149172638045e3ac71080db",
+        "s": "📖"
+      }
+    ],
+    "弹层": [
+      {
+        "n": "dialog",
+        "k": "33e09fe9176a8edcc4acd628870b73d3c30af1c4",
+        "s": "👁",
+        "注": "270 宽居中对话框,属性全中文",
+        "见": "iOS 风·Cancel 左/主按钮红字在右"
+      },
+      {
+        "n": "drawer",
+        "k": "0b8d576b4aa9fac42748eb93ddc0360059a4645c",
+        "s": "📖",
+        "注": "四向抽屉"
+      },
+      {
+        "n": "actionsheet",
+        "k": "eb00b89ee4b965b250c628630171204a5b682016",
+        "s": "📖",
+        "注": "底部动作面板"
+      },
+      {
+        "n": "popover(Popover页)",
+        "k": "0549b3deb45e968322e6057a2fd9cd4f9cf58d88",
+        "s": "📖"
+      },
+      {
+        "n": "popover(Tooltip页)",
+        "k": "6888255bfe18b9bb55b6829797fc1e673db2dc49",
+        "s": "📖",
+        "注": "🔴 两个同名,认 key"
+      },
+      {
+        "n": "mask",
+        "k": "a65d96fbadfc9d82ffc41b557ec11280eead2912",
+        "s": "📖",
+        "注": "只是那层黑纱"
+      }
+    ],
+    "提示/反馈": [
+      {
+        "n": "toast",
+        "k": "8486fa8b6632fbd0bd06748467774482fadb96a3",
+        "s": "👁",
+        "注": "轻提示,居中",
+        "见": "深灰半透明方块+线性图标"
+      },
+      {
+        "n": "notice bar",
+        "k": "bdebb61002956ffd9bac994229b56bc09ae3768a",
+        "s": "📖",
+        "注": "通栏通知条"
+      },
+      {
+        "n": "spin",
+        "k": "ccdc96aa130d35aae3caaa9fc5546a1c9293aeb3",
+        "s": "📖",
+        "注": "转圈"
+      },
+      {
+        "n": "skeleton",
+        "k": "91a7d8ec686669d1b6661bc192ddc3cd594e4c3a",
+        "s": "📖",
+        "注": "骨架屏"
+      },
+      {
+        "n": "empty-state",
+        "k": "424e33090ffb1d369525b454a0577f09fce9cb53",
+        "s": "👁",
+        "注": "26 个业务空态",
+        "见": "3D 立体插画风不是扁平图标"
+      }
+    ],
+    "标签": [
+      {
+        "n": "tag / colorful (legacy)",
+        "k": "51d6bf4c091b57b8ea8df84995e9a3373fc8ea9e",
+        "s": "👁",
+        "注": "🔴 移动端只有这个 legacy 的,而且在 Tabs 页",
+        "见": "areal 实心/line 描边"
+      },
+      {
+        "n": "activity-tag",
+        "k": "62227d94d08e990098c0e983691298d27a9f17dd",
+        "s": "📖",
+        "注": "运营活动标,mobile 档只有 82×15"
+      },
+      {
+        "n": "badge",
+        "k": "5c4c3d749890de7ba0903463ac839910980a996c",
+        "s": "📖",
+        "注": "红点/数字角标"
+      }
+    ],
+    "标签页/Tab": [
+      {
+        "n": "tabs",
+        "k": "8a0ad27ad4faeba60ab45a641df1cd1fbda6691d",
+        "s": "📖",
+        "注": "375×44 主 tab 条"
+      },
+      {
+        "n": "tab",
+        "k": "c1bd8e1c9ce419676170f3be5eb6f6eb291881f8",
+        "s": "📖",
+        "注": "单个 tab"
+      },
+      {
+        "n": "tabs_02",
+        "k": "27ec4bdfade54942ea50d48458bacd301902a890",
+        "s": "👁",
+        "注": "小号分段控件,color 是身份(buyer/supplier/sales system)",
+        "见": "白底胶囊分段控件"
+      }
+    ],
+    "列表": [
+      {
+        "n": "list",
+        "k": "3c7258b23b5ef51d75443bf5eb0b556c1335cf19",
+        "s": "📖"
+      },
+      {
+        "n": "list-item",
+        "k": "45bd70ee8a335260909b78e2da4fc8f1ea593818",
+        "s": "📖",
+        "注": "64 变体,最常用"
+      },
+      {
+        "n": "list-item/switch",
+        "k": "3409c7b169d2c23abea9ce66ef32164294bf54b3",
+        "s": "📖"
+      },
+      {
+        "n": "list-item/user",
+        "k": "529ae0ddb0af9d33421dd692298523cc13493a3c",
+        "s": "📖",
+        "注": "带头像"
+      },
+      {
+        "n": "swipe action",
+        "k": "38bf157b1aa928e829e6b64787c1a556c5fc8db9",
+        "s": "📖",
+        "注": "左右滑出操作"
+      }
+    ],
+    "卡片": [
+      {
+        "n": "card",
+        "k": "bb9b7c53dc4198ba3cd0ff32db9809ac8e745372",
+        "s": "📖",
+        "注": "通用卡 343 宽"
+      },
+      {
+        "n": "feed-card",
+        "k": "4caa96dc3cfad90224e5fa3dd897c448274482ca",
+        "s": "👁",
+        "注": "🔴 双列瀑布流 175 宽,七种业务卡型",
+        "见": "七种业务卡·粉渐变热搜榜/深红运营卡"
+      },
+      {
+        "n": "product-card-result",
+        "k": "f6f824bf1eedad8b18deb3f2f99550007b1095be",
+        "s": "👁",
+        "注": "图搜结果卡 166 宽",
+        "见": "图搜结果卡·左上运营标·无 Send Inquiry"
+      },
+      {
+        "n": "product-card-list",
+        "k": "76e2bd143fd2acf808031913f4ef6eab33e87bcf",
+        "s": "📖",
+        "注": "通栏商品卡"
+      },
+      {
+        "n": "supplier-card-list",
+        "k": "674b1e1dc8d07f7d398627ff02119c328fbbc3e8",
+        "s": "👁",
+        "注": "通栏供应商卡",
+        "见": "四个重复 OEM/ODM 占位标签"
+      },
+      {
+        "n": "similar-product-card",
+        "k": "42b27628d0eea6e43869b32ea51cb76f3590d0cf",
+        "s": "📖",
+        "注": "相似品卡 355×80"
+      }
+    ],
+    "页头/导航": [
+      {
+        "n": "page-header/m",
+        "k": "a92219635fbb73db999e22692d8ba441a7fc7eae",
+        "s": "👁",
+        "注": "🔴 移动端页头主力,375×44,标题文字用 TEXT 属性改",
+        "见": "44 高·返回+居中标题+右图标"
+      },
+      {
+        "n": "page-header-search/m",
+        "k": "3d5b7c20e7a12692b827f4e8e805ace8d718da1b",
+        "s": "👁",
+        "注": "带搜索框的页头,含图搜/扫码开关",
+        "见": "MIC logo + 搜索框 + 相机"
+      },
+      {
+        "n": "page-header-webview/m",
+        "k": "586c69525479f32d146add282135553f6b709f91",
+        "s": "📖",
+        "注": "App 内嵌网页的页头"
+      },
+      {
+        "n": "header-logo/m",
+        "k": "afe8b16f6d9d205f075a07dff3566a8857941972",
+        "s": "📖"
+      }
+    ],
+    "筛选": [
+      {
+        "n": "filter-bar/m",
+        "k": "5ce386f0f98086453cc15a53f5cb02ae6ef26130",
+        "s": "👁",
+        "注": "结果页顶部筛选条",
+        "见": "选中是黑描边加粗不是红"
+      },
+      {
+        "n": "filter-content",
+        "k": "97a69f31ddc1045f2853117db27166be126c35ef",
+        "s": "📖",
+        "注": "MOQ/Price/OEM-ODM 三种筛选面板"
+      },
+      {
+        "n": "filter-popover",
+        "k": "3c569cfc048091acb76349603fa9c65a31352132",
+        "s": "📖",
+        "注": "插槽壳,把 filter-content 换进去"
+      },
+      {
+        "n": "sheet-header",
+        "k": "84099a179fe16f022877fe2c7d97d70a4800f5ed",
+        "s": "📖",
+        "注": "抽屉头含分类 tab + 筛选按钮"
+      }
+    ],
+    "头像": [
+      {
+        "n": "avatar default",
+        "k": "fc420c53d33a34c4ab59272206625280de463a2f",
+        "s": "📖",
+        "注": "buyer/saler/supplier 三种角色"
+      },
+      {
+        "n": "avatar text",
+        "k": "d0f738e28342c99171ac6eb1bb334ad43f43587e",
+        "s": "📖",
+        "注": "首字母头像,8 个语种档"
+      }
+    ],
+    "评分": [
+      {
+        "n": "rate",
+        "k": "b7fe9c75dd15a6f72db5805c6814eb0b9af41868",
+        "s": "📖",
+        "注": "0~5 半星步进"
+      }
+    ],
+    "图片": [
+      {
+        "n": "image",
+        "k": "12c2395c1129d5509c0a7fc9df6f1802083a6346",
+        "s": "📖",
+        "注": "含 no image / placeholder 状态"
+      },
+      {
+        "n": "image uploader",
+        "k": "9e50db11503262747a9cb278fa5c70c99c9fa2be",
+        "s": "📖"
+      },
+      {
+        "n": "image viewer",
+        "k": "5f369cfa1d6911169c1ac9e5b655630a2bdf9ba5",
+        "s": "📖",
+        "注": "全屏大图查看"
+      }
+    ],
+    "轮播": [
+      {
+        "n": "swiper",
+        "k": "d04b20ec99eebed345da45796f22bbd78d1104cf",
+        "s": "📖"
+      },
+      {
+        "n": "Carousel Dots",
+        "k": "3c514f4e60169ed9605700290271e085406c2e69",
+        "s": "📖",
+        "注": "指示点组"
+      }
+    ],
+    "折叠": [
+      {
+        "n": "accordion",
+        "k": "4ee6685a9becf18935435a1429c054401f9affe3",
+        "s": "📖"
+      }
+    ],
+    "视频": [
+      {
+        "n": "playing / not started / loading",
+        "k": "见 _videoPlayer族",
+        "s": "📖",
+        "注": "375×374 三个状态各一个组件"
+      }
+    ],
+    "表单整块": [
+      {
+        "n": "form",
+        "k": "4761ca61e4b871b57f5b198d338e4f1ac698e706",
+        "s": "📖",
+        "注": "vertical/horizontal 两套布局"
+      }
+    ],
+    "图标": [
+      {
+        "n": "移动端icon",
+        "k": "a178b2d461558481f53dc0c25a66ef49f31354ae",
+        "s": "📖",
+        "注": "302 个,名单见 assets/feique-mobile-icon-variants.txt"
+      },
+      {
+        "n": "brand logo",
+        "k": "ee7544e804e5193881360410dc0308d985bfb7ff",
+        "s": "📖",
+        "注": "供应商资质标 16 种组合"
+      },
+      {
+        "n": "attachment icon",
+        "k": "e5e463d49c88eb30a4353790b3bd9c021588648f",
+        "s": "📖",
+        "注": "文件类型图标"
+      }
+    ],
+    "_库里没有的(别找了)": [
+      "下拉刷新(Refresh 页是空的)",
+      "上拉加载(LoadMore 页是空的)",
+      "自动完成(AutoComplete 页是空的)",
+      "alert(整个库没有)",
+      "tag / basic(只有 legacy 版)",
+      "table 表格",
+      "面包屑 breadcrumb",
+      "分页 pagination(移动端不需要)",
+      "steps 步骤条"
+    ]
+  },
+  "_openQuestions": [
+    "✅ 已解决（吉吉 2026-09-01 拍）1. 补截图 → 已补 3 批 15 张，nameLookup 15 个转 👁，实测纠正 4 处凭名字的错判（见 _visualFindings）。剩下的组件仍是 📖。",
+    "✅ 已解决 2. tabs_02 的 sales system = #4973F2，硬编码没绑 style（style 层没有这个色）。",
+    "✅ 已解决（吉吉拍：按实测走）3. Corner 规范页作废，不找组件库的人对。圆角查实测值，圆形按钮写 1000。",
+    "✅ 已解决（吉吉确认）5. 移动端没有 CSS 库 → HTML demo 按清册实测值手写。",
+    "✅ 已解决 6. figma-verify 已装（指纹 35910-468224b6，match:true，冒烟通过）。",
+    "⏳ 还没拍 4. 库里发现的问题（Shadow 1 级标注错两层 / color 页背景色编号跟 paint style 反了 / empty-state 说明写 15 种主题实际 26 种 / product-card-result 说明写有 Send Inquiry 实际没有 / 一批拼写错）要不要整理一份报给组件库的人？",
+    "⏳ 新增：figma-verify 的「按钮顺序：主按钮在左」判据对移动端 dialog 会误报（移动端走 iOS 惯例主按钮在右）。要不要给这道门加移动端豁免？改门的刀该吉吉落。"
+  ],
+  "_verifiedFindings": {
+    "Shadow规范页1级投影标注写错了": {
+      "怎么验的": "按坐标(不按图层树)重建标注列,再跟三个 effect style 的真值逐层对账。三级投影各自的 styleId 都确认过。",
+      "2级和3级": "🟢 标注与 effect style 完全一致,一个数不差",
+      "1级": "🔴 三层里错了两层",
+      "明细": [
+        "最内层:标注写 B:0 S:1,实际是 B:2 S:-2(blur 和 spread 都错)",
+        "中间层:标注写 B:6 S:1,实际是 B:6 S:0(spread 错)",
+        "最外层:标注写 B:12 S:4,实际就是 B:12 S:4 ✅"
+      ],
+      "🔴 跟Web端": "Web 端那轮记的是『1级 标注写 spread 1/1/4、最内层 blur 0;图形是 spread -2/0/+4、blur 2』—— 移动端一字不差地继承了同一个错。说明是从 Web 端复制过来的规范页。",
+      "怎么用": "画阴影一律绑 effect style(id 在 tokens.effectStyles),别照规范页的数字手写。"
+    },
+    "button零重复variant": {
+      "怎么验的": "逐条比对 405 个 variant 名,零重名。405/540 是稀疏不是坏。可正常 setProperties。"
+    },
+    "color页背景色编号跟paint style反了": {
+      "现象": "color 页表格写『#F0F1F2 = 背景色01 / #F5F7FA = 背景色02』,但 paint style 是 background 01 = #F5F7FA / background 02 = #F0F1F2。",
+      "🔴 跟Web端": "同一个错,继承的。以 paint style 为准。"
+    },
+    "color页把反白标成了禁用色": {
+      "现象": "color 页写『#fff 禁用色』。但 paint style 层文字色只有四个 token(#222/#555/#888/#B3B3B3),白色只有 other/white。",
+      "结论": "#fff 是反白不是禁用。Web 端已确证过同一条,移动端继承。"
+    },
+    "color页两处标签串了": {
+      "现象": "#FFF2F2 标成 green-2(应是 red 系),#EBFBF6 也标 green-2。两行撞名。"
+    }
+  },
+  "demoWorkflow": {
+    "_整条路": "Figma 里查本清册拿 key 和 variant → importComponentByKeyAsync → setProperties(按本文件的真名,别自己拼) → 颜色绑 paint style(id 在 tokens 段) → 间距绑 spacing variables。",
+    "🔴 移动端没有对应的 CSS 实现": "✅ 吉吉 2026-09-01 确认：移动端没有 CSS 库（Web 端有 飞鹊Web组件库.css，移动端没有对应物）。→ 做移动端 HTML demo 只能按本清册的实测值手写样式，没有类名可抄。这也意味着 Figma 是移动端唯一权威，不存在「CSS 会滞后」的问题。",
+    "起手三件": [
+      "① 基准画布 375×812,通栏 375 / 卡片 343 / 抽屉 300",
+      "② 正文默认 body/lg = 16px/24px Roboto Regular(不是 Web 端的 14)",
+      "③ 页头用 page-header/m(375×44),底部 CTA 用 button bottom fixed(375×64),中间内容用 list 族或 feed-card"
+    ],
+    "图标": "用 assets/feique-mobile-icon-variants.txt 里的名字(带中文分类前缀),🔴 别拿 Web 端那份的名字来用,有 5 处拼法不同"
+  },
+  "_visualFindings": {
+    "_说明": "2026-09-01 补截图（吉吉拍板做的）。这一段全是「光读名字/属性会猜错、看了图才知道」的东西。Web 端那轮的教训是光读名字会错三处，移动端这轮实测错了四处。",
+    "🔴 四处凭名字会猜错的": {
+      "switch 开启色": "实测是**品牌红 #E64545**。🔴 Web 端实测是蓝的 —— 两端相反。这条直接印证「Web 端的坑不能继承到移动端」。",
+      "radio 选中态": "实测是**黑色实心圆 + 白色对勾**，不是红色圆点、也不是常见的「圆环套圆点」。看着更像圆形版 checkbox。做表单稿凭想象画红点就错了。",
+      "filter-bar 选中态": "实测是**黑色描边 + 文字加粗**，不是品牌红。未选中是灰描边常规字。",
+      "dialog 按钮顺序": "实测 **Cancel 在左、主按钮(红字)在右**。🔴 跟飞鹊「主按钮在左」的规则相反 —— figma-verify 门里就有「按钮顺序：主按钮在左」这条判据，对移动端 dialog 会误报。移动端走的是 iOS 惯例。"
+    },
+    "已看过长相的（👁）": {
+      "button 五种 type": "primary=红底白字圆角胶囊；secondary=白底黑描边黑字；dashed=白底黑虚线黑字；text=纯黑文字无底无框；link=蓝字。🔴 **color 只作用于 primary 的填充**（红/蓝/黑三档），其余四种 type 不受 color 影响 —— 跟 Web 端一致。",
+      "tag / colorful (legacy)": "areal=实心（红底白字）· line=描边（白底蓝字蓝框）。名字拼错但语义清楚：areal 其实是 area。长相正常，不像「legacy」暗示的那么糟。",
+      "tabs_02": "白底圆角胶囊分段控件，选中白底彩字、未选中彩底白字。",
+      "product-card-result": "见 _businessComponents 里那条（description 过时）。",
+      "supplier-card-list": "左 logo 占位 + 公司名单行截断 + 右上 LeadingFactory 标 + Audited + 5 星 + Fast Delivery 文案 + **四个一模一样的 OEM/ODM 标签（明显是占位没改）** + 下方三张产品图带价格。",
+      "feed-card rank-hot-searches": "粉色渐变底 + Hot Searches 标题 + 4 行白色胶囊（小图 + 搜索词单行截断）。",
+      "feed-card promo": "深红底 + SMARTEXPO 角标 + 产品堆叠图 + Hot Products + View more 白胶囊按钮 + 底部轮播点。",
+      "filter-bar/m products": "漏斗图标圆形按钮 + 三个筛选胶囊（Secured Trading 绿字 / Audited / Manufacturer）。",
+      "page-header/m": "44 高白底，返回箭头 + 居中 Title + 右侧功能图标，底部 1px 分割线。",
+      "page-header-search/m leading=logo": "🔴 **直接就是 MIC 移动端首页页头**：MIC 官方 logo（红 M + Made-in-China + Connecting Buyers with Chinese Suppliers）+ 圆角搜索框（放大镜 + Search Products + 相机图标）+ 右侧人形。做移动端首页 demo 直接用这个。",
+      "empty-state": "🔴 **3D 立体插画风，不是扁平线性图标**。灰色调 + 少量品牌红点缀（no-product-results 是灰箱子 + 放大镜 + 红色感叹线）。",
+      "dialog 双按钮": "iOS 风格。粗体标题居中 + 正文 + 横分割线 + 左右两个按钮（竖线分隔），Cancel 黑字、主按钮红字。**是红字不是红底**。",
+      "toast success": "深灰半透明圆角方块 + 线性对勾圆圈 + Success 白字，居中浮层。"
+    }
+  },
+  "_blindSpots": {
+    "_说明": "🔴 2026-09-01 实测出来的盲区。清册说「45 页学完」是真的，但**不等于移动端库全学完了**。别把「清册里没有」读成「库里没有」。",
+    "覆盖率": {
+      "全文件顶层已发布组件": 337,
+      "清册收录": 121,
+      "覆盖率": "约 37%",
+      "差额都在哪": "Symbols 页 214 个（占全库 64%），我一个没扫。其余零头是 Typography字体页等未打勾页。"
+    },
+    "🔴 Symbols 页（0:43854）· 214 个已发布组件 · 最大盲区": {
+      "性质": "零个组件集（全是散的单体 COMPONENT）· 零个写了 description · 大量重名。像是 Sketch/旧文件导入残留，或变体被打散的旧版组件堆，不是有意维护的组件库。",
+      "重名实测": "icon×76 · Cascader Menu Item×27 · Select Menu Item×27 · Input Caption×24 · Icon/UserOutlined×16 · Icon/InfoCircleOutlined×7 · Menu Item/Vertical/Navigation Item×8 · Icon/SearchOutlined×5 · slider×3 · radio buttons×3 · select menu group title×5 · input caption×4 · input pre post tab×4",
+      "Ant Design 痕迹": "Icon / UserOutlined、Icon / InfoCircleOutlined、Icon / SearchOutlined —— 这套命名是 Ant Design 的，不是飞鹊的。",
+      "变体被打散的痕迹": "名字里直接带 variant 值：hover,left · hover,right · uploading,small,默认",
+      "🔴 为什么这是风险": "它们**已发布、有正式 key、会被 search_design_system 搜出来**。实测搜 button 就返回了 3 个 Symbols 页的 radio buttons。因为数量多（214 vs 121），**搜到残留件比搜到正经组件更容易**。",
+      "怎么防": "守住「先查清册再 search」这个顺序就行 —— 清册里有的直接用 key（100% 正确），清册没有才 search，这时看到 filePath 里是 Symbols 页的、或名字重复度高的、或没 description 的，先怀疑是残留件，别直接用。",
+      "要不要学": "⏳ 等吉吉拍。我没有自己扩范围。"
+    },
+    "🔴 两端覆盖率对照（2026-09-01 实测）": {
+      "Web端": {
+        "页数": 77,
+        "全部已发布组件": 261,
+        "清册收录": 174,
+        "覆盖率": "67%",
+        "盲区在哪": "82 个在 18 个未打勾页",
+        "盲区性质": "**有价值**——含两页 MIC 业务卡片组件（业务组件探索 19 个 + 产品列表橱窗 19 个，后者是主搜/QP/LV 的 ProductCard）"
+      },
+      "移动端": {
+        "页数": 61,
+        "全部已发布组件": 337,
+        "清册收录": 121,
+        "覆盖率": "36%",
+        "盲区在哪": "214 个在 Symbols 页",
+        "盲区性质": "**多半是残留**——重名散件（icon×76）、零 description、带 Ant Design 命名痕迹"
+      },
+      "一句话": "两端都有盲区，但**性质相反**：Web 端漏掉的是值钱的业务组件，移动端漏掉的是旧文件垃圾。别用同一个决定处理两边。"
+    }
+  },
+  "_searchDisciplines": {
+    "_说明": "🔴 用 search_design_system 的纪律（2026-09-01 实测立）。",
+    "1_默认跨库返回_必须传 includeLibraryKeys": {
+      "实测": "在移动端文件里搜 button，返回 20 条：移动端 15 条 · Web 端 4 条 · **第三个库「TM组件」1 条**。fileKey 传的是移动端也拦不住跨库。",
+      "做法": "搜之前先想清要哪个库，用 includeLibraryKeys 限定。",
+      "libraryKey": {
+        "[飞鹊Edition2026]-移动端": "lk-844c4add403a2b262e76a42d42f4817f21fccf706c2d46544a4ab678a7462bea670ee6f512f325e4ccfb4196073367c87814dfeaec69f66c508245f913d91c11",
+        "[飞鹊Edition2026]-Web端": "lk-61c367c44b5eb3ce12dd22895ed5e1145aa04d1e34ea9b4db8092e1480a7a01021709fa90c2281034ed9b5d90f449e149ae2607703111d6cca3bf326d9e983ea",
+        "TM组件": "lk-f499a83202b8f7d5f42aeaf0a2686ee795d219353764bb138e34351c7dc58d5e40d764d7203b386ec2e5aafb52c16c4f6acb95efec40cb60981d279771e365bb"
+      },
+      "🔴 TM组件是新发现的第三个库": "以前的记录里从没出现过。它也有自己的 button（key c8354185…）。做 TM 相关的稿可能该用它 —— 但这个库我完全没学过，用之前先查。"
+    },
+    "2_search 返回的 description 不可信": {
+      "实测两例": "product-card-result 的 description 写「+ Send Inquiry 按钮 165×27」，实测卡上没有这个按钮；empty-state 的 description 写「31 个变体 · 15 种场景」，实测 64 个变体 · 26 种主题。",
+      "做法": "description 只当线索，尺寸/变体/结构一律以清册的实测值为准，清册没有就自己去量。"
+    },
+    "3_两端 key 天然隔离（已实测，这条是好消息）": {
+      "实测": "Web 端 174 个 key vs 移动端 121 个 key，**交集 0**。20 个两端同名的组件（button/radio/checkbox/switch/textarea/empty-state/mask/image/form/swiper/affix/scrollbar/brand logo/attachment icon/carousel dot/date picker/area picker/selecter-single/selecter-multiple/tag legacy）**key 全部不同**。",
+      "含义": "拿错 key 不可能悄悄命中另一端的组件 —— 要么 import 到明显不对的东西（一眼看得出），要么报错。**不存在「静默用错」这种失败模式**。",
+      "🔴 但": "这只保证「用错了看得出来」，不保证「不会去拿错的清册」。判 Web 还是移动端那一步没有机器兜底。"
+    }
+  },
+  "_statesReference": {
+    "_说明": "🔴 2026-09-01 实测+看图。「悬停 / 按下 / 选中」在飞鹊里是三件不同的事，而且前两个两端互斥。做稿标注交互态之前先读这段。",
+    "1_悬停与按下_两端互斥": {
+      "🔴 结论": "Web 端 button 有 hover 没有 press；移动端 button 有 press 没有 hover。**两端各缺对方那一个**（已实测 variantOptions，不是推测）。",
+      "Web端 State 轴": [
+        "default",
+        "hover",
+        "disabled"
+      ],
+      "移动端 State 轴": [
+        "default",
+        "press",
+        "disabled"
+      ],
+      "含义": "做移动端稿标注 hover 是错的（触屏没有悬停）；做 Web 端稿想找 press 态也找不到那个 variant。跨端搬交互标注会落空。"
+    },
+    "2_button 三态实测色值（两端 primary 一致）": {
+      "default": "#E64545 · 绑 primary/buyer · 饱和红底白字",
+      "hover(Web) / press(移动)": "#CF3E3E · 绑 primary/buyer hover · 暗一档的红",
+      "disabled": "#E64545 · 绑 primary/buyer · **填充色不变，靠降透明度变浅**（淡红底白字）",
+      "🔴 token 名跟用途对不上": "移动端的 **press** 态复用了名叫 `primary/buyer hover` 的 paint style。style 名写 hover、实际用途是按下。值是对的，别因为名字叫 hover 就以为移动端有悬停态。"
+    },
+    "3_secondary 的中间态_两端长得不一样": {
+      "Web端 secondary hover": "**填充变浅灰 #F4F4F4**（绑 primary/dark background），描边保持 → 灰底黑框黑字",
+      "移动端 secondary press": "**描边加粗变黑**，底仍是白 → 白底粗黑框黑字",
+      "含义": "同一个「中间态」，Web 端靠换底色表达、移动端靠加重描边表达。别互抄。"
+    },
+    "4_「选中」button 没有这个态": {
+      "🔴": "button 的 State 轴里没有 selected/active。要「选中」得换组件 —— 下面这四套视觉语言完全不同，选错就是风格串味。",
+      "四套选中态（移动端·已看图）": {
+        "selecter-single（按钮式单选·筛选用）": "default = 白底 + 红描边 + 红字；selected = **淡红底 #FDF1F1** + 红描边 + 红字。**只加了层浅红底，描边和字色不变**。属品牌色系。",
+        "selecter-multiple（按钮式多选）": "selected = **浅灰底 + 黑色粗描边 + 黑字**，完全不用红。属中性色系 —— 跟 filter-bar/m 的选中态是同一套语言。",
+        "checklist style1（整行可勾列表）": "selected = **整行底色不变，右侧出现红色对勾**。",
+        "radio（圆点式单选·表单用）": "selected = **黑色实心圆 + 白色对勾**（不是红点，也不是圆环套圆点）。"
+      },
+      "🔴 最容易选错的": "「单选」这个中文说法对应 radio 和 selecter-single 两个组件，**选中态一个是黑圆白勾、一个是淡红底胶囊**，长得毫无关系。上下文说不清就问一句。"
+    },
+    "5_🔴「选中/按下」这个概念在库里有 7 种写法": {
+      "_为什么记": "setProperties 按属性名和值精确匹配，写法猜错就 miss。下面每种都实测过。",
+      "移动端": {
+        "state=selected": "radio · checkbox · selecter-single · selecter-multiple · checklist style1/2 · letter",
+        "state=active": "chip-icon-text/m（用 active 不用 selected）",
+        "Active=true": "cascader-menu-item（**属性名首字母大写**）",
+        "checked=on": "tab（而且 checked 轴混装了选中态和小红点：on|off|Little Red Dot）",
+        "State=press": "button（**不带 ed**，属性名首字母大写）",
+        "state=pressed": "page-header-webview/m · page-header-webview-control/m（**带 ed**，属性名小写）"
+      },
+      "Web端额外的两种": {
+        "state=Selected": "selecter-single（**首字母大写**），而同族 selecter-multiple 是小写 selected —— 同一族内部就不一致",
+        "statues=active|inactive": "radio 和 checkbox（**属性名拼错成 statues**，而且值用 active/inactive 不用 selected）"
+      },
+      "一句话": "别按印象写 `selected` 就完事 —— 先去 components.<组件名>.props 抄真名。"
+    }
+  }
+}

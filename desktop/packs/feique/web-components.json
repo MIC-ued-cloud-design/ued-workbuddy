@@ -1,0 +1,4800 @@
+{
+  "_meta": {
+    "purpose": "飞鹊 Web 组件库的可查清册。做视觉稿/demo 时先查这里，别自己画像素、别猜 variant 名。",
+    "sourceFile": {
+      "fileKey": "gcanH38jg2SMmXwrcC6FP8",
+      "name": "飞鹊Edition2026 Web端",
+      "url": "https://www.figma.com/design/gcanH38jg2SMmXwrcC6FP8/-飞鹊Edition2026--Web端"
+    },
+    "scope": "只收录 page 名带 ✅ 的页（吉吉：打勾=已做好确定的）+ 吉吉点名的 color/Corner/Shadow 三页。Typography字体 与 无障碍设计 两页未打勾，吉吉 2026-08-31 明确跳过。",
+    "progress": {
+      "pagesInScope": 44,
+      "pagesDone": 44,
+      "learnedOn": "2026-08-31",
+      "batch": "全部完成 + 三个坏 set 已修 + 中文名对照表已建"
+    },
+    "howToUse": [
+      "1) 拿组件：await figma.importComponentSetByKeyAsync(key) 拿 set，或 importComponentByKeyAsync 拿单个 variant。有 key 就不必 search_design_system（它有盲区）。",
+      "2) 配 variant：instance.setProperties({ 属性名: '值' })。🔴 属性名大小写必须原样照抄 props 的 key —— button 的 State 是大写 S，其余全小写。",
+      "3) 尺寸/间距：sample 记的是该 set 第一个 variant 的实测值，不是全部 variant 的通值。改尺寸前先量目标那一档。",
+      "4) 没有 auto-layout 的 set（layout=absolute）不能靠 layoutSizing 撑开，必须 resize。"
+    ],
+    "authorityNote": "本文件记的是从 Figma 图形实测出来的值。凡规格页文字与图形不一致，一律记两边并标注我采信哪个及理由，不替吉吉裁决 —— 见 pendingDecisions 与 fileIssuesFound。",
+    "relatedFiles": {
+      "assets/feique-tokens.json": "token 权威源（本次已补 color/corner/shadow 三块空洞）",
+      "assets/feique-icon-variants.txt": "icon set 的 301 个 variant 真值，一行一个，可 grep",
+      "memory-refs/feique-library-learning-log.md": "学习进度 + 待吉吉拍的冲突 + 文件里发现的错"
+    },
+    "gateCoverageNote": "🔴 scripts/token-sync-check.js 的颜色断言只比 5 个字段（brandRed / link / text.primary·secondary·tertiary）。本次往 tokens.json 新增的三十多个色它一个都不查。说「token 门全绿」时要带上这个范围。",
+    "measurementScopeNote": "🔴 圆角/字号的实测直方图样本是 12 个组件页，不是全部 41 个 ✅ 页。剩余页学完后应重量一次。",
+    "coverage": "✅ 44/44 页全部学完(41 个 ✅ 页 + color/Corner/Shadow 三页)。Typography字体 与 无障碍设计 两页未打勾,吉吉 2026-08-31 明确跳过。",
+    "sampleFieldCaveat": "🔴🔴 清册里每条的 `sample` 取的是该 set 的**第一个 variant**(children[0]),**不一定是默认态**。已实测踩到:vo-supplier-nav 和 vo-supplier-sider 的第一个 variant 是选中态,我一度把选中态的底色当成了常态底色。要默认态的值,看 `defaultVariant` 字段(有的条目有)或按 componentPropertyDefinitions 的 defaultValue 自己取。**引用 sample 里的颜色前,先确认那是不是你要的态。**",
+    "auditMethodNote": "🔴 扫全页统计字体/字重/颜色时,**必须先剔掉画布上的说明标注**(设计师给组件打的标签,不在 COMPONENT/COMPONENT_SET 子树里)。实测:不剔的话 Inter Medium 132 · Microsoft YaHei 141 · PingFang SC 1 这些全会算进来,得出「组件库自己不守规范」的错误结论;剔掉后组件内部 98.5% 合规,违规集中在 MIC 页头页脚 和 Steps 两处。判据:`insideComponent(n)` 沿 parent 链找有没有 COMPONENT/COMPONENT_SET。",
+    "lastUpdated": "2026-08-31",
+    "补件记录_2026-09-01": "吉吉授权补学两页未打勾的 MIC 业务组件：「业务组件（探索）」4320:960（19 个）+「产品列表+橱窗（待更新）」6674:1370（19 个）。清册 component 条目 82 → 106。"
+  },
+  "pendingDecisions": {
+    "_fullAnalysisLivesIn": "memory-refs/feique-library-learning-log.md 第一节 —— 完整论证只写在那一处，这里只留摘要，避免两个文件各写一份然后漂移。",
+    "_sourceLineageWarning": "🔴 响应式🤖 页 / assets/docs/飞鹊响应式规则-AI友好型规范.md / 现有 feique-tokens.json 的圆角阶梯三者值一字不差，很可能同一血统（页名带 🤖、文档名带「AI友好型」）。它们算一个来源，不是三份独立印证。Corner 页是另一个来源。",
+    "D1-圆角阶梯": "实测真组件只用 4/6/8 + pill + 整圆(32/40/60)；2·12·16·20·24 各 0 次。两套规格文档各错一半。要吉吉定 radius.scale 怎么改 —— 改它要连带改 engine.js 的 RAD 镜像和 token-sync-check.js 断言。实测直方图在 feique-tokens.json 的 _measuredFromComponents。",
+    "D2-字号20": "实测组件只用 12/14/16/18（14 占 58%）；20/22/24/32/36 各 0 次，但 22/24/32/36 是公认合法的标题字号 —— 所以结论不是「20 违规」，而是「组件字号 vs 页面级标题字号是两回事」。web.scale 大概不用改，只需吉吉确认「body 正文级最大 = 20」这句（按实测组件正文最大是 16，即输入框主文字）。",
+    "D3-文字色第五档": "color 页 neutral color-4 (#B3B3B3) 与 neutral color-5 (#fff) 的场景说明都写「禁用色」。按旁边汇总板（标题#222/正文#555/辅助文本#888/禁用暗文#B3B3B3）判断 #fff 应是反白文字，待吉吉确认。",
+    "D4-视觉自检误报": "engine.js 的 PALETTE 没收 #E6E6E6，但它是 color 页的正式边框色（模块分割），所以 MIC-视觉自检 会把合法用色报成违规。补不补进色板请吉吉定 —— 改共享的门不自己动。",
+    "D5-重复维护源": "assets/docs/飞鹊响应式规则-AI友好型规范.md 的「字号+行高」和「圆角」两段与 feique-tokens.json 重复。已在 tokens.json 的 _consumers 里登记，等 D1 定了一起改，免得改两遍。"
+  },
+  "fileIssuesFound": [
+    {
+      "page": "color颜色(包括主题)",
+      "issue": "文字色 neutral color-3（标签 #888）和 neutral color-4（标签 #B3B3B3）的两个色块，实际填充都是 #E6E6E6。",
+      "evidence": "脚本比对色块真实 fill vs 相邻 hex 标签，28 行里这 2 行不一致。",
+      "myCall": "按标签取值（标签与汇总板一致），色块画错了。只报告不改。"
+    },
+    {
+      "page": "color颜色(包括主题)",
+      "issue": "错误色第二档 token 名写成 red--2（双横线）。",
+      "myCall": "按同组规律应为 red-2。只报告不改。"
+    },
+    {
+      "page": "Shadow阴影",
+      "issue": "1级阴影的文字标注与图形不一致：标注 spread 写 1/1/4、最内层 blur 写 0；图形实际 spread -2/0/+4、最内层 blur 2。",
+      "evidence": "2级(-4/0/+8)和3级(-8/0/+16)的标注与图形完全吻合，且都遵守「内层负·中层零·外层正」；只有1级标注破了这个规律。",
+      "myCall": "采信图形。只报告不改。"
+    },
+    {
+      "page": "Corner圆角",
+      "issue": "规格文字写「默认按钮、输入框、卡片 -> 6px」，但输入框实测是 4px（button 确实是 6）。",
+      "myCall": "按实测分开记：按钮 6、输入类 4。"
+    },
+    {
+      "page": "icon图标✅",
+      "issue": "variant 值 行业图标-ind-light-industy 拼写错误，industry 少一个 r。",
+      "myCall": "清册照原样收录（否则 setProperties 会失败），但标注这是错拼。"
+    },
+    {
+      "scope": "本地 assets/svg/ 与 Figma icon set 不同步",
+      "issue": "Figma 有本地缺 13 个（含最常用的 close）：calculator clock-f close earth ind-light-industy loading problem refund-rate thumb-up-f tariff usa vector-left vector-right。本地有 Figma 无 7 个，多为命名不一致：Loading(大写L) vector_left/vector_right(下划线) ind-lightIndusty(驼峰) delete ic_image vector2。",
+      "myCall": "需要补导出/统一命名，等吉吉定要不要做。"
+    },
+    {
+      "page": "MIC 页头页脚✅",
+      "issue": "有 20 处非阶梯圆角：3px（8 处）、9px（4 处）、13px（8 处）。",
+      "evidence": "同批量测的其他 11 个组件页一处这种值都没有，只有这一页有。",
+      "myCall": "只报告不改。"
+    },
+    {
+      "scope": "MIC-视觉自检 的色板",
+      "issue": "engine.js 的 PALETTE 缺 #E6E6E6，会把 color 页的正式边框色报成违规（自检误报，不是设计稿的错）。另 PALETTE 里有 8 个色不在 color 页规格表上（#CF3D3D #E8ECF0 #E8EAED #A3B8CC #B0B8C1 #E6FAF4 #D8E6F2 #FCECEC），来自线上 CSS 实证，不冲突。",
+      "myCall": "见 pendingDecisions D4，不自己改共享的门。"
+    }
+  ],
+  "foundations": {
+    "color": {
+      "_page": "color颜色(包括主题) · 0:103",
+      "_note": "🔴 主题不是用 Figma 变量做的 —— 文件里只有两个变量集合（Collection 1 = 1 个变量 + 三个没改名的 Mode，基本是废的；spacing = 7 个变量）。所以主题只能按这张手画规格表用，改主题不会自动生效。",
+      "themes": {
+        "_meaning": "三套主题色，每套三档：主色 / hover / 浅底。MIC 主站用主题01（品牌红）。",
+        "主题色01 品牌红": {
+          "red-1": {
+            "hex": "#E64545",
+            "use": "主按钮色、边框、icon、logo"
+          },
+          "red-2": {
+            "hex": "#CF3E3E",
+            "use": "主按钮 hover"
+          },
+          "red-5": {
+            "hex": "#FDF1F1",
+            "use": "框背景"
+          }
+        },
+        "主题色02 品牌蓝": {
+          "blue-1": {
+            "hex": "#007DFA",
+            "use": "主按钮色、边框、icon"
+          },
+          "blue-2": {
+            "hex": "#0071E1",
+            "use": "主按钮 hover"
+          },
+          "blue-3": {
+            "hex": "#EBF5FF",
+            "use": "框背景"
+          }
+        },
+        "主题色03 中性": {
+          "neutral-1": {
+            "hex": "#222222",
+            "use": "主按钮色、边框、icon、强调/正文标题"
+          },
+          "neutral-2": {
+            "hex": "#000000",
+            "use": "主按钮 hover"
+          },
+          "neutral-3": {
+            "hex": "#F4F4F4",
+            "use": "框背景 / 线按钮 hover / dark background"
+          }
+        }
+      },
+      "functional": {
+        "常规": {
+          "blue-1": "#007DFA",
+          "浅底 blue-2": "#EBF5FF"
+        },
+        "成功": {
+          "green-1": "#00C88C",
+          "浅底 green-2": "#EBFBF6"
+        },
+        "警示": {
+          "yellow-1": "#FAAA00",
+          "浅底 yellow-2": "#FEF6E5"
+        },
+        "错误": {
+          "red-1": "#FF5252",
+          "浅底 red-2": "#FFF2F2",
+          "_note": "文件里 token 名误写 red--2；且注意这个 red-1 (#FF5252) 与主题色的 red-1 (#E64545) 同名不同值 —— 引用时必须带上是「功能色/错误」还是「主题色01」"
+        }
+      },
+      "text": {
+        "neutral-1": {
+          "hex": "#222",
+          "use": "强调/正文标题、描边 icon"
+        },
+        "neutral-2": {
+          "hex": "#555",
+          "use": "次强调/正文标题"
+        },
+        "neutral-3": {
+          "hex": "#888",
+          "use": "次要信息"
+        },
+        "neutral-4": {
+          "hex": "#B3B3B3",
+          "use": "禁用"
+        },
+        "neutral-5": {
+          "hex": "#FFFFFF",
+          "use": "反白（文件写「禁用色」疑为笔误，见 D3）"
+        }
+      },
+      "border": {
+        "neutral-1": {
+          "hex": "#DAE0E6",
+          "use": "列表分割线"
+        },
+        "neutral-2": {
+          "hex": "#CED3D9",
+          "use": "按钮描边（也是输入框描边实测值）"
+        },
+        "neutral-3": {
+          "hex": "#E6ECF2",
+          "use": "模块/边框描边"
+        },
+        "neutral-4": {
+          "hex": "#E6E6E6",
+          "use": "模块分割"
+        }
+      },
+      "background": {
+        "背景色01": "#F0F1F2",
+        "背景色02": "#F5F7FA",
+        "背景色03": "#FFFFFF"
+      }
+    },
+    "corner": {
+      "_page": "Corner圆角 · 0:1174",
+      "_status": "阶梯有冲突，见 pendingDecisions D1。以下是页面上的规则条文（这部分无争议）。",
+      "measuredOnRealComponents": {
+        "4": "输入类、小控件、小型按钮/标签",
+        "6": "按钮（button set 实测）",
+        "8": "表单卡片容器",
+        "12": "大卡片",
+        "20": "更大卡片/模态",
+        "pill": "9999 或 40（scrollbar）"
+      },
+      "rules": [
+        "阶梯基于一个基数（2px 或 4px）成倍增长。",
+        "组合圆角：卡片内既有外容器又有按钮时，遵循「外大内小」或「同级统一」。",
+        "视觉等大原则：外圆角 = 内圆角 + padding。例：内圆角 16 + 内边距 8 = 外圆角 24。（外圆角和内圆角要看起来一样大，需要这个公式校正。）",
+        "紧凑型主题（compact theme）下所有圆角可按比例缩小（如 ×0.8）。",
+        "圆角不随响应式断点变化，保持统一。"
+      ]
+    },
+    "shadow": {
+      "_page": "Shadow阴影 · 0:1218",
+      "_note": "三级，每级都是三层 drop shadow 叠加。以下是从图形实测的值（1级的文字标注有误，见 fileIssuesFound）。全部纯黑 #000，x 一律 0。",
+      "levels": {
+        "1级": {
+          "meaning": "低层级。被操作（hover/点击）时浮起，操作结束就消失。如下拉面板。",
+          "layers": [
+            {
+              "y": 5,
+              "blur": 12,
+              "spread": 4,
+              "alpha": 0.08
+            },
+            {
+              "y": 3,
+              "blur": 6,
+              "spread": 0,
+              "alpha": 0.12
+            },
+            {
+              "y": 1,
+              "blur": 2,
+              "spread": -2,
+              "alpha": 0.1
+            }
+          ],
+          "css": "0 5px 12px 4px rgba(0,0,0,.08), 0 3px 6px 0 rgba(0,0,0,.12), 0 1px 2px -2px rgba(0,0,0,.10)"
+        },
+        "2级": {
+          "meaning": "中层级。由地面元素展开产生、跟随所在层级移动。如卡片 hover、浮层。",
+          "layers": [
+            {
+              "y": 9,
+              "blur": 28,
+              "spread": 8,
+              "alpha": 0.05
+            },
+            {
+              "y": 6,
+              "blur": 16,
+              "spread": 0,
+              "alpha": 0.08
+            },
+            {
+              "y": 3,
+              "blur": 6,
+              "spread": -4,
+              "alpha": 0.12
+            }
+          ],
+          "css": "0 9px 28px 8px rgba(0,0,0,.05), 0 6px 16px 0 rgba(0,0,0,.08), 0 3px 6px -4px rgba(0,0,0,.12)"
+        },
+        "3级": {
+          "meaning": "高层级。运动与其他层级无关，显著突出于界面之上。如对话框、模态框、通知、抽屉。",
+          "layers": [
+            {
+              "y": 12,
+              "blur": 48,
+              "spread": 16,
+              "alpha": 0.03
+            },
+            {
+              "y": 9,
+              "blur": 28,
+              "spread": 0,
+              "alpha": 0.05
+            },
+            {
+              "y": 6,
+              "blur": 16,
+              "spread": -8,
+              "alpha": 0.08
+            }
+          ],
+          "css": "0 12px 48px 16px rgba(0,0,0,.03), 0 9px 28px 0 rgba(0,0,0,.05), 0 6px 16px -8px rgba(0,0,0,.08)"
+        }
+      },
+      "rule": "建议两层以上组合：一层负责大范围柔和扩散，一层负责底部清晰边界，模拟自然光线。",
+      "structurePattern": "每级三层的 spread 遵循「内层负 · 中层零 · 外层正」：1级 -2/0/+4，2级 -4/0/+8，3级 -8/0/+16。判断某个阴影值对不对可以用这个规律。"
+    },
+    "spacing": {
+      "_page": "Space间距🤖✅ · 0:1086",
+      "_components": [
+        {
+          "name": "spacing scale",
+          "note": "通用/水平 7 token 说明板"
+        },
+        {
+          "name": "spacing vertical",
+          "note": "垂直间距说明板"
+        }
+      ],
+      "tokens": {
+        "xxs": 4,
+        "xs": 8,
+        "s": 12,
+        "m": 16,
+        "l": 24,
+        "xl": 32,
+        "2xl": 48
+      },
+      "multiples": "基于 4px 网格：xxs×1 xs×2 s×3 m×4 l×6 xl×8 2xl×12",
+      "horizontalRule": "🔴 水平间距必须从这 7 个 token 中选取，禁止非 4px 倍数值。",
+      "verticalRule": "垂直间距必须是 4px 倍数，推荐优先用这 7 个 token；7 个不够时允许其他 4px 倍数（20/28/36/40 等），禁止非 4px 倍数（5/10/15/25）。",
+      "usageByToken": {
+        "xxs 4": "icon 内间距 · 紧凑元素间隙 · 标签内 padding ｜ 垂直：图标与文字间距 · checkbox 与 label",
+        "xs 8": "组件内 padding · 相关元素间距 · 列表项 padding(small) ｜ 垂直：表单项间距 · 列表分割线到内容",
+        "s 12": "卡片内 padding · 表单字段间距 · 列表项 padding(default) ｜ 垂直：段落间距 · 表单 label 到输入框",
+        "m 16": "区块内 padding · 段落间距 · 模块内部间距 ｜ 垂直：卡片内 padding · 模块标题到内容",
+        "l 24": "区块间距 · 卡片间距 · 主要模块分隔 ｜ 垂直：模块间距 · 区块标题到卡片",
+        "xl 32": "大区块间距 · 页面区域分隔 · section 间距 ｜ 垂直：section 间距 · footer 上方间距",
+        "2xl 48": "页面级间距 · 首屏到内容区 · 大段落分隔 ｜ 垂直：大区块分隔 · 首屏到内容区"
+      },
+      "verticalExtras": {
+        "20": "区块内分组间距 · 响应式断点常用",
+        "28": "大分组间距 · 页面段落分隔",
+        "40": "页面区域分隔 · 大模块留白"
+      },
+      "principle": "间距是层级信号：同级元素用相同间距，不同层级用不同间距拉开视觉距离。",
+      "figmaVariableCollection": "spacing（7 个变量，1 个 mode）—— 这是文件里唯一有实际内容的变量集合。"
+    },
+    "responsive": {
+      "_page": "响应式🤖 ✅ · 3376:929",
+      "_component": "responsive（component set，type=[breakpoint table | card grid | left-right ratio | font scale]）",
+      "baseWidth": 1440,
+      "minWidth": 768,
+      "scrollbarReserve": "设计稿需考虑滚动条 10-20px",
+      "breakpoints": [
+        {
+          "bp": 1920,
+          "range": "≥1440",
+          "content": 1440,
+          "margin": "m(16)~xl(32)",
+          "padding": "m(16)~xl(32)",
+          "titleSize": "32/36",
+          "body": 14,
+          "cardCols": 6
+        },
+        {
+          "bp": 1366,
+          "range": "1366-1439",
+          "content": 1326,
+          "margin": "m(16)~l(24)",
+          "padding": "m(16)~l(24)",
+          "titleSize": "24/32",
+          "body": 14,
+          "cardCols": 4
+        },
+        {
+          "bp": 1280,
+          "range": "1280-1365",
+          "content": 1240,
+          "margin": "s(12)~l(24)",
+          "padding": "s(12)~l(24)",
+          "titleSize": "22/24",
+          "body": 14,
+          "cardCols": 4
+        },
+        {
+          "bp": 1024,
+          "range": "1024-1279",
+          "content": 984,
+          "margin": "s(12)~m(16)",
+          "padding": "s(12)~m(16)",
+          "titleSize": "18/22",
+          "body": 14,
+          "cardCols": 3
+        },
+        {
+          "bp": 768,
+          "range": "768-1023",
+          "content": 728,
+          "margin": "s(12)~l(24)",
+          "padding": "s(12)~l(24)",
+          "titleSize": "18/22",
+          "body": 14,
+          "cardCols": 2
+        },
+        {
+          "bp": 375,
+          "range": "<768",
+          "content": "WAP",
+          "margin": "s(12)~m(16)",
+          "padding": "s(12)~m(16)",
+          "titleSize": "18",
+          "body": 14,
+          "cardCols": 1
+        }
+      ],
+      "fontScale": [
+        {
+          "token": "title36",
+          "size": 36,
+          "lineHeight": 42,
+          "from": "≥1440",
+          "use": "超大屏页面主标题"
+        },
+        {
+          "token": "title32",
+          "size": 32,
+          "lineHeight": 38,
+          "from": "≥1366",
+          "use": "大屏标题 · 价格"
+        },
+        {
+          "token": "title24",
+          "size": 24,
+          "lineHeight": 30,
+          "from": "≥1280",
+          "use": "中屏标题 · 区块大标题"
+        },
+        {
+          "token": "title22",
+          "size": 22,
+          "lineHeight": 28,
+          "from": "≥1280",
+          "use": "中屏副标题 · 强调信息"
+        },
+        {
+          "token": "title18",
+          "size": 18,
+          "lineHeight": 26,
+          "from": "≥1024",
+          "use": "小屏标题 · 移动端标题"
+        },
+        {
+          "token": "title16",
+          "size": 16,
+          "lineHeight": 24,
+          "from": "≥768",
+          "use": "区块标题 · 列表大标题"
+        },
+        {
+          "token": "body",
+          "size": 14,
+          "lineHeight": 22,
+          "from": "全断点",
+          "use": "正文 · 按钮 · 输入框（绝对主力）"
+        },
+        {
+          "token": "caption",
+          "size": 12,
+          "lineHeight": 18,
+          "from": "≥768",
+          "use": "注释 · 角标（极少用）"
+        }
+      ],
+      "fontScaleNote": "🔴 这份阶梯里没有 20px，与现有 feique-tokens.json 冲突，见 pendingDecisions D2。行高是新信息（现有 tokens.json 只有字号没有行高）。",
+      "layoutModes": {
+        "拉伸 Stretch": "元素宽度随容器变化拉伸 · 通栏/等分结构",
+        "等比缩放 Scale": "元素按比例缩放 · 图片/图标",
+        "扩展 Expand": "增减元素数量或间距 · 卡片列数/列表项",
+        "固定 Fixed": "元素尺寸不变 · 固定宽度导航/侧边栏"
+      },
+      "moduleAdaptation": {
+        "左右结构比例": "1920→48:52 · 1366→48:52 · 1280→50:50 · 1024→52:48 · 768→100%堆叠",
+        "产品卡片列数": "1920→6列 · 1440→5列 · 1366→4列 · 1280→4列 · 1024→3列 · 768→2列 · 375→1列",
+        "特殊内容区": "1840px（大图页/视频频道）· 1200px（展厅/rubik，兼容 4 个断点）"
+      },
+      "rules": [
+        "基准设计宽度 1440px，居中展示，向上向下响应适配。",
+        "中间态：≥1280 以大断点为主（1300→按1366）· <1280 以小断点为主（1200→按1024）。",
+        "简单页面只考虑 1440 / 1280 / 1024 三个断点；更简单可只做 1440 / 768 两个。",
+        "保守方案：1200px 内容区可兼容 1920/1440/1366/1280 四个断点。",
+        "间距全部映射飞鹊 spacing token（水平严格 7 token，垂直 4px 网格）。",
+        "圆角不随断点变化。"
+      ],
+      "crossCheckWithMemory": "现有记录里「1024 几乎永远跟桌面不一样、每个 1024 节点必须跟桌面对比」得到印证：1024 的内容区 984、卡片 3 列、标题降到 18/22，与 1440 全不同。"
+    }
+  },
+  "components": {
+    "icon": {
+      "page": "icon图标✅",
+      "nodeId": "44:7475",
+      "key": "403824504e9f17e847ab5058e9e5635546392915",
+      "variantCount": 301,
+      "props": {
+        "icon": "见 assets/feique-icon-variants.txt（301 个值，一行一个）"
+      },
+      "defaultVariant": "品牌图形&标准功能图标-android",
+      "sample": {
+        "wh": "16x16",
+        "layout": "absolute（无 auto-layout）",
+        "r": 0
+      },
+      "criticalNote": "🔴 variant 值带中文分类前缀（符号&箭头-arrow-down），本地 assets/svg/ 的文件名是剥掉前缀的（arrow-down.svg）。以前搜不到飞鹊图标就是因为拿了本地那套名字去搜 Figma。12 个前缀：交易/功能图标/品牌图形&标准功能图标/媒体/社媒（圆）/社媒（方）/符号&箭头/行业图标/富文本/评价/询价询盘/账户。默认 variant 是 android，import 后必须显式 setProperties。"
+    },
+    "attachment icon": {
+      "page": "icon图标✅",
+      "nodeId": "44:10322",
+      "key": "c3296c953d1cb604f305a2121d55e328cc0738a2",
+      "variantCount": 27,
+      "props": {
+        "attachment": [
+          "DOC",
+          "DOCX",
+          "XLS",
+          "PPT",
+          "PIC",
+          "FILE",
+          "TEXT",
+          "ZIP",
+          "PDF"
+        ],
+        "size": [
+          "large",
+          "default",
+          "small"
+        ]
+      },
+      "defaultVariant": "attachment=DOC, size=large",
+      "sample": {
+        "wh": "36x36 (size=large)",
+        "layout": "absolute",
+        "r": 0
+      },
+      "note": "9 种文件类型 × 3 尺寸 = 27，完整矩阵。做询盘附件、上传列表、TM 传文件用这个，别拿通用 icon 拼。"
+    },
+    "brand logo": {
+      "page": "icon图标✅",
+      "nodeId": "2005:9039",
+      "key": "9fd7ad87678ed833acb3009c4c7a087de10dcfae",
+      "variantCount": 17,
+      "props": {
+        "brand": [
+          "diamond",
+          "gold",
+          "audited",
+          "STS",
+          "rating",
+          "certificate",
+          "leading-factory",
+          "supplier-star"
+        ],
+        "form": [
+          "icon",
+          "group",
+          "score",
+          "stars",
+          "with-desc",
+          "with-text",
+          "wordmark",
+          "wordmark-box"
+        ]
+      },
+      "defaultVariant": "brand=diamond, form=icon",
+      "sample": {
+        "wh": "16x16",
+        "layout": "HORIZONTAL, HUG/HUG",
+        "r": 0
+      },
+      "note": "🔴 8×8=64 但只有 17 个 variant —— 稀疏矩阵。**完整组合表见 existingVariants**,配之前对一遍。MIC 的会员等级(diamond/gold)、认证标识(audited)、担保交易(STS)、标杆工厂(leading-factory)、评分(rating/supplier-star)全在这个 set 里,别自己画。🔴 属性只有 brand × form 两个 —— `MIC brand logo with checkbox` 的说明里写的 `state=full` **已经不存在了**;它说的 87×16 对应的其实是 `form=with-text`。🔴 同一概念两种拼法:本 set 用 `leading-factory`(连字符),`MIC brand logo with checkbox` 用 `leading factory`(空格)。",
+      "existingVariants": {
+        "_why": "🔴 8×8=64 但只做了 17 个。**这是全表,配之前对一遍;不在表里的组合 setProperties 会失败。**",
+        "_lesson": "🔴 不同 brand 的可用 form 差别很大,别拿一个 brand 的经验套另一个。最典型:STS 有 5 种形态,而 leading-factory **只有 wordmark、没有 icon**。",
+        "diamond": {
+          "icon": "16x16 · key=20defb0b86",
+          "with-text": "114x16 · key=4552892609"
+        },
+        "gold": {
+          "icon": "16x16 · key=1de5b9aef0",
+          "with-text": "91x16 · key=ed5b67b009"
+        },
+        "audited": {
+          "icon": "16x16 · key=18ff8b6bac",
+          "with-text": "105x16 · key=52c1a04295",
+          "wordmark": "46x16 · key=a6032354d0"
+        },
+        "STS": {
+          "icon": "16x16 · key=8587f89b7d",
+          "with-text": "87x16 · key=0c2fec5f52",
+          "with-desc": "148x16 · key=ec4e40e300",
+          "wordmark": "94x16 · key=5c2282de93",
+          "wordmark-box": "112x22 · key=a794a5401d",
+          "_note": "形态最全的一个 brand。STS = Secured Trading Service(担保交易服务)。"
+        },
+        "leading-factory": {
+          "wordmark": "70x16 · key=be2e450e30",
+          "_note": "🔴 只有 wordmark 一种,**没有 icon**。"
+        },
+        "certificate": {
+          "group": "181x22 · key=3c28105c63",
+          "_note": "🔴 只有 group 一种(181x22,是一组而不是单个标识)。"
+        },
+        "supplier-star": {
+          "icon": "16x16 · key=a7b5d5c164",
+          "stars": "76x16 · key=d448ada6f9"
+        },
+        "rating": {
+          "score": "92x12 · key=18840277d9",
+          "_note": "🔴 只有 score 一种,而且高度只有 12(全表最矮)。"
+        },
+        "_notAvailable": "brand=diamond/gold 没有 wordmark;brand=audited 没有 with-desc/wordmark-box;除 STS 外都没有 with-desc 和 wordmark-box;除 rating 外都没有 score;除 supplier-star 外都没有 stars;除 certificate 外都没有 group。"
+      },
+      "visualIdentity": {
+        "_why": "🔴 光有 variant 名和尺寸还不够用 —— 得知道每个长什么样,才能在『你说要 STS』时挑对那一个。以下是逐个读出来的真实构成(2026-08-31,吉吉给了组件截图后逐 variant 核对)。",
+        "_criticalFinding1_字标是矢量不是文字": "🔴🔴 这 5 个 variant **内部没有文字节点**,那些字是**矢量图形画出来的**:`audited/wordmark`(46x16) · `leading-factory/wordmark`(70x16) · `STS/with-text`(87x16) · `STS/wordmark`(94x16) · `STS/wordmark-box`(112x22)。→ **做 demo 不能用 CSS 排字复现,必须导 SVG/PNG。** 也不能改文案(改不了,它不是文字)。",
+        "_criticalFinding2_品牌标识色全不是 token": "🔴 标识本身的颜色一个都不在 33 个 paint style 里:diamond 蓝 #24ACFA · gold 橙 #FF9500 · audited 深蓝 #34469B + 金 #D1A751 · STS 绿盾 #66DDB7 · leading-factory 蓝 #007DFA + 红 #FF3E3E · supplier-star 蓝 #527ACC · STS wordmark 底 #F9F9F9 · STS wordmark-box 底 #EEF8ED(浅绿) · certificate 的 Certified 文字 #425F7B。品牌标识色本就不该当通用 token,但 MIC-视觉自检 会报它们违规 —— 对应那边的『系统品牌豁免』档。",
+        "_criticalFinding3_certificate 用了 SemiBold": "🔴🔴 `certificate/group` 里 \"Certified\" 是 **12px / SemiBold** #425F7B。而飞鹊的 16 个 text style **只有 Regular 和 Bold**,没有 SemiBold —— 说明这个文字没绑 text style,是硬编码的字重。⚠️ 这跟我既有的一条判据冲突:『字重只有 400/700,读到 SemiBold = 旧缓存』。**这次是实时读取、不是缓存**,所以正确的说法应该是:*text style 层只有 400/700,但库里存在没绑 style 的硬编码 SemiBold*。判据需要按这个改口径。",
+        "variants": {
+          "diamond/icon": "16x16 · 蓝钻图形 #24ACFA · 无文字",
+          "diamond/with-text": "114x16 · 蓝钻 + \"Diamond Member\" 12px Regular #222222(可编辑文字)",
+          "gold/icon": "16x16 · 橙色圆形徽章 #FF9500 · 无文字",
+          "gold/with-text": "91x16 · 橙徽 + \"Gold Member\" 12px Regular #222222(可编辑文字)",
+          "audited/icon": "16x16 · 深蓝 #34469B + 金 #D1A751 组合标记 · 无文字",
+          "audited/with-text": "105x16 · 标记 + \"Audited Supplier\" 12px Regular #222222(可编辑文字)",
+          "audited/wordmark": "46x16 · 纯字标「Audited」,首字母 A 就是那个标记 · 🔴 矢量,无文字节点",
+          "leading-factory/wordmark": "70x16 · 蓝框内「LeadingFactory」,L 是红色 #FF3E3E 其余蓝 #007DFA · 🔴 矢量,无文字节点",
+          "STS/icon": "16x16 · 绿盾 #66DDB7 + 白色 $ 符号 · 无文字",
+          "STS/with-text": "87x16 · 绿盾 + 「Secured Trading」粗字标 · 🔴 矢量,无文字节点",
+          "STS/with-desc": "148x16 · 绿盾 + \"Secured Trading Service\" 12px Regular #222222 · ✅ 这个才是可编辑文字",
+          "STS/wordmark": "94x16 · 纯「Secured Trading」字标,底 #F9F9F9 · 🔴 矢量,无文字节点",
+          "STS/wordmark-box": "112x22 · 「Secured Trading」+ **浅绿底色块 #EEF8ED** · 🔴 矢量,无文字节点 · 全表唯一高 22 的",
+          "certificate/group": "181x22 · 三个第三方认证圆标 + \"RCG\" 12px + \"+n\" 14px + \"Certified\" 12px **SemiBold** #425F7B · 「+n」是溢出计数",
+          "supplier-star/icon": "16x16 · 蓝圆 #527ACC + 白星 · 无文字",
+          "supplier-star/stars": "76x16 · 五颗星一排 · 无文字",
+          "rating/score": "92x12 · \"4.3\" #222222 + \"/5.0\" #888888 + \"(Reviews)\" #222222,全 12px Regular · 🔴 分子分母**分色**:实际分数用 text/title,「/5.0」用 text/auxiliary · 全表唯一高 12 的"
+        }
+      }
+    },
+    "scrollbar": {
+      "page": "Scrollbar滚动条✅",
+      "nodeId": "2019:24778",
+      "key": "307dcf89b7f71ee6e416e03ad4e4de4df46c79f3",
+      "variantCount": 2,
+      "props": {
+        "size": [
+          "auto",
+          "thin"
+        ]
+      },
+      "sample": {
+        "auto": "6px 宽",
+        "thin": "4px 宽",
+        "fill": "#888888",
+        "r": 40,
+        "note": "高度 40 只是示意，实际随内容"
+      }
+    },
+    "mask": {
+      "page": "Mask背景蒙版✅",
+      "nodeId": "8433:916",
+      "key": "b3404b635905359fe72c1b410c8c45d620f1e5f8",
+      "variantCount": 3,
+      "props": {
+        "opacity": [
+          "0.35",
+          "0.55",
+          "0.75"
+        ]
+      },
+      "sample": {
+        "wh": "1280x800",
+        "fill": "#000000 纯黑",
+        "layout": "absolute"
+      },
+      "note": "只有三档纯黑透明度。做 Dialog/Drawer/图片查看器/图片 hover 的遮罩一律用它，别自己画矩形调 alpha 值。**默认档是 0.35**(children[0] 不等于默认,读 defaultValue)。🔴🔴 **圆角必须 override 到组件内部那个 Rectangle 4,设在实例外层不生效**(外层 cornerRadius 只在 clipsContent=true 时才裁子节点,而内部矩形自己的圆角是 0)。圆角取值:有同级底图取底图的,没底图(纯占位色块)取父容器的。🔴 语义边界:它承担「盖住整块内容、把它压到背景层」;盖一小块、本身是控件一部分的半透明底(播放按钮圆底、角标底)**不属于它**。详见 figma-feique-first 坑 55。"
+    },
+    "pagination": {
+      "page": "导航/Pagination 分页器✅",
+      "nodeId": "2062:359",
+      "key": "49e53189be78455c025999d11cac2a8f76704d3b",
+      "variantCount": 6,
+      "props": {
+        "variant": [
+          "basic",
+          "jumper",
+          "mini",
+          "mini jumper",
+          "more",
+          "simple"
+        ]
+      },
+      "sample": {
+        "wh": "248x32",
+        "layout": "HORIZONTAL, gap 4, HUG/HUG, 垂直居中"
+      },
+      "note": "一整排 tab 的组件有 6 种形态。下面三个 item 级 set 是它的零件，一般直接用一整排 tab 的组件，需要单独摆才用零件。"
+    },
+    "pagination item / number": {
+      "page": "导航/Pagination 分页器✅",
+      "nodeId": "2062:320",
+      "key": "f189d5a1e5f529b750689dc2c1c8e5f9d57ab1d1",
+      "variantCount": 12,
+      "props": {
+        "size": [
+          "default",
+          "small"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "active"
+        ],
+        "disabled": [
+          "false",
+          "true"
+        ]
+      },
+      "sample": {
+        "wh": "32x32",
+        "layout": "absolute"
+      }
+    },
+    "pagination item / arrow": {
+      "page": "导航/Pagination 分页器✅",
+      "nodeId": "2062:345",
+      "key": "ed144cafe448674abdf45b56a962e0aabfba94f1",
+      "variantCount": 18,
+      "props": {
+        "type": [
+          "arrow",
+          "text"
+        ],
+        "size": [
+          "default",
+          "small"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "disabled"
+        ],
+        "direction": [
+          "left",
+          "right"
+        ]
+      },
+      "sample": {
+        "wh": "32x32",
+        "layout": "HORIZONTAL, gap 10, pad 8, 居中, HUG/HUG",
+        "r": 4
+      }
+    },
+    "pagination item / more": {
+      "page": "导航/Pagination 分页器✅",
+      "nodeId": "2062:358",
+      "key": "aafbc2d01ca976cab0cb358bf71e99d0cbb76b79",
+      "variantCount": 2,
+      "props": {
+        "state": [
+          "default"
+        ],
+        "direction": [
+          "left",
+          "right"
+        ]
+      },
+      "sample": {
+        "wh": "32x32",
+        "layout": "absolute"
+      },
+      "note": "state 只有 default 一个选项（省略号没有交互态）。"
+    },
+    "button": {
+      "page": "Button 按钮✅",
+      "nodeId": "2019:24969",
+      "key": "763190f9f69421d390401bb5eecc289e617c7c72",
+      "variantCount": 540,
+      "props": {
+        "type": [
+          "primary",
+          "secondary",
+          "dashed",
+          "link",
+          "text"
+        ],
+        "size": [
+          "default",
+          "small",
+          "large"
+        ],
+        "State": [
+          "default",
+          "hover",
+          "disabled"
+        ],
+        "content": [
+          "basic",
+          "icon only"
+        ],
+        "color": [
+          "red",
+          "blue",
+          "dark"
+        ],
+        "shape": [
+          "default",
+          "round"
+        ]
+      },
+      "defaultVariant": {
+        "type": "primary",
+        "size": "small",
+        "State": "default",
+        "content": "basic",
+        "color": "red",
+        "shape": "default"
+      },
+      "sample": {
+        "variantMeasured": "type=text, size=default",
+        "wh": "74x32",
+        "layout": "HORIZONTAL, gap 4, pad 5/16/5/16, 居中, HUG/HUG",
+        "r": 6
+      },
+      "criticalNote": "🔴🔴 属性名 State 是大写 S，其余五个（type/size/content/color/shape）全小写。写成 state 配不上。5×3×3×2×3×2=540 是完整矩阵，任意组合都存在。color 的 red/blue/dark 正对应 color 页的三套主题（主题01红/主题02蓝/主题03中性）—— 换主题就是换这个属性，不是改填充色。default 尺寸高 32、圆角 6（这是「圆角到底是 6 还是 8」那个冲突的关键实测证据）。"
+    },
+    "input/basic": {
+      "page": "Input输入框✅",
+      "nodeId": "2200:3601",
+      "key": "5e9ac766dafd7b0560d6e2236c6ebf718e7b3180",
+      "variantCount": 90,
+      "props": {
+        "status": [
+          "default",
+          "error",
+          "warning",
+          "success",
+          "reminder"
+        ],
+        "size": [
+          "default",
+          "large",
+          "small"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "disabled",
+          "focused",
+          "typing",
+          "filled"
+        ]
+      },
+      "sample": {
+        "wh": "340x32 (size=default)",
+        "layout": "HORIZONTAL, gap 8, pad 5/10/5/10, FIXED/HUG",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "criticalNote": "🔴 这是「状态枚举」的现成答案：status 5 档（含 reminder，我以前不知道有这档）× state 6 档（default/hover/disabled/focused/typing/filled）。做交互稿列状态清单时直接照抄这 6 个态，别自己编。注意这里 state 是小写 s（跟 button 的 State 相反）。描边 1px #CED3D9 且 INSIDE —— INSIDE 描边在 Figma 不占外框尺寸，还原成 CSS 时要按 border-box 处理。"
+    },
+    "input/password": {
+      "page": "Input输入框✅",
+      "nodeId": "2161:2022",
+      "key": "49bdd5cfa14049a6356f327922cf6454ce73c10a",
+      "variantCount": 36,
+      "props": {
+        "size": [
+          "small",
+          "default",
+          "large"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "focused",
+          "typing",
+          "filled",
+          "disabled"
+        ],
+        "hide": [
+          "true",
+          "false"
+        ]
+      },
+      "sample": {
+        "wh": "320x24 (size=small)",
+        "layout": "HORIZONTAL, gap 4, pad 3/8/3/8, FIXED/FIXED",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      }
+    },
+    "input/search": {
+      "page": "Input输入框✅",
+      "nodeId": "2138:11996",
+      "key": "44bcf44d4fa0a693dfcff4f62b5fc611ae2723bf",
+      "variantCount": 9,
+      "props": {
+        "size": [
+          "small",
+          "default",
+          "large"
+        ],
+        "button type": [
+          "default",
+          "primary with Icon",
+          "primary with Text"
+        ]
+      },
+      "sample": {
+        "wh": "464x24 (size=small)",
+        "layout": "HORIZONTAL, FIXED/HUG",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "note": "🔴 属性名 \"button type\" 带空格，setProperties 时要用引号。做主搜/站内搜索用这个，别拿 input/basic 拼一个搜索按钮。"
+    },
+    "input pre post tab": {
+      "page": "Input输入框✅",
+      "nodeId": "2092:16178",
+      "key": "b9b1b207e56bd714bcb0b2140d8b23ad7a7a4396",
+      "variantCount": 18,
+      "props": {
+        "type": [
+          "basic",
+          "icon",
+          "select"
+        ],
+        "tab": [
+          "pre",
+          "post"
+        ],
+        "size": [
+          "default",
+          "large",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "52x32",
+        "layout": "HORIZONTAL, gap 8, pad 5/10/5/10, HUG/HUG",
+        "r": "mixed（只有外侧两角有圆角）",
+        "fill": "#F5F7FA",
+        "stroke": "#CED3D9 CENTER"
+      },
+      "note": "输入框前后缀（如 https:// 前缀、单位后缀、下拉选择）。r=mixed 是因为贴着输入框那侧不倒角。"
+    },
+    "input/pre post tab": {
+      "page": "Input输入框✅",
+      "nodeId": "2131:2387",
+      "key": "9bc092020e0b71ddd1dc2189590bf78464d65035",
+      "variantCount": 3,
+      "props": {
+        "size": [
+          "default",
+          "large",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "480x24 (size=small)",
+        "layout": "HORIZONTAL, FILL/HUG",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "note": "⚠️ 名字跟上面那个只差一个斜杠（input pre post tab vs input/pre post tab），这个是「带前后缀的完整输入框」，上面那个是「前后缀零件」。按名字搜很容易拿错，认 key。"
+    },
+    "input label horizontal": {
+      "page": "Input输入框✅",
+      "nodeId": "2089:12160",
+      "key": "8a82b8a65f086a2d1d3450b3d5e5ee9c55ef1fca",
+      "variantCount": 3,
+      "props": {
+        "size": [
+          "default",
+          "large",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "108x40 (size=large)",
+        "layout": "HORIZONTAL, gap 4, pad 8/0/8/0, 右对齐, FIXED/HUG"
+      }
+    },
+    "input label vertical": {
+      "page": "Input输入框✅",
+      "nodeId": "2089:12232",
+      "key": "b294449b44aa15655065785871392715323dbfab",
+      "variantCount": 6,
+      "props": {
+        "tooltip": [
+          "true",
+          "false"
+        ],
+        "mark": [
+          "optional",
+          "none",
+          "required"
+        ]
+      },
+      "sample": {
+        "wh": "146x22",
+        "layout": "HORIZONTAL, gap 4, HUG/HUG"
+      },
+      "note": "label 的必填标记有三档：required / optional / none —— optional 是显式的「选填」标记，不是「没标记」。做表单时这三档要分清。"
+    },
+    "input caption": {
+      "page": "Input输入框✅",
+      "nodeId": "2091:12233",
+      "key": "695fd5b483d52eaf86fac6ad36dd8aacf31818da",
+      "variantCount": 3,
+      "props": {
+        "status": [
+          "default",
+          "error",
+          "warning"
+        ]
+      },
+      "sample": {
+        "wh": "232x24",
+        "layout": "HORIZONTAL, gap 10, pad 2/0/0/0, FILL/HUG"
+      },
+      "note": "输入框下方的辅助/报错文字。注意只有 3 档（没有 success/reminder），跟 input/basic 的 status 5 档不对齐。"
+    },
+    "form": {
+      "page": "Form表单（ 布局、lebal、报错）🤖 ✅",
+      "nodeId": "3423:9157",
+      "key": "ebebc54dd8d1504526e9eececcceeeb2a6aed81c",
+      "variantCount": 10,
+      "props": {
+        "type": [
+          "vertical states",
+          "horizontal states",
+          "inline",
+          "login",
+          "registration",
+          "disabled",
+          "size variants",
+          "advanced search",
+          "step form",
+          "dynamic fields"
+        ]
+      },
+      "sample": {
+        "wh": "400x664",
+        "layout": "VERTICAL, gap 16, pad 24, FIXED/HUG",
+        "r": 8,
+        "fill": "#FFFFFF"
+      },
+      "note": "🔴 整表单有 10 种现成形态，包括 login / registration / advanced search / step form / dynamic fields —— 做买家登录、注册、高级搜索、分步表单都有现成的，别从零搭。（页名里 lebal 是 label 的笔误。）"
+    },
+    "form item vertical": {
+      "page": "Form表单",
+      "nodeId": "3417:7486",
+      "key": "f4c8648d032479244ddc2308eacdaf3c4672581d",
+      "variantCount": 12,
+      "props": {
+        "state": [
+          "default",
+          "error",
+          "warning",
+          "success",
+          "validating",
+          "disabled"
+        ],
+        "required": [
+          "true",
+          "false"
+        ]
+      },
+      "sample": {
+        "wh": "70x62",
+        "layout": "VERTICAL, gap 8, HUG/HUG"
+      },
+      "note": "🔴 state 有 validating（校验中）这一档 —— 我以前列状态清单从来没想到过。表单项 6 态：default/error/warning/success/validating/disabled。"
+    },
+    "form item horizontal": {
+      "page": "Form表单",
+      "nodeId": "3418:7649",
+      "key": "d722cc9cb4f482c142aa7c34d6774d68f663fb66",
+      "variantCount": 12,
+      "props": {
+        "state": [
+          "default",
+          "error",
+          "warning",
+          "success",
+          "validating",
+          "disabled"
+        ],
+        "required": [
+          "true",
+          "false"
+        ]
+      },
+      "sample": {
+        "wh": "340x32",
+        "layout": "HORIZONTAL, gap 16, FIXED/HUG"
+      }
+    },
+    "form item / validation": {
+      "page": "Form表单",
+      "key": "50a3e7c05146b82d55cdc50c4ff4c46fd7ccac4f",
+      "variantCount": 4,
+      "props": {
+        "status": [
+          "default",
+          "error",
+          "warning",
+          "success"
+        ]
+      },
+      "sample": {
+        "wh": "360x94",
+        "layout": "VERTICAL, gap 8"
+      }
+    },
+    "form / login": {
+      "page": "Form表单",
+      "key": "e431877d2192ad89afed6239488717a570c5e4c3",
+      "variantCount": 2,
+      "props": {
+        "layout": [
+          "vertical",
+          "inline"
+        ]
+      },
+      "sample": {
+        "wh": "448x236",
+        "layout": "VERTICAL, gap 24"
+      }
+    },
+    "form / basic": {
+      "page": "Form表单",
+      "key": "96cd5c7ba78beaf95c0817f353b0af4231c4289a",
+      "variantCount": 3,
+      "props": {
+        "size": [
+          "default",
+          "small",
+          "large"
+        ]
+      },
+      "sample": {
+        "wh": "360x1068",
+        "layout": "VERTICAL, gap 24, FIXED/HUG"
+      }
+    },
+    "form/vertical": {
+      "page": "Form表单",
+      "key": "f52f1463c298158be1615850a9d1e695c093aba8",
+      "variantCount": 3,
+      "props": {
+        "size": [
+          "default",
+          "small",
+          "large"
+        ]
+      },
+      "sample": {
+        "wh": "360x1526",
+        "layout": "VERTICAL, gap 24, FIXED/HUG"
+      }
+    },
+    "form/inline": {
+      "page": "Form表单",
+      "key": "a61f050abe6f0347e17025ff8114bf24f3b70bdb",
+      "variantCount": 3,
+      "props": {
+        "size": [
+          "default",
+          "small",
+          "large"
+        ]
+      },
+      "sample": {
+        "wh": "1383x32",
+        "layout": "HORIZONTAL, gap 24, HUG/HUG"
+      }
+    },
+    "_formItemFamily": {
+      "_note": "同一族：每个控件类型各有「横排（label 在左）」和「竖排（label 在上）」两个 set，属性统一都是 size=[default|small|large]，3 个 variant。横排统一 HORIZONTAL gap 24，竖排统一 VERTICAL gap 8。做表单时按 label 方向选族，别混。",
+      "horizontal": {
+        "_layout": "HORIZONTAL, gap 24",
+        "form item / input": {
+          "key": "62747c00dad0cf475b47411bfd9eaf9a29d01ad2",
+          "wh": "340x32"
+        },
+        "form item / inline": {
+          "key": "ea388749b39a02e90946d52166386dbf29fa09ac",
+          "wh": "322x32"
+        },
+        "form item / password": {
+          "key": "2c84a243bd5d6fb3bf0cdfe1a67ccfcfb60b59f4",
+          "wh": "340x32"
+        },
+        "form item / phone": {
+          "key": "f7b4239c33265b4869e2846bd7b5bb4786652004",
+          "wh": "340x32"
+        },
+        "form item / textarea": {
+          "key": "341d97e1f7846c20393f938a37a501a8f2b235c1",
+          "wh": "340x62"
+        },
+        "form item / select": {
+          "key": "4c370e22e886b428c7a9b75ae808eac74219ec26",
+          "wh": "340x32"
+        },
+        "form item / datepicker": {
+          "key": "187fe0e56e465f007946a7ee1534766435b739d4",
+          "wh": "160x32"
+        },
+        "form item / timepicker": {
+          "key": "50d1935c59aa3a4dc72447dd3568088c4397d57a",
+          "wh": "160x32"
+        },
+        "form item / inputnumber": {
+          "key": "152017cd33c419d48e003b1ae22b0ea4aae1a634",
+          "wh": "148x32"
+        },
+        "form item / switch": {
+          "key": "e3b7b07cad372c9a637f072a80c7bdfa574edf40",
+          "wh": "44x22"
+        },
+        "form item / button": {
+          "key": "676dea771cce951fde57cc6b4f772466cded782f",
+          "wh": "74x32"
+        },
+        "form item / currency": {
+          "key": "cb5f1a809707c4877d987daffddfb0b9cf77d3d1",
+          "wh": "340x32"
+        },
+        "form item / rate": {
+          "key": "e6af7a31e98009c5a4ad1fdeacf4a345df59efb8",
+          "wh": "100x20"
+        },
+        "form item / upload": {
+          "key": "c786ebc508758b562eab76c4c2eb577f0e68f06e",
+          "wh": "400x146"
+        },
+        "form item / radio": {
+          "key": "df27281daff65809329e954d349eb26d5b0ecb83",
+          "wh": "176x22"
+        },
+        "form item / checkbox": {
+          "key": "1be838f2e2ab7b07f53015b3336c4a77ee0ca52c",
+          "wh": "176x22"
+        }
+      },
+      "vertical": {
+        "_layout": "VERTICAL, gap 8",
+        "form item vertical / input": {
+          "key": "0d6d23ffc1d39caa628de20c9d3bc7928b290a62",
+          "wh": "146x62"
+        },
+        "form item vertical / password": {
+          "key": "c2dc0933c416b2d481c3eaadf19556bd3d35f2df",
+          "wh": "146x62"
+        },
+        "form item vertical / phone": {
+          "key": "f57e99b331e9ce3b436e23eb2e73e29f144bf7b5",
+          "wh": "146x62"
+        },
+        "form item vertical / textarea": {
+          "key": "5b46c0e882300eba39320f91099fc222f79c3b37",
+          "wh": "146x92"
+        },
+        "form item vertical / select": {
+          "key": "4c8bf5a8f7e564b28db004e9b7e940e9dc99099b",
+          "wh": "146x62"
+        },
+        "form item vertical / datepicker": {
+          "key": "baff8152163dd2aeaedefbd688ec63d77519dec6",
+          "wh": "146x62"
+        },
+        "form item vertical / timepicker": {
+          "key": "427e95d96c521651f2a3ac8d24ea67558c6c7e5b",
+          "wh": "146x62"
+        },
+        "form item vertical / inputnumber": {
+          "key": "c45701b39bce6faa3b4d1be6c766428e3717f229",
+          "wh": "148x62"
+        },
+        "form item vertical / switch": {
+          "key": "e040f281369496b359e38b767b103624ba244afb",
+          "wh": "146x52"
+        },
+        "form item vertical / button": {
+          "key": "25225fa11f2e1972d003713569746b1fddf3b1f5",
+          "wh": "146x62"
+        },
+        "form item vertical / currency": {
+          "key": "ec44149b6cb777aec92030047ae68f195733394c",
+          "wh": "146x62"
+        },
+        "form item vertical / rate": {
+          "key": "34707b7dea41645963c26134734588ac08962b0f",
+          "wh": "146x50"
+        },
+        "form item vertical / upload": {
+          "key": "84360e15a14971131ca54d1bf187e4b2375f9cd5",
+          "wh": "360x176"
+        },
+        "form item vertical / radio": {
+          "key": "d7f73ea08e06aa14fa96ad5d4efb578a9124b324",
+          "wh": "176x52"
+        },
+        "form item vertical / checkbox": {
+          "key": "503e0600c353bc708d58431460f4de56b09480b8",
+          "wh": "176x52"
+        }
+      },
+      "builtInCopy": {
+        "upload": "Click or drag file to this area to upload / Support for a single or bulk upload.",
+        "caption": "This is a caption under a text input. / This is a warning message."
+      }
+    },
+    "textarea": {
+      "page": "Textarea 文本域 ✅",
+      "key": "e71dc8a8b9ca19a10de2047e454acd4a01d5e952",
+      "variantCount": 21,
+      "props": {
+        "size": [
+          "default",
+          "large",
+          "small"
+        ],
+        "state": [
+          "disabled",
+          "default",
+          "hover",
+          "focused",
+          "typing",
+          "filled",
+          "error"
+        ]
+      },
+      "sample": {
+        "wh": "320x78",
+        "layout": "VERTICAL, gap 0, pad 6/12/6/12",
+        "r": 6,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2135:201",
+      "note": "state 有 7 档(比 input/basic 多了 error 直接进 state)。注意 textarea 的 r=6,而 input/basic 是 4 —— 输入类里它俩圆角不一样。"
+    },
+    "inputNumber": {
+      "page": "InputNumber 数字输入框✅",
+      "key": "4b6f1e31370f9736b9c415f8b6590337a308c284",
+      "variantCount": 45,
+      "props": {
+        "size": [
+          "default",
+          "large",
+          "small"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "typing",
+          "disable",
+          "error"
+        ],
+        "button": [
+          "bilateral",
+          "left",
+          "none"
+        ]
+      },
+      "sample": {
+        "wh": "148x32",
+        "layout": "HORIZONTAL, gap 0",
+        "r": 6,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2290:348",
+      "note": "🔴 state 里是 disable 不是 disabled(少个 d)。button 三档决定加减按钮摆在两侧/左侧/不要。r=6 跟 textarea 一致、跟 input/basic(4) 不一致。"
+    },
+    "select input": {
+      "page": "Select选择器✅",
+      "key": "50139b12d702b8e0382d3f13a85d300f2a5e3dcb",
+      "variantCount": 135,
+      "props": {
+        "status": [
+          "default",
+          "warning",
+          "error"
+        ],
+        "size": [
+          "default",
+          "large",
+          "small"
+        ],
+        "type": [
+          "basic",
+          "multiple",
+          "search"
+        ],
+        "state": [
+          "default",
+          "disabled",
+          "filled",
+          "focused",
+          "hover"
+        ]
+      },
+      "sample": {
+        "wh": "320x32",
+        "layout": "HORIZONTAL, gap 4, pad 5/10/5/10",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2517:3289",
+      "note": "主力选择器。type 三档:basic 单选 / multiple 多选 / search 可搜索。status 只有 3 档(没有 success/reminder),跟 input/basic 的 5 档不对齐。"
+    },
+    "select menu item": {
+      "page": "Select选择器✅",
+      "key": "2f619c4f10fa5ca78c5a6b1d07fbd5cec6feec20",
+      "variantCount": 5,
+      "props": {
+        "state": [
+          "disabled",
+          "default",
+          "hover",
+          "selected",
+          "selected multiple"
+        ]
+      },
+      "sample": {
+        "wh": "124x32",
+        "layout": "HORIZONTAL, gap 10, pad 5/8/5/8"
+      },
+      "nodeId": "2250:2586",
+      "note": "下拉项。selected 和 selected multiple 是两个不同态。"
+    },
+    "select": {
+      "page": "Select选择器✅",
+      "key": "7a82c8f3d7722ee2dfa4a9d45126abc110677b43",
+      "variantCount": 6,
+      "props": {
+        "active": [
+          "yes",
+          "no"
+        ],
+        "size": [
+          "default",
+          "small",
+          "large"
+        ]
+      },
+      "sample": {
+        "wh": "320x32",
+        "layout": "absolute"
+      },
+      "nodeId": "2558:2506",
+      "note": "一整排 tab 的组件(输入框+展开的菜单)。active=yes 是展开态。"
+    },
+    "multiple Selection Item": {
+      "page": "Select选择器✅",
+      "key": "c57e5d5d6a3d8ca24821876a6b01b06339aee126",
+      "variantCount": 9,
+      "props": {
+        "_UNREADABLE": "🔴 读不出来"
+      },
+      "sample": {
+        "wh": "63x22",
+        "layout": "HORIZONTAL, gap 4, pad 0/8/0/8",
+        "r": 4,
+        "fill": "#F5F7FA"
+      },
+      "nodeId": "2250:2587",
+      "note": "🔴🔴 这个 set 是坏的:componentPropertyDefinitions 抛 'Component set has existing errors'。原因=variant 属性从来没命名(还叫 Property 1)、且属性值里带逗号(default,default)。谁 import 它都配不了 variant。variant 名形如 'Property 1=default,default' / 'Property 1=large,hover',推断是 size×state 两维塞进了一个属性。要用只能按 name 精确匹配子节点,不能 setProperties。"
+    },
+    "radio": {
+      "page": "Radio&Radio Group 单选框 ✅",
+      "key": "e02daf42d50fe77bcd491fb8ad1adb86a032579b",
+      "variantCount": 28,
+      "props": {
+        "statues": [
+          "inactive",
+          "active"
+        ],
+        "size": [
+          "default",
+          "small"
+        ],
+        "color": [
+          "neutral",
+          "bule",
+          "red",
+          "disabled"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "disabled"
+        ]
+      },
+      "sample": {
+        "wh": "48x22",
+        "layout": "HORIZONTAL, gap 4"
+      },
+      "nodeId": "2211:479",
+      "note": "🔴🔴 两个拼写错误照原样收录(否则配不上):属性名是 statues(应为 status);color 的值是 bule(应为 blue)。而同族的 checkbox 写的是正确的 blue —— 两个组件不一致。另外 color 里有 disabled、state 里也有 disabled,两处重复。"
+    },
+    "selecter-single": {
+      "page": "Radio&Radio Group 单选框 ✅",
+      "key": "06c562c37ea54813c355eb7d0b72e54e16c2ce9c",
+      "variantCount": 60,
+      "props": {
+        "state": [
+          "default",
+          "hover",
+          "Selected"
+        ],
+        "shape": [
+          "default",
+          "round"
+        ],
+        "size": [
+          "default",
+          "small"
+        ],
+        "color": [
+          "default",
+          "red",
+          "blue"
+        ],
+        "disabled": [
+          "no",
+          "yes"
+        ]
+      },
+      "sample": {
+        "wh": "85x32",
+        "layout": "HORIZONTAL, gap 10, pad 5/16/5/16",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2211:480",
+      "note": "🔴 按钮式单选(不是圆点)。state 的 Selected 是大写 S。set 名 selecter 是 selector 的拼写错误。"
+    },
+    "MIC brand logo with checkbox": {
+      "key": "b774a95ab156da3d05fdfa0aba83d7734a1857ec",
+      "id": "4466:824",
+      "页": "业务组件（探索）",
+      "v": 3,
+      "props": "brand[audited|STS|leading factory]def=audited",
+      "尺寸": "audited 72x16 / STS 120x16 / leading factory 96x16",
+      "说明": "LV 搜索结果页 filter 栏顶部的品牌认证快选行。每行 = 16×16 checkbox + 10px gap + brand logo。checkbox 内置的「可选」文字节点已设 visible=false，只显示方框。"
+    },
+    "checkbox": {
+      "page": "Checkbox&Radio Group 复选框✅",
+      "key": "66ff587827f0e49648104454243300c08f8fe200",
+      "variantCount": 42,
+      "props": {
+        "statues": [
+          "active",
+          "indeterminate",
+          "inactive"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "disabled"
+        ],
+        "size": [
+          "default",
+          "small"
+        ],
+        "color": [
+          "neutral",
+          "blue",
+          "red",
+          "disabled"
+        ]
+      },
+      "sample": {
+        "wh": "48x22",
+        "layout": "HORIZONTAL, gap 4"
+      },
+      "nodeId": "2211:477",
+      "note": "🔴 属性名同样是 statues(拼错)。有 indeterminate(半选)态 —— 做全选/部分选的树形筛选需要它。color 这里是正确的 blue(radio 那边是 bule)。"
+    },
+    "selecter-multiple": {
+      "page": "Checkbox&Radio Group 复选框✅",
+      "key": "3f3fbb2a1723cc0ba3045f8b8f122b7bea96a0a0",
+      "variantCount": 60,
+      "props": {
+        "state": [
+          "default",
+          "hover",
+          "selected"
+        ],
+        "shape": [
+          "default",
+          "round"
+        ],
+        "size": [
+          "large",
+          "small"
+        ],
+        "color": [
+          "default",
+          "red",
+          "blue"
+        ],
+        "disabled": [
+          "no",
+          "yes"
+        ]
+      },
+      "sample": {
+        "wh": "85x32",
+        "layout": "HORIZONTAL, gap 10, pad 5/16/5/16",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2211:478",
+      "note": "🔴 size 是 [large|small],没有 default —— 而同族 selecter-single 是 [default|small]。同一族两个组件的 size 取值域不一样,配之前必查。state 的 selected 这里是小写(single 那边是大写 Selected)。"
+    },
+    "selecter-multiple2": {
+      "page": "Checkbox&Radio Group 复选框✅",
+      "key": "c0998d4628fbba697442cbb23bf01a7cebd58d14",
+      "variantCount": 16,
+      "props": {
+        "type": [
+          "text",
+          "dropdown",
+          "badge",
+          "icon"
+        ],
+        "state": [
+          "default",
+          "selected"
+        ],
+        "disabled": [
+          "no",
+          "yes"
+        ]
+      },
+      "sample": {
+        "wh": "121x30",
+        "layout": "HORIZONTAL, gap 4, pad 4/12/4/12",
+        "r": 1000,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "10514:11866",
+      "note": "新一代按钮式多选(pill 形,r=1000)。type 四档含 dropdown 和 badge —— 搜索结果页筛选那种「品类 ⌄」「已认证 12」的胶囊标签就是它。"
+    },
+    "upload / files list": {
+      "page": "批次2",
+      "key": "898c57b1260c69337de15d8dd461d3325d975272",
+      "variantCount": 3,
+      "props": {
+        "state": [
+          "default",
+          "hover",
+          "error"
+        ]
+      },
+      "sample": {
+        "wh": "276x22",
+        "layout": "HORIZONTAL, gap 4"
+      },
+      "nodeId": "2460:28551",
+      "note": "已上传文件的列表行。"
+    },
+    "upload list item / picture": {
+      "page": "批次2",
+      "key": "1a5f4dc56d8d5bfeea8a2f3e8bd9eedc3b4be2e5",
+      "variantCount": 14,
+      "props": {
+        "status": [
+          "upload",
+          "error",
+          "uploaded"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "progress"
+        ],
+        "type": [
+          "card",
+          "circle"
+        ]
+      },
+      "sample": {
+        "wh": "104x104",
+        "layout": "HORIZONTAL, pad 10",
+        "r": 8,
+        "fill": "#F5F7FA",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2518:31057",
+      "note": "图片上传缩略图。status(业务状态) 和 state(交互态) 是两个独立属性,别混。"
+    },
+    "upload / button": {
+      "page": "批次2",
+      "key": "f7fd0677aaa4b8700134e8d179e07c25311834a5",
+      "variantCount": 15,
+      "props": {
+        "state": [
+          "default",
+          "hover",
+          "pressed",
+          "loading",
+          "disabled"
+        ],
+        "size": [
+          "default",
+          "large",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "108x40",
+        "layout": "HORIZONTAL, gap 4, pad 8/16/8/16",
+        "r": 8,
+        "fill": "#F5F7FA",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2460:6695",
+      "note": "🔴 state 有 pressed 和 loading —— 通用 button 只有 default/hover/disabled,上传按钮多这两档。"
+    },
+    "upload / drag and drop": {
+      "page": "批次2",
+      "key": "ffefd64bf7ae37dab4c777d8eca19b5a7f7ba378",
+      "variantCount": 2,
+      "props": {
+        "state": [
+          "default",
+          "hover"
+        ]
+      },
+      "sample": {
+        "wh": "480x146",
+        "layout": "VERTICAL, gap 16, pad 16",
+        "r": 8,
+        "fill": "#F5F7FA",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2460:6889",
+      "note": "拖拽上传区。内置文案:Click or drag file to this area to upload / Support for a single or bulk upload."
+    },
+    "uploading": {
+      "page": "批次2",
+      "key": "852a877d96641e78735dacbf6372602940614258",
+      "variantCount": 9,
+      "props": {
+        "state": [
+          "uploading",
+          "error",
+          "finished"
+        ],
+        "size": [
+          "default",
+          "small"
+        ],
+        "background": [
+          "yes",
+          "no"
+        ]
+      },
+      "sample": {
+        "wh": "289x40",
+        "layout": "HORIZONTAL, gap 8, pad 0/8/0/8",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #007DFA INSIDE"
+      },
+      "nodeId": "2518:31491",
+      "note": "上传进度条行。描边是蓝色 #007DFA(不是默认灰),因为进行中要强调。"
+    },
+    "date picker input / basic": {
+      "page": "批次2",
+      "key": "db5ed2ac7821f6414b52400d21adef0357885fe3",
+      "variantCount": 108,
+      "props": {
+        "status": [
+          "default",
+          "warning",
+          "error"
+        ],
+        "size": [
+          "default",
+          "small",
+          "large"
+        ],
+        "state": [
+          "default",
+          "hover",
+          "focused",
+          "selected",
+          "filled",
+          "disabled"
+        ],
+        "range": [
+          "false",
+          "true"
+        ]
+      },
+      "sample": {
+        "wh": "162x40",
+        "layout": "HORIZONTAL, gap 4, pad 8/12/8/12",
+        "r": 8,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "3083:5205",
+      "note": "🔴 首个 variant 是 162x40 r=8,注意这是 size=default 却高 40 —— 跟 input/basic 的 default=32 不一样。range=true 是「起止两个日期」形态。"
+    },
+    "datepicker input / borderless": {
+      "page": "批次2",
+      "key": "fbf7dc8214ed2366ccf6c0bd86888b555b676e5a",
+      "variantCount": 18,
+      "props": {
+        "size": [
+          "small",
+          "default",
+          "large"
+        ],
+        "state": [
+          "default",
+          "focused",
+          "filled"
+        ]
+      },
+      "sample": {
+        "wh": "160x24",
+        "layout": "HORIZONTAL, gap 4, pad 3/8/3/8",
+        "r": 4
+      },
+      "nodeId": "3126:6962",
+      "note": "无边框日期输入,嵌在表格/筛选条里用。"
+    },
+    "date picker menu": {
+      "page": "批次2",
+      "key": "7d0abdaa639d7824b992fef50c71b327cbe096c8",
+      "variantCount": 10,
+      "props": {
+        "type": [
+          "day",
+          "date and time",
+          "time",
+          "month",
+          "year",
+          "quarter"
+        ],
+        "range": [
+          "false",
+          "true"
+        ]
+      },
+      "sample": {
+        "wh": "450x338",
+        "layout": "VERTICAL",
+        "r": 6,
+        "fill": "#FFFFFF"
+      },
+      "nodeId": "3623:7317",
+      "note": "🔴 日历面板有 6 种粒度:日/日期+时间/时间/月/年/季度。做筛选器别自己画月历。"
+    },
+    "date picker": {
+      "page": "批次2",
+      "key": "e2cc9445974ab9a7b6e35b1c493f17e67afa9943",
+      "variantCount": 6,
+      "props": {
+        "qctive": [
+          "yes",
+          "no"
+        ],
+        "size": [
+          "default",
+          "large",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "280x32",
+        "layout": "VERTICAL, gap 8"
+      },
+      "nodeId": "3623:11161",
+      "note": "🔴 属性名是 qctive —— active 的拼写错误(q/a 打错)。照原样写才配得上。"
+    },
+    "date picker / menu item": {
+      "page": "批次2",
+      "key": "8d287d3635e5e3a9bd064a2e749ca843e68d7a37",
+      "variantCount": 5,
+      "props": {
+        "state": [
+          "default",
+          "inactive",
+          "hover",
+          "current",
+          "selected"
+        ]
+      },
+      "sample": {
+        "wh": "24x24",
+        "layout": "VERTICAL, pad 1/0/1/0",
+        "r": 6
+      },
+      "nodeId": "3023:10105",
+      "note": "日历里的单个日子。current(今天) 和 selected(选中) 是两个态。"
+    },
+    "time picker menu cell": {
+      "page": "批次2",
+      "key": "c242fe4caf878e9b598ff5fdd40cac2a1949a40a",
+      "variantCount": 3,
+      "props": {
+        "state": [
+          "default",
+          "hover",
+          "selected"
+        ]
+      },
+      "sample": {
+        "wh": "48x28",
+        "layout": "HORIZONTAL, pad 3/16/3/16",
+        "r": 6
+      },
+      "nodeId": "3023:10106",
+      "note": "时间选择的单元格。"
+    },
+    "_variantNameTraps": {
+      "_why": "🔴 setProperties 的属性名和值必须跟 Figma 里一字不差,包括拼写错误。这张表是我实测撞到的全部不一致,写对了才配得上。",
+      "大小写不一致": {
+        "button": "State 大写 S(其余属性全小写)",
+        "selecter-single": "state 的值 Selected 大写 S",
+        "selecter-multiple": "同一族但 selected 小写",
+        "spin description": "属性名 Size 大写 S",
+        "carousel dots": "vertical 的值 'false' 小写但 'True' 大写"
+      },
+      "拼写错误(照原样用)": {
+        "radio": "属性名 statues(应 status);color 值 bule(应 blue)",
+        "checkbox": "属性名 statues(应 status),但 color 值是正确的 blue",
+        "date picker": "属性名 qctive(应 active)",
+        "inputNumber": "state 值 disable(应 disabled)",
+        "icon": "variant 值 行业图标-ind-light-industy(industry 少 r)",
+        "set 名": "selecter-single / selecter-multiple(应 selector)",
+        "carousel dots": "color 值 bule(应 blue),而单数的 carousel dot 是正确的 blue",
+        "breadcrumb light/dark mode": "属性名 statue(应 state),同页的 breadcrumb Link 却是正确的 state",
+        "affix": "icon 值 rfg(疑似 rfq)",
+        "tag / colorful": "type 值 areal(疑似 area)",
+        "Steps Item / Inline Step": "Status 值 Waiting,而同族其他 set 都是 Wait",
+        "vo-buyer-nav-menu": "属性值 Botton-default / Botton-hover(Button 拼错)",
+        "resend": "state 值 press(同页另一 set 用 pressed)"
+      },
+      "属性名带空格": {
+        "input/search": "button type",
+        "MIC brand logo with checkbox": "值 leading factory"
+      },
+      "同族取值域不一致": {
+        "selecter-single vs selecter-multiple": "size 一个是 [default|small] 一个是 [large|small]",
+        "input/basic vs select input vs input caption": "status 分别是 5 档 / 3 档 / 3 档",
+        "input/basic vs date picker input": "size=default 的高度一个 32 一个 40"
+      },
+      "读不出属性的坏 set": {
+        "multiple Selection Item": "Select 页 2250:2587 —— 属性未命名(Property 1)+值带逗号,Figma 抛错。只能按子节点 name 匹配。"
+      },
+      "属性未命名": {
+        "swiper": "属性名就叫 'Property 1'(能读,但名字无意义;含义是指示点位置)",
+        "multiple Selection Item": "同样未命名,且值带逗号导致整个 set 读不出来",
+        "搜索结果页筛选 4 个 set": "全部是 Property 1;其中侧边栏部件的值里还混进了 Figma 默认名 'Line 1'"
+      },
+      "中文/全角值": {
+        "fd_dialog box": "state 里有 自定义弹框（最大高度）/ 自定义弹框（最大宽度）,含全角括号",
+        "Empty 缺省图": "属性名和值全中文,含全角括号（）和斜杠,26 个主题值"
+      },
+      "size 取值域不统一": {
+        "绝大多数": "[default|small|large]",
+        "flip button": "[default|big|small] —— 用 big 不用 large",
+        "selecter-multiple": "[large|small] —— 没有 default",
+        "spin description": "属性名还是大写 Size"
+      },
+      "撞名/默认名": {
+        "tab item / basic": "两个不同 set 完全同名(49宽 / 73宽)",
+        "Component 1": "Tabs 页有个 set 还是 Figma 默认名",
+        "tabs /  basic": "名字里两个空格",
+        "popover": "Popover 页和 Popconfirm 页各有一个叫 popover 的 set,不是同一个东西",
+        "close": "Dialog 页的 set 就叫 close,太通用",
+        "vo-buyer-nav-menu": "两个不同 set 同名,属性名还不一样(Property 1 vs state)"
+      },
+      "非 VARIANT 型属性": {
+        "Steps 一族": "用了 BOOLEAN 型 component property:Time#3116:24 / Description#3116:35 / Description#506:2770 / Time#3116:46。setProperties 时属性名必须带 #id 后缀,值传 true/false。"
+      },
+      "首字母大写的属性名": {
+        "button": "State",
+        "spin description": "Size",
+        "Popconfirm 页的 popover": "Button",
+        "Collapse": "Borderless / Size / Item Count / Secondary project",
+        "Steps 全族": "Type / Size / Direction / Status / State / Style / Order 全大写"
+      },
+      "全角字符": {
+        "MIC FilterSidebar-侧边筛选栏组合": "区间用全角波浪号 ～(1280～1024),且从大到小倒着写",
+        "Empty 缺省图": "全角括号（）",
+        "fd_dialog box": "全角括号（）",
+        "登录-验证码（阿语）": "全角括号（）"
+      },
+      "中文属性名": {
+        "com-capabilities/w": "类型",
+        "com-header/w": "chat状态(中英混排)",
+        "Empty 缺省图": "场景 / 主题 / 颜色"
+      },
+      "非阶梯圆角": {
+        "prod-video/w": "r=10",
+        "social(买家登录)": "r=21.5(非整数)",
+        "MIC 页头页脚": "3 / 9 / 13(实测 20 处·全部 12 个抽测组件页里唯一有这种值的)",
+        "_note": "圆角阶梯是 4/6/8+pill,这些都在阶梯外。还原时照实测值走,别就近取阶梯值。"
+      },
+      "非 token 颜色": {
+        "vo-supplier-nav": "#284159 深藏青(供应商 VO 导航)",
+        "footer-home / footer-mlan": "#E3E4E6(页脚底色)",
+        "_note": "这两个色不在 33 个 paint style 里、也不在 color 页上。用它们时不能绑 style,只能硬编码 —— 但那会被 MIC-视觉自检 报违规。要不要补进 token 请吉吉定。"
+      },
+      "同一概念两种拼法": {
+        "leading factory": "`brand logo` 写 leading-factory(连字符) / `MIC brand logo with checkbox` 写 leading factory(空格)",
+        "_note": "跨 set 引用同一个业务概念时,属性值拼法不保证一致。每个 set 单独查。"
+      },
+      "逗号分隔符不统一(必查真名)": {
+        "_why": "🔴🔴 variant 名里属性之间的分隔符,有的 set 是 `, `(逗号+空格)、有的是 `,`(纯逗号),**而且同一个 set 内部会混**。按名字精确匹配前必须 dump 真名,不能按同族另一个 set 的格式推断 —— 2026-08-31 我照上一轮工单里写的带空格名去 find,6 个 variant 全 miss。",
+        "带空格 `, `": [
+          "input/basic(90)",
+          "tag / basic(9)",
+          "select input(135)",
+          "alert(16)",
+          "tab item(12)",
+          "switch(16)",
+          "breadcrumb Link(6)"
+        ],
+        "无空格 `,`": [
+          "empty-state(12)",
+          "header-home(10)"
+        ],
+        "🔴 同一个 set 内部混用(各有 1 个例外)": {
+          "Empty 缺省图": "31 个里 30 个纯逗号,只有 `场景=基础通用, 主题=筛选无结果, 颜色=通用` 带空格",
+          "checkbox": "42 个里 41 个纯逗号,只有 `statues=inactive, state=default, size=default, color=neutral` 带空格"
+        },
+        "_做法": "`set.children.map(c=>c.name)` 先取真名再匹配;或用 `c.name.replace(/, /g,',')` 统一成一种写法之后再比。别手写。"
+      }
+    },
+    "area picker": {
+      "page": "AreaPicker 国家&地区选择器✅",
+      "key": "4e0bd2347545eb276c29edc6d25d9001de4b5ed6",
+      "type": "单个 COMPONENT(不是 component set,没有 variant)",
+      "sample": {
+        "wh": "360x630"
+      },
+      "note": "国家/地区选择面板。页面上另有「单选」「多选」两种示意的 FRAME,但只做成了一个组件,多选形态没有 variant。"
+    },
+    "address picker": {
+      "page": "AddressPicker 地址选择器 ✅",
+      "key": "1e7044bafba15d251b3ec9f2d5a915cf9c7b7b27",
+      "type": "单个 COMPONENT(不是 component set,没有 variant)",
+      "sample": {
+        "wh": "360x316"
+      },
+      "note": "地址选择面板。页面上标了「常态/悬停/获焦」三态,但三态没做成 variant,只有一个组件。"
+    },
+    "tooltip": {
+      "page": "Tooltip 文字提示✅",
+      "key": "3d6cde110f5ac6e23b4a97e80ee7fb2cb18ce7f9",
+      "variantCount": 24,
+      "props": {
+        "placement": [
+          "bottom",
+          "bottom left",
+          "bottom right",
+          "top right",
+          "top",
+          "top left",
+          "left top",
+          "left bottom",
+          "left",
+          "right top",
+          "right bottom",
+          "right"
+        ],
+        "close": [
+          "yes"
+        ],
+        "color": [
+          "dark",
+          "light"
+        ]
+      },
+      "sample": {
+        "wh": "222x48",
+        "layout": "VERTICAL, gap 0"
+      },
+      "nodeId": "2576:1709",
+      "note": "🔴 placement 有 12 个方位(注意 'left top' 和 'top left' 是两个不同值,前者是贴左侧靠上、后者是在上方靠左)。color 两档 dark/light。🔴🔴 close 只有一个值 yes，**但母版结构里根本没有关闭按钮节点**(子节点只有 Frame 113 / Vector / Frame 108 / TEXT)。别据「close 只有 yes」推论「要手动隐藏 ×」(2026-09-06 我这么推过,错的)。跟 popover 的真正区别在结构不在 variant:popover 的 Frame 108 里多一个 Frame 127+icon·功能图标-close,而且自带三层投影;tooltip 两样都没有(effects 数=0)。**hover 提示一律用 tooltip,别用 popover**(用错=气泡上多一个用户点不掉也不该点的 ×)。三件套「外层 FIXED + 内部 TEXT 设 HUG + Vector 保持母版原生 177×6」见 figma-feique-first 坑 54;常用 variant key(bottom·dark)=5d886a7ab29fb1fdbe717cb30ba7d2466dcd243e;实测宽度=16+文字宽+16(2字→60、4字→88)。"
+    },
+    "popover": {
+      "page": "Popover 气泡卡片✅",
+      "key": "e3dcbf4ecf3cd48ae9d11771d94c194e8d90fc57",
+      "variantCount": 24,
+      "props": {
+        "placement": [
+          "bottom",
+          "bottom left",
+          "bottom right",
+          "top right",
+          "top",
+          "top left",
+          "left top",
+          "left bottom",
+          "left",
+          "right top",
+          "right bottom",
+          "right"
+        ],
+        "close": [
+          "yes"
+        ],
+        "color": [
+          "dark",
+          "light"
+        ]
+      },
+      "sample": {
+        "wh": "240x48",
+        "layout": "VERTICAL, gap 0"
+      },
+      "nodeId": "2519:533",
+      "note": "属性结构跟 tooltip 一模一样,只有默认宽度不同(240 vs 222)。**区别在结构:popover 内部有关闭按钮节点(Frame 108 里的 Frame 127+icon·功能图标-close)且自带三层投影,tooltip 两样都没有。**选择判据:装多行富内容、需要用户点掉→popover;只装一句话的 hover 提示→tooltip。🔴 外层白填充是 visible=false 的占位,绑 style 会点亮成白卡盖住气泡。手搭做不出来,分层做法见 figma-feique-first §🫧气泡卡片。"
+    },
+    "swiper": {
+      "page": "Swiper 轮播✅",
+      "key": "70ef4845b231e40fed01a8e8a67d8ab933bd19bb",
+      "variantCount": 4,
+      "props": {
+        "Property 1": [
+          "Bottom",
+          "Left",
+          "Right",
+          "Top"
+        ]
+      },
+      "sample": {
+        "wh": "1200x360",
+        "layout": "absolute",
+        "fill": "#007DFA"
+      },
+      "nodeId": "2290:10833",
+      "note": "🔴 属性名就叫 'Property 1' —— 从来没命名。它的含义是指示点的位置(Bottom/Left/Right/Top),值首字母大写。1200x360 是标准 banner 尺寸。"
+    },
+    "carousel dot": {
+      "page": "Swiper 轮播✅",
+      "key": "c07e264fff7d8767603ba082f8dbc664f134e01f",
+      "variantCount": 24,
+      "props": {
+        "state": [
+          "active",
+          "default",
+          "hover"
+        ],
+        "shape": [
+          "line",
+          "round"
+        ],
+        "color": [
+          "light",
+          "dark",
+          "red",
+          "blue"
+        ]
+      },
+      "sample": {
+        "wh": "24x3",
+        "layout": "absolute"
+      },
+      "nodeId": "2290:10793",
+      "note": "单个指示点。shape=line 是横条(24x3),round 是圆点。"
+    },
+    "carousel dots": {
+      "page": "Swiper 轮播✅",
+      "key": "6586450dcc1972ee3d37bb254ecd29d9734325cd",
+      "variantCount": 16,
+      "props": {
+        "vertical": [
+          "false",
+          "True"
+        ],
+        "shape": [
+          "line",
+          "round"
+        ],
+        "color": [
+          "light",
+          "dark",
+          "red",
+          "bule"
+        ]
+      },
+      "sample": {
+        "wh": "124x3",
+        "layout": "HORIZONTAL, gap 4"
+      },
+      "nodeId": "2290:10794",
+      "note": "🔴🔴 两个坑:① color 值是 bule(拼错,而单数的 carousel dot 是正确的 blue)② vertical 的值是 'false' 小写 / 'True' 大写 —— 同一个属性里大小写不统一。"
+    },
+    "flip button": {
+      "page": "Swiper 轮播✅",
+      "key": "c6ac42a17dc67701e5c12aba10f7ee1dd4fd3b80",
+      "variantCount": 24,
+      "props": {
+        "state": [
+          "default",
+          "hover"
+        ],
+        "color": [
+          "light",
+          "dark"
+        ],
+        "position": [
+          "left",
+          "right"
+        ],
+        "size": [
+          "default",
+          "big",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "48x48",
+        "layout": "HORIZONTAL, pad 14/18/14/18",
+        "r": 1000,
+        "fill": "#FFFFFF",
+        "effectStyle": "绑了 box shadow(1级)"
+      },
+      "nodeId": "2290:10832",
+      "note": "🔴 size 的值是 [default|big|small] —— 用的是 big 不是 large,跟全库其他组件的 large 不一致。已绑 effect style,做 demo 用 CSS 的 1级阴影。"
+    },
+    "fd_dialog box": {
+      "page": "反馈/Dialog 对话框 ✅",
+      "key": "f3fa1a35e9fc5c3a90e7f5fef2a8770147041bea",
+      "variantCount": 7,
+      "props": {
+        "state": [
+          "default",
+          "info",
+          "warning",
+          "success",
+          "error",
+          "自定义弹框（最大高度）",
+          "自定义弹框（最大宽度）"
+        ]
+      },
+      "sample": {
+        "wh": "401x180",
+        "layout": "VERTICAL, gap 24, pad 24/32/24/32",
+        "r": 8,
+        "fill": "#FFFFFF"
+      },
+      "nodeId": "2274:6785",
+      "note": "🔴 state 里混了中文值:自定义弹框（最大高度）/ 自定义弹框（最大宽度）,还带全角括号。setProperties 要一字不差照抄。set 名带 fd_ 前缀(全库唯一一个这么起名的)。"
+    },
+    "close": {
+      "page": "反馈/Dialog 对话框 ✅",
+      "key": "b0a2dd3be39281d78dc69be68d1431868b850855",
+      "variantCount": 2,
+      "props": {
+        "state": [
+          "default",
+          "hover"
+        ]
+      },
+      "sample": {
+        "wh": "20x20",
+        "layout": "absolute"
+      },
+      "nodeId": "2267:4139",
+      "note": "🔴 set 名就叫 'close',太通用,按名字搜会撞一堆东西。认 key。"
+    },
+    "message": {
+      "page": "反馈/Message 全局提示✅",
+      "key": "2325b8985121a6c1d35619667370622a83039087",
+      "variantCount": 5,
+      "props": {
+        "type": [
+          "normal",
+          "error",
+          "loading",
+          "success",
+          "warning"
+        ]
+      },
+      "sample": {
+        "wh": "178x40",
+        "layout": "HORIZONTAL, gap 8, pad 8/12/8/12",
+        "r": 8,
+        "fill": "#FFFFFF",
+        "effectStyle": "绑了 box shadow(1级)"
+      },
+      "nodeId": "2216:65",
+      "note": "🔴 type 里有 loading —— 全局提示可以是「处理中」态,我以前列反馈态不会想到。只有 5 个 variant,没有尺寸/位置维度。"
+    },
+    "spin description": {
+      "page": "反馈/Loading 加载✅",
+      "key": "f63ac5cca378d954c548c2f42f121713219bd70e",
+      "variantCount": 6,
+      "props": {
+        "arrange": [
+          "horizontal",
+          "vertical"
+        ],
+        "Size": [
+          "default",
+          "small",
+          "large"
+        ]
+      },
+      "sample": {
+        "wh": "113x52",
+        "layout": "HORIZONTAL, gap 8, pad 16"
+      },
+      "nodeId": "3170:1043",
+      "note": "🔴 属性名 Size 是大写 S(跟 button 的 State 一样的坑)。arrange 决定文字在转圈右边还是下边。"
+    },
+    "spin basic": {
+      "page": "反馈/Loading 加载✅",
+      "key": "301cd183a8546443fc60293e072a72ace2e5c86c",
+      "variantCount": 16,
+      "props": {
+        "_UNREADABLE": "🔴 读不出来"
+      },
+      "sample": {
+        "wh": "14x14",
+        "layout": "absolute"
+      },
+      "nodeId": "2216:10100",
+      "note": "🔴🔴 第二个坏 set。原因跟 Select 那个不同:这个是 **variant 组合重复** —— 'size=small, color=red' 在子节点里出现了两次,Figma 因此拒绝给出 propertyDefinitions。推断属性是 size(small/default/large) × color(red/…)。要用只能按子节点 name 匹配。"
+    },
+    "_brokenSets": {
+      "_why": "🔴 这些 set 的 componentPropertyDefinitions 读不出来,setProperties 用不了。要用只能 import 后按子节点的 name 精确匹配。两个案例的根因不同,以后自己建 set 时都要避开。",
+      "multiple Selection Item": {
+        "page": "Select选择器✅",
+        "id": "2250:2587",
+        "cause": "原因B · 属性值带逗号(且属性未命名)"
+      },
+      "spin basic": {
+        "page": "反馈/Loading 加载✅",
+        "id": "2216:10100",
+        "cause": "原因A · 16 个 variant 里 1 个组合重复"
+      },
+      "_keyLookup": "key 只存在 components 里对应条目,这里不重复(避免两处维护)。",
+      "_rootCausesConfirmed": {
+        "_method": "2026-08-31 逐个数了 variant 名的重复数和属性个数分布,不靠猜。",
+        "原因A · variant 组合重复": {
+          "_rule": "Figma 要求每个属性值组合唯一,重复了就整个 set 读不出属性定义。",
+          "Collapse-Item": "72 个里 5 个重复(如 Color=default, Size=small, Borderless=yes, Active=no, State=default 出现两次)",
+          "spin basic": "16 个里 1 个重复(size=small, color=red 出现两次)"
+        },
+        "原因B · 属性值里带逗号": {
+          "_rule": "逗号是 Figma 分隔多个属性的符号,值里出现逗号会让解析崩掉。",
+          "multiple Selection Item": "0 个重复,但名字是 'Property 1=default,default' —— 被解析成两段,第二段没有等号。"
+        },
+        "_howToFix": "原因A 删掉重复的 variant;原因B 给属性起名并把逗号换成别的分隔符。两者都是吉吉这边改文件,我只报告。"
+      },
+      "Collapse-Item": {
+        "page": "Collapse 折叠面板✅",
+        "id": "3160:1418",
+        "cause": "原因A · 72 个 variant 里 5 个组合重复"
+      },
+      "_status": "✅ 2026-08-31 三个全部修复完成（吉吉授权「可以直接修复下」）。修完三个都能正常 setProperties 了。",
+      "_repairLog": {
+        "spin basic": {
+          "做法": "删掉重复的 `size=small, color=red`(节点 11564:215)。改之前验了两条:与 0:104565 尺寸和子结构一致 + 全文件零实例引用它。",
+          "修完": "15 个 variant,属性可读 = size[small|default|large] × color[light|red|dark|blue|gray]。修好之后才第一次看到它真实的属性域。"
+        },
+        "multiple Selection Item": {
+          "做法": "9 个 variant 从 `Property 1=<size>,<state>` 重命名成 `size=<size>, state=<state>`。属性从未命名 + 值带逗号,是这个 set 读不出属性的根因。重命名不动节点 id,27 个实例不受影响。",
+          "修完": "9 个 variant,属性可读 = size[default|large|small] × state[default|disabled|hover]。"
+        },
+        "Collapse-Item": {
+          "做法": "两步。① 删掉整块被复制的 4 个 variant(3160:1389/1390/1391/1392) —— 逐个查过零实例引用。② 把 3160:1354 从 `Active=no` 改成 `Active=yes`。",
+          "改名依据": "它高 80、有 2 个子节点,而 2 个子节点只出现在 Active=yes 的 variant 里;且 `Color=default, Size=small, Borderless=yes` 这一片原本没有 Active=yes,空位正好不冲突。",
+          "🔴 这一步是推断": "根因是有人把展开态标成了收起态,我按结构反推的。**如果本意不是这样,把 3160:1354 改回 Active=no 即可,但那样这个 set 会重新变成读不出属性。**",
+          "修完": "68 个 variant(原 72),零重名,属性可读 = Color × Size × Borderless × Active × State。"
+        }
+      },
+      "_verifyAfterRepair": {
+        "_ran": "2026-08-31 装好 figma-verify 后对三个 set 都跑了门(指纹 35910-468224b6 match)。",
+        "_result": "multiple Selection Item 11 违规 / spin basic 16 违规 / Collapse-Item 174 违规。",
+        "🔴 怎么读": "**这些违规一条都不是本次改动造成的** —— 全是库里既有的:description 为空(共 92 条)、Component Set 缺紫色描边、图层默认名、固高未申报、中英空格。我改的是删重复 variant + 重命名,且重命名用的全是小写值,没触发「variant 值不许大写」那道检查。",
+        "_byproduct": "顺带得到三个 set 的规范体检。最重的是 Collapse-Item:**816 处组件内默认名 + 85 处固高未申报 + 68 个 variant 没写 description + 17 处中英空格**。要不要治请吉吉定。"
+      },
+      "alert (description 属性无效)": {
+        "page": "反馈/Alert",
+        "id": "3041:740",
+        "cause": "原因C · variant 属性存在但两档内容完全相同",
+        "evidence": "`type=warning, banner=false, description=true` 与 `description=false` 都是 640x38;dump 子树只有 icon / Alert title / Button / close 四个节点,没有描述文本节点,visible 全 true。",
+        "影响": "以为传 description=true 就能拿到「标题+描述」两行的人会拿到单行。要两行得自己加文本节点。",
+        "_status": "2026-08-31 截图核出,未修(改库要吉吉拍)"
+      }
+    },
+    "breadcrumb Link": {
+      "page": "Breadcrumb 面包屑 ✅",
+      "key": "49171688d5974c2172eca2a0e31a10decf7c2f16",
+      "variantCount": 6,
+      "props": {
+        "state": [
+          "default",
+          "current",
+          "hover"
+        ],
+        "type": [
+          "large",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "45x22",
+        "layout": "HORIZONTAL, gap 0"
+      },
+      "nodeId": "2164:85",
+      "note": "🔴 注意 type 是 large/small(没有 default),而 state 里的 current 表示「当前页那一节」。"
+    },
+    "breadcrumb light mode": {
+      "page": "Breadcrumb 面包屑 ✅",
+      "key": "3dc5ff892e5ad53dcb323a4112ce94f3f0033047",
+      "variantCount": 4,
+      "props": {
+        "type": [
+          "small",
+          "large"
+        ],
+        "statue": [
+          "hover",
+          "default"
+        ]
+      },
+      "sample": {
+        "wh": "165x22",
+        "layout": "HORIZONTAL, gap 0"
+      },
+      "nodeId": "2169:170",
+      "note": "🔴 属性名是 statue(应为 state/status),而同页的 breadcrumb Link 用的是正确的 state —— 同一页两种拼法。"
+    },
+    "breadcrumb dark mode": {
+      "page": "Breadcrumb 面包屑 ✅",
+      "key": "f194585ba079d889a793f157f70739da43fc2b75",
+      "variantCount": 4,
+      "props": {
+        "type": [
+          "small",
+          "large"
+        ],
+        "statue": [
+          "default",
+          "hover"
+        ]
+      },
+      "sample": {
+        "wh": "165x22",
+        "layout": "HORIZONTAL, gap 0"
+      },
+      "nodeId": "3227:2500",
+      "note": "深色底版本(放在图片/banner 上)。属性名同样是 statue。"
+    },
+    "affix": {
+      "page": "Affix 固钉 ✅",
+      "key": "1ef1674d6e92137f5affa39eb28ddd6f52b58c86",
+      "variantCount": 28,
+      "props": {
+        "state": [
+          "default",
+          "hover"
+        ],
+        "icon": [
+          "rfg",
+          "help",
+          "suggestion",
+          "top",
+          "calendar",
+          "category",
+          "app"
+        ],
+        "text": [
+          "yes",
+          "no"
+        ],
+        "platform": [
+          "pc",
+          "all"
+        ],
+        "round": [
+          "no",
+          "yes"
+        ],
+        "size": [
+          "large",
+          "small"
+        ]
+      },
+      "sample": {
+        "wh": "62x62",
+        "layout": "VERTICAL, gap 0"
+      },
+      "nodeId": "2189:670",
+      "note": "页面右侧那条悬浮工具条。🔴 icon 的第一个值是 rfg —— 疑似 rfq 的拼写错误(MIC 有 RFQ 业务,没有 RFG),但要用只能照原样写。platform=[pc|all] 决定是否兼容触屏。"
+    },
+    "image": {
+      "page": "Image 图片✅",
+      "key": "1460693f3993b46ef2a780e1ffc2e18d8bc4f12b",
+      "variantCount": 6,
+      "props": {
+        "state": [
+          "placeholder image",
+          "Supplier without logo",
+          "loading",
+          "no image",
+          "with image",
+          "hover"
+        ]
+      },
+      "sample": {
+        "wh": "175x175",
+        "layout": "absolute",
+        "fill": "#F5F7FA"
+      },
+      "nodeId": "5703:119",
+      "note": "🔴 做 demo 极有用:图片的六个态里有 placeholder image(占位图)、no image(无图)、Supplier without logo(供应商没上传 logo)、loading。以前做 demo 图片位我会自己拿灰块凑,应该用这个。注意 'Supplier without logo' 首字母大写、其余值小写。底色 #F5F7FA = background 01。"
+    },
+    "_tabsFamily": {
+      "_warning": "🔴🔴 Tabs 页有 6 个 set,命名是全库最乱的一处:两个 set **同名** `tab item / basic`(尺寸不同)、一个 set 还叫 Figma 默认名 `Component 1`、一个名字里有**两个空格** `tabs /  basic`。按名字搜必然拿错,只能认 key。",
+      "Component 1": {
+        "key": "d94b9639ffa51e0cb0b763fe572843bbdf17e6ff",
+        "nodeId": "2576:1145",
+        "variantCount": 24,
+        "props": {
+          "state": [
+            "active",
+            "default"
+          ],
+          "position": [
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "size": [
+            "large",
+            "small",
+            "default"
+          ]
+        },
+        "sample": {
+          "wh": "49x46",
+          "layout": "HORIZONTAL, gap 8, pad 12/0/12/0",
+          "stroke": "#222222 INSIDE"
+        },
+        "note": "🔴 从没改名。描边是 #222(黑款),而下面两个同名 set 是 #E64545(红款)。"
+      },
+      "tab item / basic (49 宽·红)": {
+        "key": "ba443aa040ff3a85ffa05872cf02c75b2daf51ba",
+        "nodeId": "2644:1174",
+        "variantCount": 24,
+        "props": {
+          "state": [
+            "active",
+            "default"
+          ],
+          "position": [
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "size": [
+            "large",
+            "small",
+            "default"
+          ]
+        },
+        "sample": {
+          "wh": "49x46",
+          "stroke": "#E64545 INSIDE"
+        }
+      },
+      "tab item / basic (73 宽·红)": {
+        "key": "f55167027aa647ba9ec5987163b29a0eca053684",
+        "nodeId": "2804:2127",
+        "variantCount": 24,
+        "props": {
+          "state": [
+            "active",
+            "default"
+          ],
+          "position": [
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "size": [
+            "large",
+            "small",
+            "default"
+          ]
+        },
+        "sample": {
+          "wh": "73x46",
+          "stroke": "#E64545 INSIDE"
+        },
+        "note": "🔴 与上一条**完全同名**,只有默认宽度不同(73 vs 49)。"
+      },
+      "tabs /  basic": {
+        "key": "28b699bb0526bef34974dc37a169a9a73660bc28",
+        "nodeId": "2710:5389",
+        "variantCount": 24,
+        "props": {
+          "position": [
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "color": [
+            "black",
+            "red"
+          ],
+          "size": [
+            "default",
+            "large",
+            "large"
+          ]
+        },
+        "sample": {
+          "wh": "640x46",
+          "layout": "HORIZONTAL, gap 32",
+          "fill": "#FFFFFF"
+        },
+        "note": "🔴 名字里 `/` 后面有**两个空格**。这是一整排 tab 的组件,color 两档 black/red。🔴🔴 **gap 按 size 分档:small 16 / default 32 / large 40** —— sample 里那个 32 是 default 档,别当通用值(2026-09-07 实测)。tab item 自身 pad 是 12/0/12/0(左右为 0),所以 tab 之间的间距完全由这一层的 itemSpacing 决定。"
+      },
+      "tab item / card / tabs": {
+        "key": "ee0c5c961a4823d6a8356cd31c6ec8b949e4ad66",
+        "nodeId": "2801:1397",
+        "variantCount": 6,
+        "props": {
+          "color": [
+            "red",
+            "black"
+          ],
+          "size": [
+            "default",
+            "large",
+            "small"
+          ]
+        },
+        "sample": {
+          "wh": "477x38",
+          "fill": "#FFFFFF"
+        },
+        "note": "卡片式 tab。"
+      },
+      "tab item": {
+        "key": "baa9fc1c92e8bb216a13541d931d7c59fea0fc5d",
+        "nodeId": "2771:579",
+        "variantCount": 12,
+        "props": {
+          "state": [
+            "active",
+            "default",
+            "hover"
+          ],
+          "size": [
+            "default",
+            "large",
+            "small"
+          ],
+          "color": [
+            "red",
+            "black"
+          ]
+        },
+        "sample": {
+          "wh": "97x38",
+          "layout": "HORIZONTAL, gap 8, pad 8/24/8/24",
+          "stroke": "#E64545 INSIDE"
+        },
+        "note": "这个有 hover 态(上面几个只有 active/default)。"
+      },
+      "_relatedMemory": "配合 project-mic-home-ai-entry-revision 里那条「选中必用下划线非 chip」—— 下划线款对应带 #E64545 描边的 tab item,chip 款是 selecter-multiple2。",
+      "_indicatorPosition": {
+        "_why": "🔴🔴 `position` 的值跟那条横线实际画在哪边是**反的**。实测 tab item / basic(2644:1174) 的 state=active, size=default 四档:",
+        "实测表": {
+          "position=top": "strokeBottomWeight=2 → 线在**底部**(截图确认红条在文字下方)",
+          "position=bottom": "strokeTopWeight=2 → 线在**顶部**",
+          "position=left": "strokeRightWeight=2 → 线在**右**边",
+          "position=right": "strokeLeftWeight=2 → 线在**左**边"
+        },
+        "_解释": "position 指的是「这排 tab 在容器里的位置」,不是「那条横线画在哪边」—— tab 栏在顶部时,线画在靠内容区的那一侧(底边)。自洽,但照字面理解会拿反。",
+        "🔴 要底部下划线": "传 `position=top`。这是最常见的 tab 样式。",
+        "没有 position 的那个 set": "`tab item`(2771:579) 只有 state/size/color 三个属性,线**固定在顶部**(strokeTopWeight=2,相当于 position=bottom 的形态)。要底部线只能换 set 或自己改 strokeWeight。",
+        "🔴 选中态配色两个 set 不一致": {
+          "tab item (2771:579)": "active = 透明底 + **黑字 #222 · 700 字重** + 2px 红线 #E64545;default = **浅灰底 #F5F7FA** + 400 字重 + 无线。那层浅灰底就是「看着像标签/胶囊」的来源。",
+          "tabs /  basic (2710:5389) 一整排 tab 的组件": "640x46,六个 tab 横排 gap 32。active = **红字** + 红线;未选中 = 灰字。"
+        },
+        "_对在做的项目": "首页 AI 搜索入口改版要「选中用下划线不要胶囊」= 既要传 position=top 拿底部线,又要去掉未选中态那层 #F5F7FA 灰底。"
+      }
+    },
+    "Popconfirm": {
+      "page": "Popconfirm 气泡确认框✅",
+      "key": "2ea4ba71382da99675cd98814c968772770ff83b",
+      "variantCount": 12,
+      "props": {
+        "placement": [
+          "top left",
+          "top right",
+          "bottom right",
+          "bottom left",
+          "left top",
+          "right top",
+          "left bottom",
+          "right bottom",
+          "left",
+          "right",
+          "bottom",
+          "top"
+        ]
+      },
+      "sample": {
+        "wh": "264x155",
+        "layout": "VERTICAL, gap 0"
+      },
+      "nodeId": "3024:7465",
+      "note": "带确认/取消按钮的气泡。placement 12 方位,跟 tooltip/popover 同一套。"
+    },
+    "popover (Popconfirm 页)": {
+      "page": "Popconfirm 气泡确认框✅",
+      "key": "ddbc1d2758a16d6f3d4808b6533b9286369dae66",
+      "variantCount": 24,
+      "props": {
+        "state": [
+          "T",
+          "B",
+          "R",
+          "L"
+        ],
+        "position": [
+          "L",
+          "T",
+          "C",
+          "B",
+          "R"
+        ],
+        "Button": [
+          "no",
+          "yes"
+        ]
+      },
+      "sample": {
+        "wh": "180x96",
+        "layout": "VERTICAL, gap 0"
+      },
+      "nodeId": "3026:8471",
+      "note": "🔴🔴 两个问题:① set 名叫 popover,与 Popover 页那个真正的 popover(key e3dcbf4e…)**撞名**,按名字搜会拿错 ② 属性值是单字母缩写 T/B/R/L 和 L/T/C/B/R,含义要猜(推断 state=箭头方向、position=箭头沿边的位置、C=center)。属性名 Button 还是大写 B。"
+    },
+    "tag / basic": {
+      "page": "Tag 标签 ✅",
+      "key": "c44a41460290b598c57def4c76082e5f84ecb8fb",
+      "variantCount": 9,
+      "props": {
+        "size": [
+          "small",
+          "default",
+          "large"
+        ],
+        "state": [
+          "default",
+          "closeable",
+          "add new"
+        ]
+      },
+      "sample": {
+        "wh": "45x18",
+        "layout": "HORIZONTAL, gap 4, pad 0/4/0/4",
+        "r": 4,
+        "fill": "#F5F7FA",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "2325:894",
+      "note": "🔴 state 里的 'add new' 带空格,是那种「+ 新增标签」的形态。默认高只有 18(比按钮矮很多)。"
+    },
+    "tag / colorful (legacy)": {
+      "page": "Tag 标签 ✅",
+      "key": "e9c801c049ea12baf44a6eb1d33ee0c1a5cd0f91",
+      "variantCount": 15,
+      "props": {
+        "type": [
+          "areal",
+          "line"
+        ],
+        "preset": [
+          "red",
+          "orange",
+          "blue",
+          "green",
+          "deep blue",
+          "dark gray",
+          "light gray",
+          "light blue",
+          "light green",
+          "light orange",
+          "light red"
+        ]
+      },
+      "sample": {
+        "wh": "61x18",
+        "layout": "HORIZONTAL, gap 4, pad 0/4/0/4",
+        "r": 4,
+        "stroke": "1px #E64545 INSIDE"
+      },
+      "nodeId": "2325:895",
+      "note": "🔴 名字里带 (legacy) —— 这是**已标记为旧版**的组件,新稿别用,用 tag / basic。11 个预设色。type 的 areal 疑似 area 的拼写错误(意思是整块填色 vs 只描边)。"
+    },
+    "_stepsFamily": {
+      "_warning": "🔴🔴 Steps 是全库唯一用了 **BOOLEAN 型 component property** 的地方(不是 variant)。写法不一样:setProperties({'Time#3116:24': true}),属性名必须带那串 #id 后缀,不能只写 Time。另外这一族的属性名全部首字母大写(Type/Size/Direction/Status/State/Style/Order),跟全库小写惯例相反。",
+      "*Steps*": {
+        "key": "4177fbd1c92231e4742b16c192f2eda8a9d372cf",
+        "nodeId": "3035:347",
+        "variantCount": 10,
+        "booleanProps": [
+          "Time#3116:24",
+          "Description#3116:35"
+        ],
+        "props": {
+          "Type": [
+            "Basic",
+            "Custom Icon",
+            "Dot",
+            "Navigation",
+            "Inline"
+          ],
+          "Size": [
+            "Default",
+            "Small"
+          ],
+          "Direction": [
+            "Horizontal",
+            "Vertical",
+            "Steps"
+          ]
+        },
+        "sample": {
+          "wh": "1200x54",
+          "layout": "HORIZONTAL, gap 16"
+        },
+        "note": "🔴 set 名带**星号** `*Steps*`。Direction 的第三个值是 'Steps'(不是方向词),含义不明。"
+      },
+      "Steps Item / Progress Icon": {
+        "key": "f3630c4c093511b35fd45fdaa913924cf265f10d",
+        "nodeId": "3035:491",
+        "variantCount": 14,
+        "props": {
+          "Type": [
+            "Basic Default",
+            "Basic Small",
+            "Dot"
+          ],
+          "State": [
+            "Finish",
+            "Process",
+            "Wait",
+            "Error",
+            "Progress"
+          ]
+        },
+        "sample": {
+          "wh": "32x32",
+          "r": 32,
+          "stroke": "1px #007DFA INSIDE"
+        },
+        "note": "步骤圆点。r=32 就是整圆(这解释了实测直方图里 32 出现 62 次)。State 里 Process 和 Progress 是两个不同值,容易写错。"
+      },
+      "Steps Item / Horizontal": {
+        "key": "b6535dbfadad4b5fd38c8d06b60065e30c803cd2",
+        "nodeId": "3035:665",
+        "variantCount": 24,
+        "booleanProps": [
+          "Description#506:2770",
+          "Time#3116:46"
+        ],
+        "props": {
+          "Status": [
+            "Finish",
+            "Process",
+            "Wait",
+            "Error"
+          ],
+          "State": [
+            "Default",
+            "Hover"
+          ],
+          "Style": [
+            "Basic",
+            "Basic Small",
+            "Custom Icon"
+          ]
+        },
+        "sample": {
+          "wh": "423x54",
+          "layout": "VERTICAL"
+        },
+        "note": "🔴 同时有 Status 和 State 两个属性:Status=业务进度,State=鼠标交互态。别混。"
+      },
+      "Steps Item / Vertical": {
+        "key": "f9116ddd631daa875d523d111ee3e7507f912489",
+        "nodeId": "3035:899",
+        "variantCount": 24,
+        "props": {
+          "Type": [
+            "Basic",
+            "Basic Small",
+            "Dot"
+          ],
+          "Status": [
+            "Finish",
+            "Process",
+            "Wait",
+            "Error"
+          ],
+          "State": [
+            "Default",
+            "Hover"
+          ]
+        },
+        "sample": {
+          "wh": "400x70",
+          "layout": "HORIZONTAL, gap 16"
+        }
+      },
+      "Steps Item / Dot Horizontal": {
+        "key": "483d423686d007476d1aeac8faf1b5e690e60932",
+        "nodeId": "3035:1146",
+        "variantCount": 24,
+        "props": {
+          "Status": [
+            "Error",
+            "Finish",
+            "Process",
+            "Wait"
+          ],
+          "State": [
+            "Default",
+            "Hover"
+          ],
+          "Order": [
+            "Center",
+            "First",
+            "Last"
+          ]
+        },
+        "sample": {
+          "wh": "180x65",
+          "layout": "VERTICAL, gap 8"
+        },
+        "note": "Order 区分首/中/尾(决定连接线画哪边)。"
+      },
+      "Steps Item / Inline Step": {
+        "key": "f97f46108a7601549364aa3b436e16d1681484f1",
+        "nodeId": "3035:1368",
+        "variantCount": 8,
+        "props": {
+          "Status": [
+            "Waiting",
+            "Process",
+            "Error",
+            "Finish"
+          ],
+          "State": [
+            "Default",
+            "Hover"
+          ]
+        },
+        "sample": {
+          "wh": "48x48",
+          "layout": "VERTICAL, gap 6, pad 8/6/8/6",
+          "r": 4
+        },
+        "note": "🔴 Status 这里第一个值是 'Waiting',而其他几个 set 都是 'Wait' —— 同一族不同拼法。"
+      },
+      "Steps Item / Tail": {
+        "key": "dfd048218e4fec22c8875334d40f7d64dcab05bd",
+        "nodeId": "3035:1394",
+        "variantCount": 8,
+        "props": {
+          "Direction": [
+            "Horizontal",
+            "Vertical"
+          ],
+          "Style": [
+            "Default",
+            "Bold"
+          ],
+          "State": [
+            "Active",
+            "Waiting"
+          ]
+        },
+        "sample": {
+          "wh": "166x0",
+          "layout": "absolute"
+        },
+        "note": "步骤之间的连接线。高度 0(是条线)。"
+      }
+    },
+    "alert": {
+      "page": "Alert 警告提示✅",
+      "key": "5ac0ac007568d956827424e258f8698b130f4390",
+      "variantCount": 16,
+      "props": {
+        "type": [
+          "error",
+          "info",
+          "success",
+          "warning"
+        ],
+        "banner": [
+          "false",
+          "true"
+        ],
+        "description": [
+          "false",
+          "true"
+        ]
+      },
+      "sample": {
+        "wh": "640x38",
+        "layout": "HORIZONTAL, gap 8, pad 8/12/8/12",
+        "r": 8,
+        "fill": "#FDF1F1",
+        "stroke": "1px #E64545 INSIDE"
+      },
+      "nodeId": "3041:740",
+      "note": "🔴 banner=true 是通栏形态(贴页面顶部、无圆角无边距),description=true 是带副文案的两行版。首个 variant 是 type=error,底色 #FDF1F1 = primary/buyer background。"
+    },
+    "switch": {
+      "page": "Switch 开关✅",
+      "key": "a6d91beed41f0fe72f757590f47b0192accfff30",
+      "variantCount": 16,
+      "props": {
+        "size": [
+          "default",
+          "small"
+        ],
+        "state": [
+          "default",
+          "loading",
+          "disabled",
+          "pressed"
+        ],
+        "active": [
+          "true",
+          "false"
+        ]
+      },
+      "sample": {
+        "wh": "44x22",
+        "layout": "absolute"
+      },
+      "nodeId": "2216:13236",
+      "note": "🔴 state 有 loading 和 pressed —— 开关切换时的等待态是现成的,做异步开关别自己编。"
+    },
+    "Collapse": {
+      "page": "Collapse 折叠面板✅",
+      "key": "9cef895e6121a0ec2b9893bb66921d68b4433f10",
+      "variantCount": 108,
+      "props": {
+        "Secondary project": [
+          "3",
+          "2",
+          "4",
+          "1"
+        ],
+        "Item Count": [
+          "2",
+          "3",
+          "4"
+        ],
+        "color": [
+          "red",
+          "blue",
+          "default"
+        ],
+        "Borderless": [
+          "yes",
+          "no"
+        ],
+        "Size": [
+          "small",
+          "default",
+          "large"
+        ]
+      },
+      "sample": {
+        "wh": "856x200",
+        "layout": "VERTICAL",
+        "r": 4,
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "3160:5458",
+      "note": "🔴 属性名带空格('Secondary project'/'Item Count'),值是数字字符串。大小写混着来:color 小写,Borderless/Size 大写。'Secondary project' 应该是二级项数量。"
+    },
+    "Collapse-Item": {
+      "page": "Collapse 折叠面板✅",
+      "key": "710f3c4c2335bd4ffb7f3df2bc99b9dfae51cb01",
+      "variantCount": 72,
+      "props": {
+        "_UNREADABLE": "🔴 读不出来"
+      },
+      "sample": {
+        "wh": "856x80",
+        "layout": "VERTICAL",
+        "r": 4,
+        "fill": "#FFFFFF",
+        "stroke": "1px #CED3D9 INSIDE"
+      },
+      "nodeId": "3160:1418",
+      "note": "🔴🔴 第三个坏 set。variant 名看起来是规范的(Color=red, Size=small, Borderless=yes, Active=yes, State=default),五个属性都命名了、没有逗号问题,所以根因跟前两个都不同,待查。"
+    },
+    "_emptyStates": {
+      "_why": "🔴🔴 对 MIC 工作极有用:空态不用自己想,26 个业务场景的缺省图都做好了,而且按买家侧/供应商侧分了色。以前我列空态靠编,应该先来这里查。",
+      "Empty 缺省图": {
+        "key": "e0f7179a27282955ee16b50ced38fd8e0d451596",
+        "nodeId": "4208:974",
+        "variantCount": 31,
+        "props": {
+          "场景": [
+            "个性选用",
+            "基础通用"
+          ],
+          "主题": [
+            "初始页面（完成）",
+            "初始页面（下载）",
+            "引导主站",
+            "暂无消息",
+            "产品搜索无结果",
+            "订单提交成功",
+            "公司搜索无结果",
+            "空询盘篮",
+            "没有权限",
+            "没有下载内容",
+            "任务成功",
+            "任务等待中",
+            "筛选无结果",
+            "网络错误404",
+            "网络错误500",
+            "无收藏记录",
+            "询盘发送成功",
+            "暂无图片",
+            "链接/账号",
+            "暂无商品/订单",
+            "任务失败/错误",
+            "网络错误/接口异常",
+            "无记录/无结果",
+            "空收件箱/空数据",
+            "买家app下载",
+            "供应商app下载"
+          ],
+          "颜色": [
+            "供应商",
+            "买家",
+            "通用"
+          ]
+        },
+        "sample": {
+          "wh": "256x224",
+          "layout": "VERTICAL, gap 0"
+        },
+        "note": "🔴 属性名和属性值**全是中文**,还含全角括号（）和斜杠。setProperties 必须一字不差照抄。颜色=[供应商|买家|通用] 又一次印证了买家侧/供应商侧的双主题。MIC 高频用的:产品搜索无结果 / 公司搜索无结果 / 筛选无结果 / 空询盘篮 / 询盘发送成功 / 暂无消息。"
+      },
+      "empty-state": {
+        "key": "3e8a379cd88ab541fecee431f110253828d3e10d",
+        "nodeId": "7752:35",
+        "variantCount": 12,
+        "props": {
+          "size": [
+            "large",
+            "default",
+            "small"
+          ],
+          "type": [
+            "basic",
+            "button",
+            "horizontal",
+            "link"
+          ]
+        },
+        "sample": {
+          "wh": "500x330",
+          "layout": "VERTICAL, gap 8, pad 32"
+        },
+        "note": "空态的**外壳**(带文案和行动按钮),上面那个 Empty 缺省图 是**插图**。两个配合用:外壳 type=button 表示带一个行动按钮,link 表示带一个文字链。"
+      }
+    },
+    "_businessComponents": {
+      "_why": "🔴🔴 这几页最贴 MIC 业务,做 MIC 的稿和 demo 优先从这里取整块,而不是用基础组件拼。",
+      "_caveat": "🔴 供应商列表 和 买家登录 两页上都写着「备注：此需求在新规范之前设计，部分细节有出入。（按照视觉稿还原）」—— 打了勾但作者自己声明过时。引用前对一下线上。",
+      "供应商列表": {
+        "_page": "供应商列表✅",
+        "_pageNote": "页面上写「复制下列母版使用」—— 这几个整列表是母版,直接复制。",
+        "prod-video/w": {
+          "key": "27e6fdb0c8017ef2b4d89dbd7d5d6d01dae6b538",
+          "nodeId": "6494:343",
+          "n": 2,
+          "props": {
+            "tabs": [
+              "video-pic",
+              "pic-only"
+            ]
+          },
+          "sample": {
+            "wh": "262x262",
+            "r": 10,
+            "fill": "#222222"
+          },
+          "note": "🔴 r=10 —— 不在任何圆角阶梯里(阶梯是 4/6/8)。黑底是视频位。"
+        },
+        "com-capabilities/w": {
+          "key": "ed0d48d63e9685f23251171cf7bcc5a872ce5c54",
+          "nodeId": "6496:461",
+          "n": 3,
+          "props": {
+            "类型": [
+              "info",
+              "detail"
+            ],
+            "verified": [
+              "yes",
+              "no"
+            ]
+          },
+          "sample": {
+            "wh": "338x192",
+            "layout": "VERTICAL, gap 16"
+          },
+          "note": "🔴 属性名是中文「类型」,值是英文。供应商能力信息块,verified 控制认证标识。"
+        },
+        "com-header/w": {
+          "key": "ce7864f6a0559bd4bcf0298d249f886338678f71",
+          "nodeId": "6498:623",
+          "n": 2,
+          "props": {
+            "chat状态": [
+              "online",
+              "offline"
+            ]
+          },
+          "sample": {
+            "wh": "1106x60",
+            "layout": "HORIZONTAL, gap 10"
+          },
+          "note": "🔴 属性名「chat状态」中英混排。在线状态直接影响 TM 入口的样子。"
+        },
+        "prod-item/w": {
+          "key": "3df7f2f28b83fa72ef792d9559ae41e2d5ad9c1c",
+          "nodeId": "6633:407",
+          "n": 2,
+          "props": {
+            "size": [
+              "default",
+              "large"
+            ]
+          },
+          "sample": {
+            "wh": "160x244",
+            "layout": "VERTICAL, gap 4"
+          },
+          "note": "产品卡片。160 宽对应响应式规则里的卡片列数计算。"
+        },
+        "_整列表母版(单个 COMPONENT·无 variant)": {
+          "标杆工厂产品列表/w": {
+            "key": "cefc953b161251be785b100e3c01118acd2abbcf",
+            "wh": "1130x382"
+          },
+          "QF供应商列表/w": {
+            "key": "764ca1200b8580e175d30e88756c025c24432473",
+            "wh": "1170x410"
+          },
+          "二级目录供应商列表/w": {
+            "key": "67ed0624345165d5eef01470ef8f3b7a3742293b",
+            "wh": "928x254"
+          },
+          "一级目录供应商列表/w": {
+            "key": "ced430cb8783685a320293fac5dfb1cdc8dbbc08",
+            "wh": "1138x326"
+          },
+          "_note": "命名后缀 /w 表示 Web 端。QF、标杆工厂、一级/二级目录 是 MIC 的具体业务页,做这些页直接取母版。"
+        }
+      },
+      "搜索结果页筛选": {
+        "_page": "搜索结果页筛选✅",
+        "_relevance": "🔴 直接关系到在做的 AI Mode 设计稿 / 首页 AI 入口改版 / 主搜三版还原。",
+        "MIC FilterSidebar-侧边筛选栏组合": {
+          "key": "004ac7b7c7735bffcc655e29171b07aa55397be1",
+          "nodeId": "7454:2954",
+          "n": 3,
+          "props": {
+            "Property 1": [
+              "1280～1024",
+              "1440～1280",
+              "1920～1440"
+            ]
+          },
+          "sample": {
+            "wh": "200x1978",
+            "layout": "VERTICAL, gap 16, pad 20/20/20/12",
+            "fill": "#FFFFFF"
+          },
+          "note": "🔴🔴 三个坑:① 属性未命名(Property 1)② 区间用**全角波浪号 ～** 不是半角 ~ ③ 区间是**从大到小倒着写**的(1280～1024)。侧边栏固定宽 200,左内边距 12 跟其余三边 20 不一样。"
+        },
+        "MIC FilterSidebar-侧边筛选栏部件": {
+          "key": "42b17308b58062d9bce2cff9ad23b3e97f947ad0",
+          "nodeId": "7302:3095",
+          "n": 7,
+          "props": {
+            "Property 1": [
+              "brand-logos",
+              "checkbox-M",
+              "input-ok",
+              "price-range",
+              "radio-S",
+              "title",
+              "Line 1"
+            ]
+          },
+          "sample": {
+            "wh": "33x24",
+            "layout": "HORIZONTAL, gap 10"
+          },
+          "note": "🔴 属性值里混进了 'Line 1' —— Figma 默认图层名漏进了 variant 值。筛选栏的零件:品牌 logo 组 / 复选 / 输入确认 / 价格区间 / 单选 / 标题。"
+        },
+        "MIC FilterSidebar-more/less": {
+          "key": "25d077d2afd76bdf23b432614df83e4f8660bbbc",
+          "nodeId": "7454:1473",
+          "n": 2,
+          "props": {
+            "Property 1": [
+              "Less",
+              "more"
+            ]
+          },
+          "sample": {
+            "wh": "48x22",
+            "layout": "HORIZONTAL, gap 2"
+          },
+          "note": "🔴 Less 大写 L、more 小写 m,同一属性里不统一。"
+        },
+        "filter-title": {
+          "key": "a3772173aca5362807a6a982865f06aabfd057eb",
+          "nodeId": "7330:1715",
+          "n": 2,
+          "props": {
+            "Property 1": [
+              "big",
+              "small"
+            ]
+          },
+          "sample": {
+            "wh": "51x28",
+            "layout": "absolute"
+          }
+        },
+        "MIC Header + Tab / 主搜页顶部组合": {
+          "key": "c8fe82b741eb6c6e5ff7337d9149b8ed2e7a3447",
+          "nodeId": "5920:4070",
+          "n": 4,
+          "props": {
+            "breakpoint": [
+              "1024",
+              "1280",
+              "1366",
+              "1440"
+            ]
+          },
+          "sample": {
+            "wh": "1024x250",
+            "layout": "VERTICAL, gap 20",
+            "fill": "#FFFFFF"
+          },
+          "note": "🔴 主搜页顶部(页头+tab)按四个断点各做了一版 —— 做主搜相关的稿别自己拼,取对应断点那一版。注意断点值是**字符串**。"
+        },
+        "MIC Tab Switch / 主搜页 tab": {
+          "key": "c9645ea298f9866362660b41dc1ad6b3bf852d19",
+          "nodeId": "5920:4037",
+          "n": 4,
+          "props": {
+            "breakpoint": [
+              "1024",
+              "1280",
+              "1366",
+              "1440"
+            ]
+          },
+          "sample": {
+            "wh": "1024x34",
+            "layout": "HORIZONTAL, pad 0/20/0/20"
+          },
+          "note": "主搜页的 tab 切换条,同样四个断点。高 34。"
+        }
+      },
+      "买供VO": {
+        "_page": "买供VO✅",
+        "_structure": "买家侧和供应商侧各一套 header / nav / sider / nav-menu,共 6 个 set + 8 个整块 COMPONENT。",
+        "_newColor": "🔴🔴 供应商 VO 导航有两个色,都不在 33 个 paint style 里:**#406080 = 导航底色**、**#284159 = 选中态底色**(description 里管它们叫 'MIC/VO nav bg' 和 'selected bg')。侧边栏 **#E6ECF2 = 选中态底色**,常态文字 text/main #555、选中文字 #222。买家侧 VO 导航底色是纯黑 #000000。",
+        "vo-supplier-nav": {
+          "key": "74e6600f90e70c2cb0456dc1e1dcdde7fd9161fd",
+          "nodeId": "7297:296",
+          "n": 3,
+          "props": {
+            "state": [
+              "default",
+              "hover",
+              "button"
+            ]
+          },
+          "sample": {
+            "wh": "68x40",
+            "layout": "HORIZONTAL, pad 0/20/0/20",
+            "fill": "#284159（这是**选中态**,不是常态。常态底色 #406080,见 _newColor）"
+          },
+          "note": "🔴 我先前把 #284159 记成了导航底色,错了 —— 它是选中态。字号 14px Roboto 白字。"
+        },
+        "vo-supplier-sider": {
+          "key": "6d9d84db3a7991af86913021d4a1964300473bb6",
+          "nodeId": "7304:2515",
+          "n": 3,
+          "props": {
+            "state": [
+              "button",
+              "default",
+              "hover"
+            ]
+          },
+          "sample": {
+            "wh": "210x30",
+            "layout": "HORIZONTAL, gap 5, pad 5/20/5/46",
+            "fill": "#E6ECF2（这是**选中态**,不是常态）"
+          },
+          "note": "左内边距 46 是给二级缩进留的。🔴 #E6ECF2 是选中态底色,选中文字 #222、常态 #555。"
+        },
+        "vo-buyer-nav": {
+          "key": "b122063a242eacb232d3625136c96b2e215fc722",
+          "nodeId": "7304:9910",
+          "n": 3,
+          "props": {
+            "state": [
+              "button",
+              "default",
+              "hover"
+            ]
+          },
+          "sample": {
+            "wh": "122x42",
+            "layout": "VERTICAL, pad 10/20/10/20",
+            "fill": "#000000"
+          },
+          "note": "🔴 买家侧 VO 导航是**纯黑** #000000,供应商侧是 #284159 深藏青。两侧不一样。"
+        },
+        "vo-buyer-sider": {
+          "key": "db4a006c809a3da43f997b1512628d42c08acf07",
+          "nodeId": "7304:4746",
+          "n": 2,
+          "props": {
+            "state": [
+              "default",
+              "hover"
+            ]
+          },
+          "sample": {
+            "wh": "190x38",
+            "layout": "VERTICAL, pad 8/10/8/10",
+            "r": 6,
+            "fill": "#E6ECF2"
+          }
+        },
+        "vo-buyer-nav-menu (053565e0)": {
+          "key": "053565e0926321fe5f3a6d28930cf1649267461a",
+          "nodeId": "7332:1679",
+          "n": 4,
+          "props": {
+            "Property 1": [
+              "default",
+              "hover",
+              "Botton-default",
+              "Botton-hover"
+            ]
+          },
+          "sample": {
+            "wh": "190x32",
+            "layout": "HORIZONTAL, gap 6, pad 5/10/5/10",
+            "fill": "#FFFFFF"
+          },
+          "note": "🔴🔴 两个问题:① 属性值里 **Botton** 是 Button 的拼写错误 ② 这个 set 跟下面那个**完全同名**。"
+        },
+        "vo-buyer-nav-menu (9b205038)": {
+          "key": "9b205038c9e4a6f7f9b59ee30c529ac02a991cc8",
+          "nodeId": "7304:9960",
+          "n": 2,
+          "props": {
+            "state": [
+              "default",
+              "hover"
+            ]
+          },
+          "sample": {
+            "wh": "180x38",
+            "layout": "HORIZONTAL, pad 8/10/8/10",
+            "r": 6,
+            "fill": "#FFFFFF"
+          },
+          "note": "🔴 与上一条同名,属性名却不同(state vs Property 1)。认 key。"
+        },
+        "_整块母版": {
+          "header-supplier-vo": {
+            "key": "3e64367d00c21eebe36c736b6e88c995a54b4d0c",
+            "wh": "1600x85"
+          },
+          "header-buyer-vo": {
+            "key": "4675a9edae685204832a048c255895eb4bbd0f2e",
+            "wh": "1600x82"
+          },
+          "vo-supplier-nav": {
+            "key": "a6c0fa9cf7be300e1d6d5d91daf30f02157e1dae",
+            "wh": "1600x40"
+          },
+          "vo-buyer-nav": {
+            "key": "b0cd1d7c2a95a711f95354ba80e96873a8125348",
+            "wh": "1600x42"
+          },
+          "vo-supplier-sider": {
+            "key": "f5ca29c97c3c4ddebc0dc3ffa48a9cdb9980d3d3",
+            "wh": "210x782"
+          },
+          "vo-buyer-sider": {
+            "key": "77080854fe9b9dbd3a9dc76d017d5cafbb2e1ec7",
+            "wh": "210x584"
+          },
+          "vo-supplier-nav-menu": {
+            "key": "630b4f32ae7a1c90a14999ad89bd93298447a492",
+            "wh": "404x389"
+          },
+          "vo-buyer-nav-menu": {
+            "key": "913211e705446e1645848b8de591da4e1022651b",
+            "wh": "380x292"
+          },
+          "_note": "🔴 页头高度两侧不同:供应商 85,买家 82。整块 COMPONENT 与同名 COMPONENT_SET 并存,别拿混。"
+        }
+      },
+      "买家登录": {
+        "_page": "买家登录✅",
+        "_caveat": "页面上写「备注：此需求在新规范之前设计，部分细节有出入。」",
+        "_arabic": "🔴🔴 有专门的阿语 RTL 版本:set `verified code entry -Arabic`(key 07690b0b…)和整块 `登录-验证码（阿语）`(key 3cdfc9e9…)。做多语稿别自己镜像,取现成的。配合 memory 里那条「Amiri 只在运营图,项目/UI/交互稿阿语仍用 Roboto」。",
+        "social": {
+          "key": "95865bc06aef84a59f6a1d2db9e514c08dbbc1ea",
+          "nodeId": "6451:8606",
+          "n": 2,
+          "props": {
+            "status": [
+              "hover",
+              "default"
+            ]
+          },
+          "sample": {
+            "wh": "356x44",
+            "r": 21.5,
+            "fill": "#FFFFFF"
+          },
+          "note": "🔴 r=**21.5**,非整数、也不在任何阶梯里(44 高的胶囊按半高算是 22,这里少了 0.5)。社媒登录按钮。"
+        },
+        "email input": {
+          "key": "a4b45b4fa911dc62d72602664a3393e544b3ce4d",
+          "nodeId": "7041:1980",
+          "n": 6,
+          "props": {
+            "status": [
+              "default",
+              "hover",
+              "focused",
+              "typing",
+              "error",
+              "disabled"
+            ]
+          },
+          "sample": {
+            "wh": "356x114",
+            "layout": "VERTICAL"
+          },
+          "note": "注意这里六态叫 status(不叫 state),跟 input/basic 相反。"
+        },
+        "password entry": {
+          "key": "e6f4b61ff539aed1d171dd5d12a71738c56eb130",
+          "nodeId": "7148:928",
+          "n": 8,
+          "props": {
+            "status": [
+              "default",
+              "typing",
+              "hover",
+              "focused",
+              "filled",
+              "error",
+              "disabled",
+              "Password Display"
+            ]
+          },
+          "sample": {
+            "wh": "356x94",
+            "layout": "VERTICAL, gap 10"
+          },
+          "note": "🔴 第八个值 'Password Display' 首字母大写还带空格,其余七个全小写。"
+        },
+        "verified code entry": {
+          "key": "dc78c14f4332868e10173bbf87fb7328fb0fda00",
+          "nodeId": "7148:1791",
+          "n": 5,
+          "props": {
+            "status": [
+              "input",
+              "error",
+              "expire",
+              "disabled",
+              "default"
+            ]
+          },
+          "sample": {
+            "wh": "356x92",
+            "layout": "VERTICAL"
+          },
+          "note": "🔴 有 expire(验证码过期)态 —— 做验证码流程别漏这个。"
+        },
+        "verified code entry -Arabic": {
+          "key": "07690b0be14d2508e87b1208f0256f2475ceede7",
+          "nodeId": "7415:12564",
+          "n": 5,
+          "props": {
+            "status": [
+              "input",
+              "error",
+              "expire",
+              "disabled",
+              "default"
+            ]
+          },
+          "sample": {
+            "wh": "356x92"
+          },
+          "note": "🔴 set 名里是 ' -Arabic'(空格+连字符+Arabic)。"
+        },
+        "verification code input box": {
+          "key": "20a03f0239f5306b2e5eda47f17005514cc1f0ca",
+          "nodeId": "6451:8632",
+          "n": 4,
+          "props": {
+            "state": [
+              "default",
+              "pressed",
+              "error",
+              "disabled"
+            ]
+          },
+          "sample": {
+            "wh": "58x58",
+            "layout": "absolute"
+          },
+          "note": "单个验证码格子,58x58。这个用 state 不用 status。"
+        },
+        "resend": {
+          "key": "1de6084eebb59c55cf1344495befea123e2fde24",
+          "nodeId": "6451:8625",
+          "n": 3,
+          "props": {
+            "state": [
+              "press",
+              "default",
+              "hover"
+            ]
+          },
+          "sample": {
+            "wh": "91x24"
+          },
+          "note": "🔴 值是 press 不是 pressed,而同页 verification code input box 用的是 pressed。"
+        },
+        "_整块母版": {
+          "登录": {
+            "key": "87c32da526f4119215576f608c5f37e64e596786",
+            "wh": "420x560"
+          },
+          "输入验证码": {
+            "key": "5b2a91d231bfe8fc899baa93b2fe3366965e8280",
+            "wh": "420x560"
+          },
+          "登录-上次社媒登录": {
+            "key": "65e0a4ddf8231b74d02be72f90619160a79cd2af",
+            "wh": "420x560"
+          },
+          "登录-验证码（阿语）": {
+            "key": "3cdfc9e921cd6622dc91afe0e3a978163dca1709",
+            "wh": "420x560"
+          },
+          "last login/default": {
+            "key": "f570021c1749c28c7755a9188c38f8119cc90300",
+            "wh": "420x560"
+          },
+          "_note": "登录弹层统一 420x560。"
+        }
+      },
+      "MIC 页头页脚": {
+        "_page": "MIC 页头页脚✅",
+        "_headline": "🔴🔴 证实了 memory 里那条判据:MIC **没有**一套全站通用页头。实际 **5 族页头 + 3 族页脚**并存,高度和断点覆盖都不一样。出任何涉及页头页脚的稿,第一件事是声明动的是哪一族。",
+        "_heights": "页头 167 / 122 / 80 / 85 / 72,页脚 640 / 205 / 169 —— 没有两族相同。",
+        "_breakpointInconsistency": "🔴 断点覆盖不一致:header-home 有 1920 但没 768;header-activity 只有 768/1024/1440;header-simple-mlan 有 768。做响应式稿要按选中那一族的断点集合走,不能套响应式页那 6 个断点。",
+        "_newColor": "🔴 页脚底色 **#E3E4E6**,不在 33 个 paint style 里、也不在 color 页上。另 vo-supplier-nav 的 #284159 同样不是 token。",
+        "_nonScaleRadius": "🔴 这一页有 20 处非阶梯圆角(3px×8 / 9px×4 / 13px×8),是全部 12 个抽测组件页里唯一有这种值的。",
+        "headers": {
+          "header-home": {
+            "key": "a168336023dc8795873a6627825cd89a9a492e07",
+            "nodeId": "5920:3448",
+            "n": 10,
+            "props": {
+              "pageType": [
+                "home",
+                "search-result"
+              ],
+              "breakpoint": [
+                "1024",
+                "1280",
+                "1366",
+                "1440",
+                "1920"
+              ]
+            },
+            "sample": {
+              "wh": "1024x167",
+              "layout": "VERTICAL, pad 15/0/0/0",
+              "fill": "#FFFFFF"
+            },
+            "note": "🔴 唯一带 pageType 的一族:首页和搜索结果页共用这族但形态不同。也是唯一覆盖 1920 的。高 167 最高(带搜索框和目录导航)。"
+          },
+          "header-simple": {
+            "key": "fd00dd16f7a7ec10496216fac0b232d19118770d",
+            "nodeId": "6800:1440",
+            "n": 4,
+            "props": {
+              "breakpoint": [
+                "1440",
+                "1366",
+                "1280",
+                "1024"
+              ]
+            },
+            "sample": {
+              "wh": "1440x72",
+              "layout": "VERTICAL, pad 15/20/15/20",
+              "fill": "#FFFFFF"
+            },
+            "note": "最矮的一族(72),用于流程页/落地页这类不需要全导航的场景。"
+          },
+          "header-activity": {
+            "key": "1e0be819ae6ebcf30742e8e33fc4f968d292e627",
+            "nodeId": "5938:1059",
+            "n": 3,
+            "props": {
+              "breakpoint": [
+                "768",
+                "1024",
+                "1440"
+              ]
+            },
+            "sample": {
+              "wh": "768x80",
+              "layout": "HORIZONTAL, pad 0/20/0/12",
+              "fill": "#FFFFFF"
+            },
+            "note": "🔴 运营活动页专用。只有 3 个断点、且是唯一从 768 起的。左右内边距不对称(左12 右20)。做招商专题/活动页用这族。"
+          },
+          "header-mlan（西语示例）": {
+            "key": "986de30bb85133aea614d51ae529b8e4a1c712b3",
+            "nodeId": "5920:4083",
+            "n": 4,
+            "props": {
+              "breakpoint": [
+                "1280",
+                "1366",
+                "1440",
+                "1024"
+              ]
+            },
+            "sample": {
+              "wh": "1280x122",
+              "layout": "VERTICAL, pad 20/0/0/0",
+              "fill": "#FFFFFF"
+            },
+            "note": "🔴 多语站页头(mlan = multi-language)。名字里带「（西语示例）」说明画的是西班牙语示例,不是只能用于西语。高 122,比 header-home 矮 45 —— 多语站没有目录导航那一层。"
+          },
+          "header-simple-mlan（西语示例）": {
+            "key": "6fb0d86422f1a8d2e9d861b48193688076d99ec7",
+            "nodeId": "6028:990",
+            "n": 5,
+            "props": {
+              "breakpoint": [
+                "1440",
+                "1366",
+                "1280",
+                "1024",
+                "768"
+              ]
+            },
+            "sample": {
+              "wh": "1440x85",
+              "layout": "VERTICAL, pad 1/0/1/0",
+              "fill": "#FFFFFF"
+            },
+            "note": "多语站的简版页头,覆盖 5 个断点(含 768)。上下内边距各 1px 很特别。"
+          }
+        },
+        "footers": {
+          "footer-home": {
+            "key": "376bc4609d45779c42f5c6772e7477578d346f3c",
+            "nodeId": "6070:1174",
+            "n": 4,
+            "props": {
+              "breakpoint": [
+                "1440",
+                "1366",
+                "1280",
+                "1024"
+              ]
+            },
+            "sample": {
+              "wh": "1440x640",
+              "fill": "#E3E4E6"
+            },
+            "note": "主站完整页脚,高 640。"
+          },
+          "footer-mlan": {
+            "key": "5fd4fc78b2bbff7748d00744258b918558eaca3c",
+            "nodeId": "6191:1547",
+            "n": 4,
+            "props": {
+              "breakpoint": [
+                "1440",
+                "1366",
+                "1280",
+                "1024"
+              ]
+            },
+            "sample": {
+              "wh": "1440x205",
+              "layout": "VERTICAL, gap 20, pad 30/0/60/0",
+              "fill": "#E3E4E6"
+            },
+            "note": "多语站页脚,高 205 —— 只有主站的三分之一。"
+          },
+          "footer-activity": {
+            "key": "6a98eb240195a4443388086e660609c7d05c10f0",
+            "type": "单个 COMPONENT(无 variant)",
+            "sample": {
+              "wh": "1440x169"
+            },
+            "note": "活动页页脚,最矮。没有断点 variant。"
+          }
+        },
+        "searchBars": {
+          "_note": "页头里的搜索条被拆成了独立组件(命名前缀 nail-),做主搜相关改版时可以单独换。",
+          "nail-search-bar": {
+            "key": "9e0662d2bf3a5c33db11a663a8cb691b79f3fe4a",
+            "wh": "704x41"
+          },
+          "nail-search-bar（西语）": {
+            "key": "29bb49d03f874a59e43d425caa8c3cf34c83d0cd",
+            "wh": "893x41",
+            "note": "🔴 西语版宽 893 vs 主站 704 —— 差 189px。多语言文案变长直接改搜索框宽度,做多语稿别照抄主站宽度。"
+          },
+          "header-activity-nail-search-bar": {
+            "key": "9c5ce1304c51981c577bbabbd69ce5824a665228",
+            "wh": "880x46"
+          },
+          "header-home/nail-related-search": {
+            "key": "b36c7f7d92bf69a81c3eddb89f76490583ca333d",
+            "wh": "673x18",
+            "note": "搜索框下方的相关搜索词行。"
+          }
+        },
+        "_worstCompliance": "🔴🔴 这一页是全部打勾页里**组件内部规范性最差**的:33 处 Roboto Medium(规范只允许 Regular/Bold)+ 20 处非阶梯圆角(3/9/13)。两项都是全库唯一集中在一页的。引用这一页的组件时,别把它的字重和圆角当规范照抄。"
+      },
+      "商机按钮规范说明": {
+        "_page": "商机按钮规范说明✅",
+        "_type": "这一页没有 component set,是**业务规则说明页**(两个 SECTION:最新触屏端按钮 1228x2454 / 商机按钮文案 1586x751)。价值在规则和文案,不在组件。",
+        "_styleSource": "页面上写「商机按钮样式规范（直接引用飞鹊 button）」—— 商机按钮不是独立组件,就是飞鹊 button。所以取值走 button 那条(sm4/md6/lg8,主色按买家红)。",
+        "ctaCopyRules": {
+          "_verbatim": "交易品：Buy Now、Send inquiry ｜ 商机品1：Start Order、Send inquiry ｜ 可交易的商机品2：Start Order、Send inquiry ｜ 多语只用Chat",
+          "_reading": "🔴 商品按可交易程度分三类,CTA 组合不同:交易品用 Buy Now,商机品用 Start Order,两者都配 Send inquiry 做次要 CTA。**多语站只给 Chat**,不给下单入口。做商详/搜索结果页的 CTA 别自己定,按这条。"
+        },
+        "boldRule": {
+          "_verbatim": "商机按钮文案提供 400、700 两种字重,结合页面布局与信息权重判定加粗规则：当页面仅展示单组商机按钮（如产品详情页），文案设置为加粗样式，提升信息辨识度；当页面存在多组商机按钮并列排布（如搜索结果页），文案使用常规字重、不加粗，维持整体视觉均衡。",
+          "_reading": "🔴 加粗不是风格偏好,是按「页面上有几组商机按钮」定的:单组(商详)加粗 700,多组并列(搜索结果页)不加粗 400。这条可以直接引用,是平台既有实践。"
+        },
+        "multiLangCopy": {
+          "_source": "页面上写「多语种文案对照表（取自翻译平台）」—— 不是设计师编的,是翻译平台的正式译文,可直接引用。",
+          "Send Inquiry": {
+            "fr": "Envoyer demande / Envoyer une Demande",
+            "ru": "Отправить Запрос",
+            "pt": "Enviar Inquérito",
+            "es": "Enviar Consulta",
+            "de": "Anfrage Absenden",
+            "nl": "Verstuur aanvraag",
+            "it": "Invia Richiesta",
+            "hi": "जांच भेजें",
+            "th": "ส่งแบบสอบถาม",
+            "tr": "Talep Gönder",
+            "id": "Kirim Permintaan",
+            "ja": "お問い合わせ",
+            "ko": "문의 보내기"
+          },
+          "Start Order on App": {
+            "fr": "Commander sur l'App / Commencer la Commande",
+            "ru": "Заказать в App",
+            "pt": "Iniciar Pedido no App",
+            "es": "Iniciar pedido en la App",
+            "de": "Bestellung in App starten",
+            "nl": "Bestel via de App",
+            "it": "Inizia Ordine sull'App",
+            "hi": "App पर ऑर्डर शुरू करें",
+            "th": "เริ่มสั่งซื้อที่App",
+            "tr": "App'te sipariş başlat",
+            "id": "Pesan di aplikasi",
+            "ja": "Appで注文を開始",
+            "ko": "App 에서 주문 시작"
+          },
+          "otherLabels": [
+            "Buy Now",
+            "Start Order",
+            "Chat Now",
+            "Send Inquiry",
+            "Find similar items",
+            "Discuter(fr Chat)",
+            "Acheter(fr Buy)"
+          ],
+          "_widthConstraint": "页面上标了「72（最大）」,推断是按钮文案的最大宽度或字符数上限,做多语适配时按最长译文排版(如德语 Bestellung in App starten 明显比英文长)。",
+          "_suspectTypo": "🔴 页面上出现两处 'Start Order quest',疑似 'Start Order' 的残留或截断错误,不像正式译文。"
+        },
+        "instanceNaming": {
+          "_list": [
+            "商机按钮/SendInquiry",
+            "商机按钮/StartOrderOnApp",
+            "商机按钮/PrimaryBtn",
+            "商机按钮/SecondaryBtn",
+            "商机按钮/linearBtn",
+            "商机按钮/icon-btn"
+          ],
+          "_sizes": "每种再分 lg / md / sm,各带 -hover:如 商机按钮/PrimaryBtn / lg 与 / lg-hover。",
+          "_typo": "🔴 有一个实例名叫 `商机按钮/linearBtnr / lg` —— linearBtn 多了个 r。",
+          "_note": "linearBtn 是描边款(对应飞鹊 button 的 secondary/dashed 那类),PrimaryBtn 是实心款。"
+        }
+      },
+      "_headerBreakpointShift": {
+        "_why": "🔴 header-home(5920:3448) 的 1440 与 1024 **不是同一版缩放,是两种布局**。实测印证了「1024 几乎永远跟桌面不一样」。",
+        "variant 名格式": "无空格:`pageType=home,breakpoint=1440`。pageType 两档 home / search-result,breakpoint 五档 1024/1280/1366/1440/1920。",
+        "1440x123 两行": "第一行:左 logo(Made-in-China + 副标语) + 中间搜索框(Products 下拉 + 相机图搜 + 红色放大镜按钮) + 右侧四项 Post My RFQ / Messages / Inquiry Basket / Account。第二行:All Categories + SourcingAI / Secured Trading Service / Video Channel / Top-ranking Product,右侧 Buyer / Help / Apps / English / Rules。",
+        "1024x167 三行": "🔴 高度 123→167。logo **从左移到居中并独占一行**,左侧出现汉堡菜单。搜索行左边并入 All Categories。右侧功能项 **从 4 个减到 2 个**(Messages 和 Account 消失)。第三行导航只剩左侧四项,**右侧 Buyer/Help/Apps/English/Rules 整块消失**。",
+        "_做法": "做响应式稿别拿 1440 缩放去交 1024,两档都要单独摆。"
+      },
+      "_supplierListDiff": {
+        "_why": "两个供应商列表整块的动作按钮位置和样式不一样,复制母版前先确认要哪个。",
+        "一级目录供应商列表/w": "1138x326(nodeId 12395:8579)。左上供应商名 + Audited/10D/6 标识 + 右上 Follow。四行属性 Business Type / Main Products / Quick Response / Fast Delivery + Request Free Catalogs 链接。🔴 动作在**左下**:Send Inquiry(红色实心) + Chat Now(白底描边)。右侧 3 个产品卡(US$30 / Set + MOQ) + 一个视频位(播放按钮 + Video 1/2 角标)。",
+        "QF供应商列表/w": "1170x410(nodeId 12395:9141)。顶部供应商名 + Audited 15 yrs + 公司类型。🔴 动作在**右上**:Send Inquiry(白底描边,没有 Chat Now)。下方 4 个产品卡(名称两行 + 价格区间 US$3.00 - 16.00 **700 字重** + 100 Set (MOQ)) + 视频位。"
+      },
+      "_filterSidebar": {
+        "nodeId": "7454:2954",
+        "size": "整 set 880x2018,3 个宽度档",
+        "结构": "Filter 标题 → 三个认证项(Audited / Secured Trading / Leading Factory,各带彩色 logo) → Business Type → R&D Capacity → Category → Min Order(Less Than + OK) → Price(Min ~ Max + OK) → Product Features → Type → Usage → Certification → More Filters(Enter Attributes + OK)。分组多的带 `More ⌄` 收起。",
+        "🔴 控件不统一": "**Category 用的是 radio(单选圆点),其余分组全是 checkbox(方框)**。照抄时容易全画成方框。",
+        "🔴 底部有运营坑位": "筛选栏最底下嵌一个 `Banner 原170*90` 的空位 —— 侧边筛选栏里是有广告位的,做稿别漏。"
+      }
+    },
+    "MIC FilterItem": {
+      "key": "72506eff5619a1cef95d2b084f3d95ccae91b191",
+      "id": "4453:551",
+      "页": "业务组件（探索）",
+      "v": 5,
+      "props": "type[checkbox-list|checkbox-list-more|input-ok|price-range|brand-logos]def=checkbox-list",
+      "尺寸": "273 宽 · checkbox-list 167 / checkbox-list-more 391 / input-ok 82 / price-range 82 / brand-logos 83",
+      "说明": "LV 搜索结果页左侧筛选项 v2。2026-04-19 实测线上 sofa 搜索页 .filter-item。每块顶部 1px #E6E6E6 分割线 + 15px 上边距，行间 gap=10。选项行=飞鹊 checkbox 实例+标签（不是纯文字）。More 箭头用 icon=right。🔴 输入框+OK 按钮是业务定制样式（.filter-item-btn），不是标准飞鹊 button，保留自绘以匹配线上 40×33 灰按钮。"
+    },
+    "MIC FilterSidebar": {
+      "key": "f53d86def06ac2b6d80cb8bc49a42c0016b802ea",
+      "id": "4456:442",
+      "页": "业务组件（探索）",
+      "v": "single",
+      "尺寸": "308x1368",
+      "说明": "LV 搜索结果页左侧筛选侧栏 v2。容器宽 308，padding 0/19/10/10，内容区 273（与 FilterItem 等宽）。VERTICAL gap=0，块间距靠每块内部 padding-top:15 + border-top 提供。线上实测有 20 个分组，本组件取 7 项样板。标题 Filter 22/Bold/28。"
+    },
+    "MIC Supplier Ad / 主搜页聚焦广告": {
+      "key": "0fbc3c51117e04842f0bf3671167940f06d6ac29",
+      "id": "5265:2216",
+      "页": "业务组件（探索）",
+      "v": 5,
+      "props": "breakpoint[2100|1920|1440|1366|1280]def=2100",
+      "尺寸": "🔴 5 断点实测：2100 和 1920 都锁 1500x342 · 1440→1130x312 · 1366→1056x294 · 1280→970x272",
+      "说明": "主搜页供应商视频广告位。AD 标识在右下角（12px Roboto Regular，text/title + opacity 0.15，左上圆角 20）。视频区色块示意用 background 02 + 中心 icon=媒体-play 48×48。视频上浮层：toggle 121×30（camera-seg + gallery-seg + 1/1 计数）· pop360 46×46（半透明深灰 opacity 0.6 + icon=媒体-panorama 30×30 白）。所有白 icon/文字绑 other/white。用了飞鹊 button primary/secondary red shape=round + brand logo audited/supplier-star/leading-factory。"
+    },
+    "MIC TM Bar / 主搜页贴底TM标": {
+      "key": "d32760ae0578ecdeba3a43bcfe7aee09bae6e3a9",
+      "id": "5306:2554",
+      "页": "业务组件（探索）",
+      "v": 1,
+      "props": "state[mini]def=mini（🔴 单值死轴·只有折叠态）",
+      "尺寸": "200x35",
+      "说明": "主搜页贴底 TM 标。横向 SPACE_BETWEEN，白底 + 圆角 8/8/0/0（贴底胶囊）+ 顶左右 1px 分割线（无下边）。左：16×16 状态圆点 + TradeMessenger 14/Regular #222；右：icon=符号&箭头-down 16×16 灰 #777。🔴 展开态没做成 variant —— live 行为是展开成高约 240 的 chat 预览面板含 Chat Now 红按钮。定位 position:fixed bottom:0 right:70 z-index 100000。数据来源 2026-04-29 实测 #webtm-wrapper。"
+    },
+    "MIC Footer Search / 搜索结果页脚": {
+      "key": "82a1826d2b2f416e3e84d67ff7989cf5b2522cfe",
+      "id": "6173:1330",
+      "页": "业务组件（探索）",
+      "v": 4,
+      "props": "breakpoint[1440|1366|1280|1024]def=1440",
+      "尺寸": "1440/1366/1280 都高 280 · 1024 高 316",
+      "说明": "🔴 这是第 4 族页脚（原记录只有 3 族）。1024 断点比其他高 36px。"
+    },
+    "MIC Footer Product / 产品详情页脚": {
+      "key": "0cf67c195a3246aec24f3092a3e5f06515fea972",
+      "id": "6181:1549",
+      "页": "业务组件（探索）",
+      "v": 4,
+      "props": "breakpoint[1440|1366|1280|1024]def=1440",
+      "尺寸": "1440/1366/1280 都高 205 · 1024 高 241",
+      "说明": "🔴 这是第 5 族页脚。同样 1024 比其他高 36px。"
+    },
+    "mic-logo": {
+      "key": "16b912f2a723fc29a132f2c1b05fae23cc2c25b0",
+      "id": "4596:1086",
+      "页": "业务组件（探索）",
+      "v": 1,
+      "尺寸": "240x46（固定）",
+      "说明": "MIC 品牌 LOGO。Vector 文字「Made in China」+ 下划线。🔴 品牌红 #DA291C 允许硬编码、不绑 Paint Style、不允许 override 颜色。用在所有 MIC 页面品牌标识 + VO 后台顶栏左侧。"
+    },
+    "vo-header": {
+      "key": "56bd0fd58dd6219ded4f62ab47db34db8f3f4b9b",
+      "id": "4596:881",
+      "页": "业务组件（探索）",
+      "v": 1,
+      "尺寸": "1600x85（固定高）",
+      "props": "state[default]（单值死轴·内部文字/LOGO 靠实例 override）",
+      "说明": "VO 后台顶栏。MIC LOGO 左 240×46 + 右侧 m-header-menu（账户/消息/通知/询盘篮/App/语言切换）。菜单辅助文字全 12px、账户主文字 14px，跟 vo-nav 的 14px 区分。badge 18px 红底白字 12px。",
+      "同名多份": "🔴 本页有两个 vo-header，另一个 key=39695a45c9285438084e49a551d30cb8e0382cf4 id=4598:827，description 一字不差。用之前确认哪个是当前版本。"
+    },
+    "vo-nav": {
+      "key": "39dab5212ae12ec6520eb826e8d2c7ce00ef8cb5",
+      "id": "4596:912",
+      "页": "业务组件（探索）",
+      "v": 3,
+      "尺寸": "1600x40",
+      "props": "selected[business|showroom|product]def=business",
+      "说明": "VO 后台二级导航。8 个 vo-nav-item + 数据罗盘 quick 入口。14px Roboto 白字。绑 MIC/VO nav bg · nav selected bg · nav quick bg。",
+      "同名多份": "🔴 另一个 key=e7f1bfaff5c3944f1c1974da0f62d5e56028ec1e id=4598:858。"
+    },
+    "vo-sider": {
+      "key": "7d9470408f1b2b99d1c95e78c1f7601469b0964b",
+      "id": "4596:973",
+      "页": "业务组件（探索）",
+      "v": 2,
+      "尺寸": "210x782",
+      "props": "group[inquiry|settings]def=inquiry",
+      "说明": "VO 后台左侧栏。nav-list 分组 + nav-gap-line 分隔。绑 MIC/VO sidebar selected bg。分组标题 #888、普通项 #555。",
+      "同名多份": "🔴 另一个 key=84b5b813c3385eb5539dc87f4288c09fe387c813 id=4598:919。"
+    },
+    "ProductCard-主搜": {
+      "key": "e9d2a2f857be9da599aa035eef5e36d7b28bd034",
+      "id": "7490:1339",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[ProductCard——主搜|ProductCard-hover——主搜]（🔴 属性未命名，hover 被做成 variant 值不是独立轴）",
+      "尺寸": "350x585（常态和 hover 同尺寸）",
+      "说明": "主搜结果页商品卡·网格型。🔴 页名带「（待更新）」—— 作者自己标的，引用前对一下线上。"
+    },
+    "ProductCard-QP": {
+      "key": "dc65800d98b1fc0dccf082213f75a3996ec1641e",
+      "id": "7490:1338",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[ProductCard——QP|ProductCard-hover——QP]（属性未命名）",
+      "尺寸": "324x560",
+      "说明": "QP 页商品卡·网格型。🔴 页名带「（待更新）」—— 作者自己标的，引用前对一下线上。"
+    },
+    "ProductCard ——LV": {
+      "key": "dcd798335ef12b6f755ade543bf41ee0b277234b",
+      "id": "6717:1481",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "state[Default|Find similar items]（🔴 值首字母大写且带空格）",
+      "尺寸": "300x554",
+      "说明": "LV 页商品卡·网格型。🔴 它的第二态不是 hover 而是「Find similar items」（找相似）—— 跟另外两个 ProductCard 的轴语义不同。🔴 页名带「（待更新）」—— 作者自己标的，引用前对一下线上。"
+    },
+    "ProductCard-主搜(List)": {
+      "key": "ed698a0ad82597bb86184910097fc42b52cbeae7",
+      "id": "7974:7314",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[ProductCard—— 主搜(List)|ProductCard—— 主搜(List)-hover]（🔴 值里有多余空格）",
+      "尺寸": "1167x323",
+      "说明": "主搜结果页商品卡·列表型（通栏）。🔴 页名带「（待更新）」—— 作者自己标的，引用前对一下线上。"
+    },
+    "ProductCard-QP(List)": {
+      "key": "2a7119b4f75ee0d570e342aa6a331e722f89b6ae",
+      "id": "7974:7315",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[ProductCard-QP(List)|ProductCard-QP(List)-hover]",
+      "尺寸": "1518x320",
+      "说明": "QP 页商品卡·列表型。🔴 页名带「（待更新）」—— 作者自己标的，引用前对一下线上。"
+    },
+    "ProductCard——LV(List)": {
+      "key": "2a73e30c98d5a4c64407b42cd096aaf0028463a7",
+      "id": "7490:3336",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[ProductCard——LV(List)|ProductCard——LV(List)-hover]",
+      "尺寸": "1520x281（两态同尺寸）",
+      "✅ 已修（2026-09-01·吉吉授权）": {
+        "修之前": "读属性直接抛 Component set has existing errors，setProperties 完全用不了。根因：两个 variant 的属性轴数量不一致 —— 一个叫 `Property 1=ProductCard-List`（单轴），另一个叫 `Property 1=Product List ——LV, Property 2=Property 22`（双轴，第二轴还是 Figma 默认名）。",
+        "怎么修的": "把两个 variant 统一成单轴 `Property 1`，值按同族惯例写成 `<名>` / `<名>-hover`，并把常态排到第一位。改名不动节点 id。",
+        "改之前查的两件": "① 全文件实例引用数 = **0**，改它零风险 ② 逐个看结构定语义（见下条）",
+        "🔴 语义是按结构推断的": "`7252:166` 只有 1 个子节点、是个套着同页单体组件 `Product List-hover` 的壳，且文案里有「Find similar items」→ 判为 **hover 态**；`8094:1858` 有 2 个真实 Frame、无找相似浮层 → 判为**常态**。**本意若不同，把两个名字对调即可**（跟 Web 端 Collapse-Item 那次同一类推断，留同样的回退路）。",
+        "修完跑门": "52 违规 / 12 通过。其中 **2 条「命名」是我的改动引入的**（variant 值含大写字母）—— 但同族其他三个 ProductCard **也各报 2 条一模一样的**（主搜 2 / QP 2 / 主搜(List) 2），是同族惯例本身违规。改成小写会让这个 set 成为 5 个卡片组件里唯一的异类，所以保持跟同族一致。其余 50 条（零硬编码 18 · 图层名待核 18 · 表达重复 7 · 固高未申报 3 · description 2 · 默认名 2）全是库里既有的，且 52 条是同族里最低的（对照 61/102/66）。"
+      },
+      "🔴🔴 用之前必看：默认 variant 是 hover 态": "`defaultVariant` = `7252:166`（**hover 态**）。import 后不显式 setProperties 会直接拿到 hover 态的卡片。必须写 `setProperties({\"Property 1\":\"ProductCard——LV(List)\"})` 才是常态。"
+    },
+    "similar Btn": {
+      "key": "2612a77b3b8efabca77b53a82b00d73930af0790",
+      "id": "8094:1666",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[similar icon|similar icon-expand]",
+      "尺寸": "折叠 40x40 · 展开 161x40",
+      "说明": "商品卡上的「找相似」按钮，hover 展开成带文字的胶囊。配合 ProductCard ——LV 的 Find similar items 态用。"
+    },
+    "product-image": {
+      "key": "0c3f8f4cf9a4b6c80cdac1ac26dfbdf5384c8ed3",
+      "id": "8108:3514",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[default|hover]",
+      "尺寸": "310x310",
+      "说明": "网格型商品卡的图片区。"
+    },
+    "product-image(list)": {
+      "key": "ca9cb3a253b2c3e46b8d4d22c730ee9c7d49ae1d",
+      "id": "8108:3686",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[Default|hover]（🔴 Default 大写、hover 小写）",
+      "尺寸": "280x280",
+      "说明": "列表型商品卡的图片区。"
+    },
+    "product/QP-image": {
+      "key": "02cba4a0aec20875c3861a5e52d968a903b0a59d",
+      "id": "8108:4081",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[QP-image|QP-image-hover]",
+      "尺寸": "284x284"
+    },
+    "product/QP-image(list)": {
+      "key": "619c5169a6bda12a3e5cda8b4e5a5e4d1f6246b5",
+      "id": "8108:4110",
+      "页": "产品列表+橱窗（待更新）",
+      "v": 2,
+      "props": "Property 1[QP-image(list)|QP-image(list)-hover]",
+      "尺寸": "280x280"
+    },
+    "product-card": {
+      "key": "28b782a96cab654cfd7d9c0f37ac24058a67ed74",
+      "id": "10752:2633",
+      "页": "产品列表+橱窗（待更新）",
+      "v": "single",
+      "尺寸": "253x367",
+      "说明": "另一个小尺寸商品卡，无 description，用途待确认。"
+    },
+    "_pageResidue_产品列表橱窗": {
+      "说明": "这一页还有 6 个单体 COMPONENT 是从 set 里拆出来的或默认名残留，用之前先确认不是废弃件。",
+      "ProductCard ——LV(单体)": "3cf1efa1d228ffd781b8c5798069c8c2b4b031a5 · 300x554",
+      "ProductCard-QP/Variant3": "65ac1591e56d0177b1a3d91d316579488f7a884a · 324x560",
+      "ProductCard-主搜/Variant3": "688f21bbc9b7fb282d97770d8fabb8d90edc1b20 · 350x587（🔴 比 set 里的 585 高 2px）",
+      "ProductCard——LV(List)/Product List ——LV/Default": "2e802d9a7a7452cf37ab015c5ce5d3d4d83004ba · 1520x281",
+      "ProductCard-主搜(List)(单体)": "19a892a69633e0a5efb73cd8a0696ed2591dc60f · 1167x323",
+      "ProductCard-QP(List)(单体)": "c8420c7fc5d54b228cd1727c0f9aeec9ec530141 · 1518x320",
+      "Product List-hover": "581c7c3244e2d819e0629662f64a934249fea858 · 1520x281"
+    },
+    "_pageResidue_业务组件探索": {
+      "说明": "这一页有 4 个默认名/残留件。",
+      "variant=2,:hover=false": "74fd39dd340240ba3afeac5ef7649b178b28bf23 · 190x37（🔴 图层名就是 variant 串，是从 set 拆出来的残留）",
+      "variant=1,:hover=false": "e8dc12bec0c6e69c890387d4eca7ed13a8e80462 · 190x37",
+      "variant=1,:hover=true": "c9e2409e78f2fb90045fcbd384ae7533107edba3 · 190x37",
+      "Component 2": "bf1f7933437241f469c8c9cacb178e3abf390453 · 7016:5265 · 4 变体 · 🔴 Figma 默认名 set，属性是中文「节点[1440|1366] × 位置[首页|主搜]」，首页 123 高、主搜 142 高。看着是页头，但名字没改无法确认用途。",
+      "产品示例图": "229efce0750bbe2876193a1da9291fbc7c75a089 · 1024x1024（占位图素材）"
+    },
+    "_footerCensus": {
+      "_说明": "🔴 2026-09-01 全文件精确清点（扫 77 页所有名字含 footer/页脚/页尾 的组件）。做涉及页脚的稿，第一件事是声明动的是哪一族。",
+      "实测结论": "Web 端 Figma 组件库里**只有 5 个页脚组件**。",
+      "🔴 跟 memory「6 套页脚」的口径差异": "memory 的 reference-mic-global-header-footer 记的是「6 套页脚」，那是从 PRD 学的**线上业务口径**（线上实际跑着几套）；这里数的是**Figma 组件口径**（组件库里做了几个）。两个口径不一样，线上有的 Figma 未必做了。别拿一个否定另一个 —— 要判某一套线上页脚在 Figma 里有没有对应组件，逐个对名字。",
+      "五个页脚（含各自断点高度实测）": {
+        "footer-home": {
+          "key": "376bc4609d45779c42f5c6772e7477578d346f3c",
+          "id": "6070:1174",
+          "页": "MIC 页头页脚✅",
+          "断点": 4,
+          "高度": "1440/1366/1280 都是 640 · **1024 只有 242**",
+          "🔴": "1024 比其他断点矮 398px —— 不是缩放，是换了另一套结构。做 1024 稿绝不能套桌面版。"
+        },
+        "footer-activity": {
+          "key": "6a98eb240195a4443388086e660609c7d05c10f0",
+          "id": "6187:1342",
+          "页": "MIC 页头页脚✅",
+          "断点": "单组件",
+          "高度": "1440x169",
+          "🔴": "只做了 1440 一个断点，其他宽度没有。"
+        },
+        "footer-mlan": {
+          "key": "5fd4fc78b2bbff7748d00744258b918558eaca3c",
+          "id": "6191:1547",
+          "页": "MIC 页头页脚✅",
+          "断点": 4,
+          "高度": "1440→205 · 1366→223 · 1280→269 · 1024→269",
+          "🔴": "**断点越窄越高**，跟 footer-home 的方向相反（footer-home 是越窄越矮）。多语站页脚内容换行导致。"
+        },
+        "MIC Footer Search / 搜索结果页脚": {
+          "key": "82a1826d2b2f416e3e84d67ff7989cf5b2522cfe",
+          "id": "6173:1330",
+          "页": "业务组件（探索）·未打勾",
+          "断点": 4,
+          "高度": "1440/1366/1280 都 280 · 1024→316"
+        },
+        "MIC Footer Product / 产品详情页脚": {
+          "key": "0cf67c195a3246aec24f3092a3e5f06515fea972",
+          "id": "6181:1549",
+          "页": "业务组件（探索）·未打勾",
+          "断点": 4,
+          "高度": "1440/1366/1280 都 205 · 1024→241"
+        }
+      },
+      "🔴 两条跨族判据": [
+        "**没有一族页脚覆盖全部断点**：footer-activity 只有 1440。要 1024 的活动页脚，库里没有。",
+        "**1024 断点在所有页脚上都是异类**：要么骤降（footer-home 640→242），要么加高（其余四族 +36 或更多）。1024 从来不是桌面版的等比缩放。"
+      ]
+    },
+    "_defaultVariantFact": {
+      "_说明": "🔴 2026-09-01 实测出来的 Figma 机制事实，修 ProductCard——LV(List) 时撞到的。",
+      "事实": "`COMPONENT_SET.defaultVariant` 是**只读的，而且插入顺序改不动它**。我用 `set.insertChild(0, 常态variant)` 把常态排到了第一位，重新读 `defaultVariant` 仍然指向 hover 那个（`7252:166`），`componentPropertyDefinitions` 的 `defaultValue` 也还是 hover。",
+      "🔴 为什么重要": "这是对旧判据「`children[0]` 不是默认 variant」的加强版 —— 旧判据说的是**读的时候别用 children[0] 当默认**；现在还知道**写的时候也改不动它**。",
+      "实际影响": "库里任何一个 set，只要它的 defaultVariant 恰好是个非常态（hover / selected / 错误态），import 后不显式 setProperties 就会拿到那个态，而且**你没法通过排序修正它**。已知两例：本 set 默认是 hover；移动端 `移动端icon` 默认是 `品牌图形&标准功能图标-android`。",
+      "怎么办": "import 后一律显式 setProperties，别指望默认值是你要的那个。"
+    }
+  },
+  "pagesRemaining": [],
+  "demoWorkflow": {
+    "_why": "吉吉 2026-08-31:学组件不只为 Figma 设计稿,也为做 1:1 的 HTML demo —— 以后做 demo 用什么图标和组件,直接从 Figma 里找。",
+    "_authority": "🔴🔴 **Figma 组件库是最终规范**(吉吉 2026-08-31 明确)。`assets/docs/飞鹊Web组件库.css` 是它的一个**实现**,会滞后。两边不一致时以 Figma 为准;CSS 缺的或旧的,从 Figma 导出补。（我先前写成『做 demo 的权威源是 CSS』,不准 —— 已改。CSS 的价值是省事:值对得上的地方直接用它的类,不必手写。）",
+    "_chain": "Figma 找到组件与 variant → 查本清册的 cssClass → 用 CSS 里的真实现 → 图标用 CSS 的 --ico-* 变量(内联 data-URI,不需要外部文件)",
+    "iconThreeNamings": {
+      "_trap": "🔴🔴 图标有三套命名并存,选错就是空图标。",
+      "figmaVariant": "带中文分类前缀:功能图标-loading / 符号&箭头-arrow-down(301 个,见 assets/feique-icon-variants.txt)",
+      "localSvgFile": "剥掉前缀:Loading.svg / arrow-down.svg(295 个,在 assets/svg/)",
+      "cssVariable": "--ico-Loading / --ico-arrow-down(293 个,在 飞鹊Web组件库.css,值是内联 data-URI SVG)",
+      "_lineage": "CSS(293) 与本地 svg(295) 是同一代;Figma(301) 更新。三方差异:Figma 多 11 个真缺(calculator clock-f close earth problem refund-rate tariff thumb-up-f usa 大于等于 小于等于),另 4 个只是命名差异(Loading/loading 大小写 · vector_left/vector-left 下划线 · ind-lightIndusty/ind-light-industy 驼峰)。",
+      "_actionable": "做 demo 需要那 11 个新图标时,得从 Figma 导出 SVG 再加进 CSS(还没做,等吉吉定)。close 尤其常用而 CSS 里没有。"
+    },
+    "buttonBinding": {
+      "_verified": "✅ 2026-08-31 逐值核对过,Figma 与 CSS 完全一致。",
+      "type": {
+        "primary": ".btn-primary",
+        "secondary": ".btn-secondary",
+        "dashed": ".btn-dashed",
+        "link": ".btn-link",
+        "text": ".btn-text"
+      },
+      "color": {
+        "red": "无后缀(默认)",
+        "blue": "-blue",
+        "dark": "-dark"
+      },
+      "size": {
+        "large": ".btn-lg",
+        "default": ".btn-md",
+        "small": ".btn-sm",
+        "_trap": "🔴 Figma 叫 default,CSS 叫 md"
+      },
+      "content": {
+        "icon only": ".btn-icon-lg / -md / -sm"
+      },
+      "shape": {
+        "round": ".btn-round(border-radius:1000px)"
+      },
+      "State": {
+        "hover": ":hover",
+        "disabled": ":disabled 或 .disabled(opacity .4)"
+      },
+      "cssValues": {
+        ".btn-lg": "h40 pad0/16 font16/24 r8",
+        ".btn-md": "h32 pad0/16 font14/22 r6",
+        ".btn-sm": "h24 pad0/8 font14/22 r4",
+        ".btn-primary": "bg#E64545 border#E64545 color#fff → hover bg#CF3E3E color#F0F1F2",
+        ".btn-primary-blue": "bg#007DFA → hover #0071E1 color#EBF5FF",
+        ".btn-primary-dark": "bg#222 → hover #000",
+        "_base": ".btn 是 inline-flex + gap4 + Roboto 400 + border 1px solid transparent"
+      }
+    },
+    "inputBinding": {
+      "class": ".inp(基类) / .inp-lg / .inp-sm,内层 .inp-body 放 padding",
+      "cssValues": {
+        ".inp": "bg#fff border1px#CED3D9 r4 font14;hover border#888;focus-within border#007DFA",
+        ".inp-body": "pad4/10 gap8;input line-height22 color#222;placeholder#B3B3B3",
+        ".inp-lg": "r8 font16 minHeight40;body pad6/12 gap10;lh24",
+        ".inp-sm": "font12;body pad2/8 gap6;lh18"
+      },
+      "_trap": "🔴 CSS 的 .inp hover 描边是 #888,而 Figma 的 dividing line 里没有 #888(那是 text/auxiliary)。做 demo 按 CSS 走。"
+    },
+    "cssClassPrefixes": {
+      "btn": "Button",
+      "inp": "Input",
+      "sel": "Select",
+      "ta": "Textarea",
+      "stp": "Steps",
+      "upl": "Upload",
+      "cb": "Checkbox",
+      "rd": "Radio",
+      "tag": "Tag",
+      "alert": "Alert",
+      "pg": "Pagination",
+      "tip": "Tooltip",
+      "clps": "Collapse",
+      "cscd": "Cascader",
+      "skel": "Skeleton",
+      "spin": "Loading",
+      "dw": "Drawer",
+      "lst": "List",
+      "tab": "Tabs",
+      "stat": "Statistic"
+    },
+    "cssRadiusReality": "CSS 全文 border-radius 分布:4(34) 8(14) 6(8),外加非阶梯值 3·9·5·7·27·120·999·1000·40·16·2。🔴 圆角是跟控件尺寸档绑定的(sm4/md6/lg8),不是自由选的阶梯。另 999 和 1000 两种 pill 写法并存。",
+    "cssFontReality": "CSS 全文 font-size 分布:14(59) 12(25) 16(19) 18(6) 24(4)。没有 20/22/32/36 —— 与 text style 层和组件实测一致。",
+    "_cssDriftKnown": [
+      "CSS 少 11 个通用图标(含最常用的 close)。",
+      "CSS 里 pill 圆角有 999 和 1000 两种写法并存,Figma 是 1000。",
+      "🔴🔴 **CSS/HTML 库里 8 个信任标识一个都没有**:audited / diamond / gold / leading-factory / certificate / supplier-star / rating / STS 标识全缺。唯一带 STS 的 `--ico-ind-STS` 是**行业分类图标**,跟 STS 信任标识不是一个东西。",
+      "→ 做供应商列表 / 搜索结果页 / 商详这类 demo 必然要用信任标识,只能从 Figma 导 SVG 或用线上真实图片。这是目前做 1:1 demo 最实的一个缺口。",
+      "🔴 信任标识里的字标是矢量图形不是文字(audited/wordmark · leading-factory/wordmark · STS 的 with-text/wordmark/wordmark-box),做 demo 只能导 SVG,不能用 CSS 排字。这比『CSS 缺这些标识』更硬 —— 就算补进 CSS 也得是图片形式。"
+    ],
+    "stsWorkedExample": {
+      "_why": "吉吉 2026-08-31 拿 STS 当例子问『你现在会直接调吗』。把这条走通的过程记下来当模板。",
+      "step1_先分歧义": "「STS 图标」在飞鹊里指三个不同的东西:① `brand logo` brand=STS(担保交易信任标识) ② `MIC brand logo with checkbox` brand=STS(带勾选框版,搜索筛选栏用) ③ `icon` 的 `行业图标-ind-STS`(行业分类图标)。**先按上下文判断或问一句,别抓一个就用。**",
+      "step2_Figma 侧怎么调": "要信任标识 → set `brand logo` key=9fd7ad87678ed833acb3009c4c7a087de10dcfae,setProperties({brand:'STS', form:'icon'}) 得 16×16;要带文字的用 form='with-text' 得 87×16;要长条带说明的 form='with-desc' 得 148×16。五种形态见 existingVariants。",
+      "step3_demo 侧怎么办": "🔴 分两种情况:① 要**行业分类图标** → CSS 有 `--ico-ind-STS`,直接用。② 要**STS 信任标识** → CSS 库里没有,而且 `STS/with-text`、`wordmark`、`wordmark-box` 内部是**矢量不是文字**,所以既不能用 CSS 类、也不能用 CSS 排字复现 —— 只能从 Figma 导出该 variant 的 SVG 内联进 demo。唯一有可编辑文字的是 `STS/with-desc`(绿盾 + \"Secured Trading Service\"),那个可以拆成「导出盾牌 SVG + CSS 排文字」。",
+      "step4_别忘了": "STS 全称 Secured Trading Service。它在 MIC 业务里是担保交易的信任凭证,属于「联系方式是硬通货」那条平台原则的同类 —— 买家看它做决策,demo 里不能拿灰块代替。"
+    }
+  },
+  "usageDocs": {
+    "_what": "组件的 description 字段。这是设计师写在组件上的用法说明,含结构、绑了哪些 style、响应式公式、设计决策、数据来源。",
+    "_lesson": "🔴🔴 我第二个漏(跟漏查 paint style 同一类错):前几批我只读了几何值,完全没读 description。全文件 108 个组件写了说明、共 3.5 万字;打勾页范围内 61 个、1.6 万字。**以后进一个组件库,description 要当一等资料读。**",
+    "_coverage": "全库 108 个有说明 / 打勾页内 61 个。下面只收对做稿和做 demo 有实际用处的。",
+    "_staleOrWrongDescriptions": {
+      "_why": "🔴 description 不会随组件自动更新,实测发现好几处说明和真实 variant 不一致。**用 description 之前先跟实测的 variant 对一遍。**",
+      "header-home": "说明写 breakpoint = 768/1024/1280/1366/1440 且『<1280 高 167 / ≥1280 高 123』;**实测 props 是 [1024|1280|1366|1440|1920]** —— 有 1920、没有 768,首个 variant 高 167。说明描述的是更早的版本。",
+      "header-mlan（西语示例）": "description 跟 header-home **一字不差**,是复制粘贴没改。而它实测只有 4 个断点 [1280|1366|1440|1024],高 122。",
+      "Empty 缺省图": "说明写『主题(15种场景)』,**实测 26 个主题值**。说明少算了。",
+      "Steps Item / Inline Step": "🔴 它的 description 是一整段 **Ant Design 的 React 示例代码**(import { Steps, List, Avatar } from 'antd'…),1499 字,跟飞鹊无关,是从 Ant Design 文档粘进来的。这是打勾页里最长的一条说明,也是最没用的一条。",
+      "MIC brand logo with checkbox": "说明里写子组件配的是 `brand logo` 的 `brand=STS,state=full`,但 `brand logo` **没有 state 属性**(只有 brand × form)。按尺寸反推:说明写的 audited 46×16 / STS 87×16 / leading factory 70×16,对应的其实是 audited 的 `form=wordmark`(46×16)、STS 的 `form=with-text`(87×16)、leading-factory 的 `form=wordmark`(70×16)。**三个还不是同一种 form。**"
+    },
+    "_newFactsFromDescriptions": {
+      "MIC LOGO 的红不是品牌红": "🔴🔴 header-supplier-vo 的说明写『LOGO 保留 **#DA291C** 品牌红(不绑 Paint Style)』。#DA291C 不在 33 个 paint style 里、也不在 color 页上,跟主色 #E64545 是两个不同的红。做页头/VO 稿时 LOGO 用 #DA291C,别拿 #E64545 替。",
+      "Web 端禁用 10px": "🔴 标杆工厂产品列表/w 的说明写『字号 12/14/16(**Web 端禁用 10px**)』。而 tokens.json 的 mobile scale 里有 10 —— 印证 web 和 mobile 阶梯确实不同,10 只在移动端合法。",
+      "instance-swap 的限制": "🔴 header-home 说明写『**instance-swap 不支持跨尺寸 variant 切换**,直接取对应 variant 放入画布』。做响应式稿别指望换 instance 就切断点,要各断点各放一个。",
+      "响应式页的来源已确认": "🔴 responsive 组件的说明末尾写『数据来源：飞鹊响应式规则-AI友好型规范』—— **确认了那一页是从 AI 友好文档生成的**,不是独立来源。我先前推测它们同源,现在有了直接证据。",
+      "spacing 变量的 scope": "spacing 变量集合绑的是 GAP + WIDTH_HEIGHT scope(不是所有 scope)。",
+      "header-home 的响应式公式": "1280 → search-bar 513 / 内容区 1240(贴边 20);1366 → 599 / 1326;1440 → 673 / 1400。actions-wrap 桌面 489 / 移动 261。business-right 桌面 6 项 / 移动隐藏。数据来源=2026-05-12 实测 made-in-china.com 登录态。⚠️ 这些数字属于说明里那个更早的版本,用前对一下实测。",
+      "垂直间距为什么比水平宽松": "spacing vertical 的说明给了理由:『水平严格 7 token,垂直灵活扩展。原因:**页面垂直层级比水平复杂,7 个值不够覆盖所有场景**』。这条可以直接引用,是设计系统作者自己写的依据,不是我的推测。",
+      "form 一族的通用结构": "form item 全族(16 横排 + 15 竖排)的说明是同一句模板:横排『Input Label Horizontal + 输入组件』、竖排『Input Label Vertical(上) + 输入组件(下)』,都是 3 个尺寸变体,**所有子组件使用飞鹊正版实例**。form/vertical 的说明还补了一句『所有子组件使用飞鹊正版实例(✅页面)』—— 说明作者自己也在按打勾页区分可用性。"
+    },
+    "_forDemo": {
+      "_why": "做 1:1 demo 时这些说明直接能用 —— 它们写了结构、绑的 style、和线上尺寸的算式。",
+      "footer-activity": "线上 height 169 = pt30 + g1(18) + 20 + g2(41) + pb40。结构 2 组(组1 六个链接;组2 第一行 Privacy/Declaration/User Agreement + 第二行 Copyright 含蓝色 Focus 链接)。字号全 12,链接色 text/main #555,『Focus Technology Co., Ltd.』用 primary/supplier 蓝,分隔线 dividing line/button,底色 background/background 01 #F5F7FA。所有行垂直居中。**自适应单组件,拖宽即可适配任意宽度。**",
+      "标杆工厂产品列表/w": "1130×374 固定。圆角 4 + dividing line/list 边框。header 1130×75 是**线性渐变 #F5F7FA→#FFF**,内嵌 com-header/w;com-content 1130×299,padding 20/20/10/10,gap 10,含 com-capabilities/w + 2×prod-item/w + prod-video/w。字号 12/14/16。源 SVG 6396:387。",
+      "一级目录供应商列表/w": "1130 宽 HUG 高,竖排。上 company-logo-wrap(logo 80×80 + 公司名 body/xl_bold + Audited 标识 + Follow 按钮带 heart icon);下 company-info-wrap 横排(左 company-info 竖排 FILL 含 4 行信息 + Contact Now 红边圆角按钮带 mail 前缀图标 + Chat 蓝链;右 rec-product-wrap 含 3 个 prod-item size=default(160宽,显示完整 price+moq) + 1 个 prod-video 280×256)。对应线上 `.list-node`。",
+      "二级目录供应商列表/w": "1130 宽 HUG 高,横排。左 company-info FILL(公司名 body/xl_bold + Audited + 3 行 key:value:Business Type / Main Products / City-Province + Contact Now 红边圆角 + Chat with Supplier 蓝链);右 product-list 含 3 个 prod-item size=default(**隐藏 price/moq**,产品名 3 行截断)。",
+      "QF供应商列表/w": "1130 宽 HUG。com-title(logo 60 + 公司名 body/xl_bold + audited + 年份 + business-type + chevron + Send Inquiry 按钮 secondary/large/red/round) + com-content(4×prod-item 160 + 1×qf-prod-video 294,SPACE_BETWEEN 自动分配间距)。QF = Qualified Factory。",
+      "prod-item/w": "两个变体:size=default 160 宽(标杆工厂两列布局用) / size=large 178 宽(QF 四列布局用)。结构 prod-pic 1:1 占位(background/background 02) + prod-info 竖排 paddingTop 8,含 prod-name body/base 两行截断 + prod-price body/lg_bold + prod-moq footnote/sm text/auxiliary。",
+      "prod-video/w": "262×259。底层 video-thumbnail(background 02 占位) + 中央 play 按钮(64×64 黑半透明圆 + 媒体-play icon 32×32 白) + 底部 controls 胶囊(黑 60% 半透明,圆角 11)。变体 tabs=video-pic(Video 角标 active + 1/N) / pic-only(仅 1/N)。文字 footnote/sm 12px 白。",
+      "com-capabilities/w": "248 宽 HUG。三变体:类型=info,verified=yes(4 项 diamond 标记列表 + Verified by SGS + Sign In) / 类型=detail,verified=yes(3 项绿色✓ + key:value,无 Sign In) / 类型=info,verified=no(4 项 diamond,无 Verified by,无 Sign In)。结尾都有 response-time 行。diamond 标记 = primary/buyer 红色 5×5 旋转 45°;✓ = function/success 绿。**用实例时靠隐藏 capability-item 控制条数。**",
+      "com-header/w": "1106 宽 HUG。左 com-title-left(logo 60×60 + 公司名 body/lg_bold + LeadingFactory 蓝 tag + com-detail footnote/sm) + 右 com-btn(Chat 链接 + Contact Now secondary red round + About Us 深色链接 + chevron-right)。SPACE_BETWEEN 分边。变体 chat状态=online 蓝 Chat / offline 灰 Chat。",
+      "header-supplier-vo": "1600×85 固定。MIC LOGO 左 240×46 + 右侧 m-header-menu(账户/消息/通知/询盘篮/App/语言切换)。菜单辅助文字 12px、账户主文字 14px、badge 18px 红底白字 12px。底色 other/white,文字 text/main #555,badge primary/buyer。🔴 **LOGO 用 #DA291C 不绑 style**;菜单文字全 12px 以跟 vo-nav 的 14px 区分。"
+    },
+    "_forDesign": {
+      "form": "10 种布局/场景变体各自的用途:vertical states(6 态展示) · horizontal states(5 态,按钮对齐输入框) · inline(多项横排+搜索按钮) · login(紧凑+全宽登录按钮) · **registration(供应商注册,含 Input/Select/DatePicker/Textarea/Radio/Switch/Checkbox/Upload 全套)** · disabled(全禁用) · size variants(40/32/24 三尺寸对比) · dynamic fields(动态增减行) · **advanced search(多列网格+折叠展开)** · **step form(分步向导,含步骤条+上一步/下一步)**。间距:表单项 m(16) · 表单 padding l(24) · 按钮间距 s(12) · 圆角 8。禁用态 = 40% 透明度。",
+      "form / basic": "18 个表单行的水平布局大全,把所有控件都摆了一遍(input/password/pre-post-tab(Phone+86/Currency$)/textarea/select 含下拉面板/date picker 含日历/time picker/inputNumber/switch/button/rate(score=4)/upload 拖拽/radio group 蓝/checkbox group 蓝/Add Field 虚线按钮/Agreement checkbox/Submit+Reset)。🔴 **下拉面板默认 hidden,展开时自动向下推**。行间距 24,标签右对齐,paddingLeft=16 是为了容纳必填星号。",
+      "form item vertical / horizontal": "六态各自的视觉:error 红边框+红 caption · warning 黄 · success 绿边框+『Verification passed.』· **validating 正常边框+蓝色『Validating...』** · disabled label 灰化+input 禁用。竖排间距 label→input 4px、input→message 4px;横排 label→control 16px。",
+      "form/inline": "筛选栏/搜索条件用。单行水平,2 个表单项 + Checkbox + Actions。子组件全用飞鹊正版实例,零硬编码。",
+      "Empty 缺省图": "基础通用档 **256×256**、个性选用档 **276×241.5**。基础通用统一中性色(『没有权限』例外,用买家色);个性选用按买家红系/供应商蓝系分。搭配用法:主文案 16px #555555、副文案 14px #888888、可选行动按钮用飞鹊 Button。源文件是雪碧图 `缺省图.webp`。",
+      "empty-state": "四档尺寸对应插画大小:大 200/主文案 body-xl · 中 120/lg · 小 72/base · 迷你 48/footnote。type=链接 那档的链接色是 primary-supplier 蓝。插画默认引用『无记录/无结果·通用』,可 swap 主题和颜色。",
+      "MIC brand logo with checkbox": "用途是 **MIC LV 搜索结果页左侧 filter 栏顶部的品牌认证快选行**。每行 = 16×16 checkbox + 10px 间距 + brand logo。线上 DOM 是 `a.filter-item-link > span.input-checkbox + img`。三档宽度:audited 72(16+10+46) · STS 113(16+10+87) · leading factory 96(16+10+70),高度全 22。🔴 内部 checkbox 用的是飞鹊 Checkbox,把它自带的『可选』文字节点设成了 visible=false,只留 16×16 方框。",
+      "responsive": "四个可视化变体的用途:breakpoint table(6 断点总览+内容区条形图+适配规则) · card grid(卡片列数) · left-right ratio(左右比例,蓝=左绿=右) · font scale(8 级字号真实渲染)。",
+      "form / login": "两个变体:vertical(用户名 + 密码 + Remember me + Forgot password + Log in 按钮 + Register 链接) / inline(用户名 + 密码 + Log in 一行排)。文字链接绑 primary/supplier 蓝。",
+      "form item / validation": "四态的具体差别:default 标签+输入框+灰提示 · error 红框+灰提示+**红报错(两条文案同时在)** · warning 黄框+灰提示+黄警告 · success 输入框+灰提示。注意 error/warning 是灰提示和彩色报错并存,不是替换。"
+    }
+  },
+  "nameLookup": {
+    "_why": "吉吉 2026-08-31：「我说直接用飞鹊的单选组件，你就能直接知道飞鹊web端单选组件是什么、长啥样」。清册按英文组件名建的,他说中文口语名,中间缺一层。这张表补这一层。",
+    "_howToUse": "他说一个中文说法 → 查这里 → 拿到候选组件 → 有多个候选时按「用在哪」判断,判不出来就问一句,别抓一个就用。",
+    "_seenFlag": "👁 = 我真看过截图,能说出长什么样;📖 = 只读过名字/属性/尺寸,没看过样子。",
+    "单选 / 单选框 / 单选组件": {
+      "候选": [
+        {
+          "组件": "radio",
+          "key": "e02daf42d50fe77bcd491fb8ad1adb86a032579b",
+          "看过": "👁",
+          "长什么样": "经典圆点单选。未选=空心圆,已选=实心圆点,右边跟文字。黑/蓝/红三色系 + 灰色禁用态,两个尺寸(default/small)。整 set 177x580。",
+          "用在哪": "表单里的单选项"
+        },
+        {
+          "组件": "selecter-single",
+          "key": "06c562c37ea54813c355eb7d0b72e54e16c2ce9c",
+          "看过": "👁",
+          "长什么样": "按钮式单选,长得像筛选标签。Optional 灰边框 → Hover → Selected 实心填充。黑/红/蓝三色系,每系再分方角(default)和圆角胶囊(round)两种形状,两个尺寸。整 set 612x620。",
+          "用在哪": "搜索筛选、选项切换、那种一排选一个的场景"
+        }
+      ],
+      "_disambiguation": "🔴 这两个长得**完全不一样**。上下文没说清就问一句「表单里的圆点,还是筛选那种按钮式」。"
+    },
+    "多选 / 复选框": {
+      "候选": [
+        {
+          "组件": "checkbox",
+          "key": "66ff587827f0e49648104454243300c08f8fe200",
+          "看过": "👁",
+          "长什么样": "方框勾选,整 set 264x580 共 42 个 variant。未选=白底浅灰边空方框,已选=实心底+白勾,半选=实心底+白横线。🔴 属性名是 statues(库里就拼错,照抄)。🔴 color 四档 neutral/blue/red/disabled,**默认 neutral 是黑色**不是红 —— 要红必须显式传 color=red。文字跟在右边(可选/已选/半选/禁用)。",
+          "用在哪": "表单多选"
+        },
+        {
+          "组件": "selecter-multiple",
+          "key": "3f3fbb2a1723cc0ba3045f8b8f122b7bea96a0a0",
+          "看过": "📖",
+          "长什么样": "按钮式多选,结构同 selecter-single。🔴 size 是 [large|small] 没有 default。",
+          "用在哪": "筛选多选"
+        },
+        {
+          "组件": "selecter-multiple2",
+          "key": "c0998d4628fbba697442cbb23bf01a7cebd58d14",
+          "看过": "📖",
+          "长什么样": "新一代胶囊式多选(r=1000)。type 四档含 dropdown 和 badge。",
+          "用在哪": "搜索结果页那种「品类 ⌄」「已认证 12」的胶囊标签"
+        }
+      ]
+    },
+    "按钮": {
+      "候选": [
+        {
+          "组件": "button",
+          "key": "763190f9f69421d390401bb5eecc289e617c7c72",
+          "看过": "👁",
+          "长什么样": "见 visualByType",
+          "用在哪": "全场景"
+        }
+      ],
+      "visualByType": {
+        "_seen": "👁 2026-08-31 截图核对过 default 尺寸(高32/圆角6/字14)的五种 type",
+        "primary": "实心红底 #E64545 + 白字。这是唯一跟着 color 属性变色的。",
+        "secondary": "🔴 白底 + **深灰描边 + 深灰字**,不是红的。",
+        "dashed": "🔴 白底 + **深灰虚线描边 + 深灰字**,也不是红的。",
+        "link": "🔴 无底无框 + **固定蓝色字 #007DFA**,而且尺寸只有 42x22(比其他型小一档)。",
+        "text": "无底无框 + 深灰字。",
+        "_keyInsight": "🔴🔴 `color=red|blue|dark` **只作用于 primary 的填充**。secondary/dashed/text 不跟着变红,link 恒定是蓝。光看属性名会以为「secondary + red」是红描边按钮 —— 不是。",
+        "sizeToRadius": "lg 高40/字16/圆角8 · md(叫 default) 高32/字14/圆角6 · sm 高24/字14/圆角4 · shape=round → 圆角 1000"
+      }
+    },
+    "输入框": {
+      "候选": [
+        {
+          "组件": "input/basic",
+          "key": "5e9ac766dafd7b0560d6e2236c6ebf718e7b3180",
+          "看过": "👁",
+          "长什么样": "340x32,圆角 4,白底 + 浅灰描边,占位文字浅灰。六个 state:default 浅灰边 → hover 边变深灰 → **focused 边变品牌蓝 #007DFA** → filled 边回浅灰但文字转黑 #222 → disabled 底变浅灰 #F2F3F5 文字浅灰。🔴 五个 status 的宽度不一样:error 只把边变红、**不带右侧图标、宽 340**;warning(橙)/success(绿)/reminder(蓝) 各带一个同色实心圆图标、**宽 360**。按 340 排版会错位 20px。",
+          "用在哪": "通用文本输入"
+        },
+        {
+          "组件": "input/search",
+          "key": "44bcf44d4fa0a693dfcff4f62b5fc611ae2723bf",
+          "看过": "📖",
+          "长什么样": "输入框 + 右侧搜索按钮(default/带图标/带文字三种)。",
+          "用在哪": "主搜、站内搜索"
+        },
+        {
+          "组件": "input/password",
+          "key": "49bdd5cfa14049a6356f327922cf6454ce73c10a",
+          "看过": "📖",
+          "长什么样": "带眼睛显隐开关(hide=true/false)。",
+          "用在哪": "密码输入"
+        },
+        {
+          "组件": "textarea",
+          "key": "e71dc8a8b9ca19a10de2047e454acd4a01d5e952",
+          "看过": "📖",
+          "长什么样": "多行,圆角 **6**(注意跟 input/basic 的 4 不一样),高 78。",
+          "用在哪": "多行文本"
+        }
+      ]
+    },
+    "下拉 / 选择器 / 下拉框": {
+      "候选": [
+        {
+          "组件": "select input",
+          "key": "50139b12d702b8e0382d3f13a85d300f2a5e3dcb",
+          "看过": "👁",
+          "长什么样": "320x32,白底浅灰边,右侧一个 chevron down。type=basic 显示单行文字(Select);type=multiple + filled 时框内塞若干灰底小 tag,每个带 × 可删。🔴 **宽 320,比 input/basic 的 340 窄 20** —— 两者并排在同一行会不齐,得自己统一。",
+          "用在哪": "表单下拉、筛选下拉"
+        },
+        {
+          "组件": "select",
+          "key": "7a82c8f3d7722ee2dfa4a9d45126abc110677b43",
+          "看过": "📖",
+          "长什么样": "一整排 tab 的组件 = 输入框 + 展开的菜单面板(active=yes 是展开态)。",
+          "用在哪": "需要画出展开态时"
+        },
+        {
+          "组件": "cascader",
+          "key": "44e382cd…(在 Cascader 页·未打勾未学)",
+          "看过": "🚫",
+          "长什么样": "未学(页面没打勾)",
+          "用在哪": "级联选择"
+        }
+      ]
+    },
+    "标签 / tag": {
+      "候选": [
+        {
+          "组件": "tag / basic",
+          "key": "c44a41460290b598c57def4c76082e5f84ecb8fb",
+          "看过": "👁",
+          "长什么样": "高 30,圆角 4,宽度 HUG。🔴 **中性灰底 #F2F3F5 + 浅灰描边 + 灰字,不是主色红** —— 要彩色标签得走 tag/colorful 或自己改。三态:default(纯文字,63 宽) / closeable(文字 + × ,81 宽) / add new(+ 前缀 + New Tag 文案,93 宽)。",
+          "用在哪": "新稿一律用这个"
+        },
+        {
+          "组件": "tag / colorful (legacy)",
+          "key": "e9c801c049ea12baf44a6eb1d33ee0c1a5cd0f91",
+          "看过": "📖",
+          "长什么样": "11 个预设色,type=areal(整块填色)/line(只描边)。",
+          "用在哪": "🔴 名字带 (legacy) = 旧版,新稿别用"
+        }
+      ]
+    },
+    "弹窗 / 对话框 / 弹层": {
+      "候选": [
+        {
+          "组件": "fd_dialog box",
+          "key": "f3fa1a35e9fc5c3a90e7f5fef2a8770147041bea",
+          "看过": "📖",
+          "长什么样": "白底圆角 8,padding 24/32,401x180。state 七档含 info/warning/success/error + 两个中文值的自定义档。",
+          "用在哪": "确认弹窗、信息弹窗"
+        },
+        {
+          "组件": "drawer",
+          "key": "256078b04a707acf2cbae006706ed43e8b97993f",
+          "看过": "🚫",
+          "长什么样": "未学(Drawer 页没打勾),但已发布进库。说明里写 width=narrow(320)/default(400)/wide(560),button=no/header/footer",
+          "用在哪": "侧滑抽屉"
+        },
+        {
+          "组件": "popover",
+          "key": "e3dcbf4ecf3cd48ae9d11771d94c194e8d90fc57",
+          "看过": "📖",
+          "长什么样": "气泡卡片,12 个方位 × dark/light。",
+          "用在哪": "装富内容的气泡"
+        },
+        {
+          "组件": "Popconfirm",
+          "key": "2ea4ba71382da99675cd98814c968772770ff83b",
+          "看过": "📖",
+          "长什么样": "带确认/取消按钮的气泡,264x155。",
+          "用在哪": "就地确认(删除确认这种)"
+        },
+        {
+          "组件": "mask",
+          "key": "b3404b635905359fe72c1b410c8c45d620f1e5f8",
+          "看过": "👁",
+          "长什么样": "纯黑遮罩层,三档透明度 opacity=0.35 / 0.55 / 0.75。整 set 3948x840。没有别的属性,就是一块半透明黑。",
+          "用在哪": "弹层背后的蒙版,别自己调 alpha"
+        }
+      ]
+    },
+    "提示 / 通知 / 报错": {
+      "候选": [
+        {
+          "组件": "message",
+          "key": "2325b8985121a6c1d35619667370622a83039087",
+          "看过": "👁",
+          "长什么样": "浮层小条:白底 + 大圆角 + 投影,高 40,宽随文字 HUG(160~183)。左侧一个实心圆图标 + 黑字 #222。normal=蓝色圆 i · error=红色圆 × · **loading=红色环形转圈(主色红,不是蓝)**。5 个 variant 只有 type 一个属性。",
+          "用在哪": "顶部飘过的全局提示"
+        },
+        {
+          "组件": "alert",
+          "key": "5ac0ac007568d956827424e258f8698b130f4390",
+          "看过": "👁",
+          "长什么样": "通栏条:640x38,浅色底 + 同色描边 + 左侧实心圆图标 + 黑字,右侧 Button 蓝色文字链 + × 关闭。error=浅红底红边红圆× · warning=浅黄底橙边橙圆!。🔴🔴 **description=true 是坏的**:结构里只有 icon/title/Button/close,没有描述文本节点,高度跟 description=false 一样 38 —— 这个属性没有实际差异,要两行描述得自己加。",
+          "用在哪": "页面内常驻的警示条"
+        },
+        {
+          "组件": "tooltip",
+          "key": "3d6cde110f5ac6e23b4a97e80ee7fb2cb18ce7f9",
+          "看过": "📖",
+          "长什么样": "12 个方位 × dark/light,只装一句话。",
+          "用在哪": "悬停解释"
+        }
+      ]
+    },
+    "空态 / 缺省 / 无结果": {
+      "候选": [
+        {
+          "组件": "Empty 缺省图",
+          "key": "e0f7179a27282955ee16b50ced38fd8e0d451596",
+          "看过": "👁",
+          "长什么样": "256x256 的插画,有厚度、带阴影的仿真实物画风灰白主体 + 少量主色红点缀。31 个业务主题,例:产品搜索无结果=文件+红色放大镜 · 筛选无结果=包裹+放大镜 · 空询盘篮=购物篮+红色斜杠。只有插画,不带文案和按钮 —— 文案要自己配,或改用 empty-state。",
+          "用在哪": "先选主题,再套外壳"
+        },
+        {
+          "组件": "empty-state",
+          "key": "3e8a379cd88ab541fecee431f110253828d3e10d",
+          "看过": "👁",
+          "长什么样": "带文案的完整空态块(插画位 + 主标题 700 + 副文灰字 + 动作)。type 四档:basic(无动作) · button(红色实心按钮,default 尺寸 360x266 竖排居中) · link(文字链) · horizontal(**横排,441x168**,插画左文字右)。三个尺寸 large/default/small。🔴 要「插画 + 文案 + 按钮」一整套用这个,只要插画用 Empty 缺省图。",
+          "用在哪": "跟上面那个配合用"
+        }
+      ]
+    },
+    "认证标识 / 会员标识 / 星级": {
+      "候选": [
+        {
+          "组件": "brand logo",
+          "key": "9fd7ad87678ed833acb3009c4c7a087de10dcfae",
+          "看过": "👁",
+          "长什么样": "见 visualIdentity —— 17 个组合逐个记了。钻石会员/金牌会员/Audited/STS担保交易/标杆工厂/第三方认证组/供应商星级/评分。",
+          "用在哪": "供应商卡片、搜索结果、商详"
+        },
+        {
+          "组件": "MIC brand logo with checkbox",
+          "key": "0fc622b6be8f293b93cadd7ff2d67f3e39285c0e",
+          "看过": "📖",
+          "长什么样": "16x16 勾选框 + 10px 间距 + 标识。三档:audited 72宽 / STS 113宽 / leading factory 96宽。",
+          "用在哪": "搜索结果页左侧筛选栏的品牌快选行"
+        }
+      ]
+    },
+    "步骤条 / 进度": {
+      "候选": [
+        {
+          "组件": "*Steps*",
+          "key": "4177fbd1c92231e4742b16c192f2eda8a9d372cf",
+          "看过": "📖",
+          "长什么样": "五种形态 Basic/Custom Icon/Dot/Navigation/Inline,横竖两向。🔴 用 BOOLEAN 型属性(Time#3116:24 / Description#3116:35),写法跟 variant 不一样。",
+          "用在哪": "分步流程"
+        }
+      ]
+    },
+    "开关": {
+      "候选": [
+        {
+          "组件": "switch",
+          "key": "a6d91beed41f0fe72f757590f47b0192accfff30",
+          "看过": "👁",
+          "长什么样": "44x22,圆角全圆,内含 18px 白色圆点。🔴 **开启是品牌蓝 #007DFA,不是红**;关闭是灰色,圆点在左;loading 态是浅蓝底 + 圆点内一个转圈。16 个 variant(size × state × active)。",
+          "用在哪": "设置项开关,异步开关用 loading 档"
+        }
+      ]
+    },
+    "分页": {
+      "候选": [
+        {
+          "组件": "pagination",
+          "key": "49e53189be78455c025999d11cac2a8f76704d3b",
+          "看过": "👁",
+          "长什么样": "六种形态 basic / jumper / mini / mini jumper / more / simple。🔴 **当前页是红字 + 红描边白底,不是红底白字**;其余页码黑字白底浅灰边。附件按需组合:`Total 85 items` 统计文字 · `Go to: [__] Page` 跳页输入框 · `10 / page` 每页条数下拉 · more 型用 `···` 省略中间页。整 set 711x456。",
+          "用在哪": "列表翻页"
+        }
+      ]
+    },
+    "面包屑": {
+      "候选": [
+        {
+          "组件": "breadcrumb Link",
+          "key": "49171688d5974c2172eca2a0e31a10decf7c2f16",
+          "看过": "👁",
+          "长什么样": "单个层级项,6 个 variant(state=current/hover/default × type=large/small)。文字 `Level 1`,current 态是**粗体**、default/hover 是常规字重。整 set 只有 141x140 —— 它只是一个「项」,分隔符和整条路径要自己拼。",
+          "用在哪": "层级导航"
+        }
+      ]
+    },
+    "标签页 / tab": {
+      "候选": [
+        {
+          "组件": "见 _tabsFamily",
+          "看过": "👁",
+          "长什么样": "🔴 见 _tabsFamily 的 _indicatorPosition —— 家族 7 个 set,选中态那条横线画在哪边由 position 属性控制,而 **position 的语义跟线的位置是反的**。要最常见的「底部下划线」传 position=top。",
+          "用在哪": "页面内切换。配合 project-mic-home-ai-entry-revision 那条「选中必用下划线非胶囊」"
+        }
+      ]
+    },
+    "图标": {
+      "候选": [
+        {
+          "组件": "icon",
+          "key": "403824504e9f17e847ab5058e9e5635546392915",
+          "看过": "📖",
+          "长什么样": "16x16,301 个 variant。🔴 值带中文分类前缀:`功能图标-search`、`符号&箭头-arrow-down`。",
+          "用在哪": "全场景。清单在 assets/feique-icon-variants.txt"
+        }
+      ]
+    },
+    "页头 / 页脚": {
+      "候选": [
+        {
+          "组件": "见 _businessComponents.MIC 页头页脚",
+          "看过": "👁",
+          "长什么样": "🔴 见 _businessComponents 的 _headerBreakpointShift —— header-home 实测 1440 与 1024 是两种布局,不是同一版缩放。",
+          "用在哪": "🔴 出稿第一件事是声明动哪一族"
+        }
+      ]
+    },
+    "上传": {
+      "候选": [
+        {
+          "组件": "upload / drag and drop",
+          "key": "ffefd64bf7ae37dab4c777d8eca19b5a7f7ba378",
+          "看过": "📖",
+          "长什么样": "480x146 拖拽区,浅灰底圆角 8。内置文案 Click or drag file to this area to upload。",
+          "用在哪": "文件上传"
+        },
+        {
+          "组件": "upload / button",
+          "key": "f7fd0677aaa4b8700134e8d179e07c25311834a5",
+          "看过": "📖",
+          "长什么样": "108x40。state 含 pressed 和 loading(通用 button 没有这两档)。",
+          "用在哪": "按钮式上传"
+        }
+      ]
+    },
+    "表单": {
+      "候选": [
+        {
+          "组件": "form",
+          "key": "ebebc54dd8d1504526e9eececcceeeb2a6aed81c",
+          "看过": "📖",
+          "长什么样": "10 种现成形态含 login/registration/advanced search/step form/dynamic fields。",
+          "用在哪": "整表单直接取,别从零搭"
+        }
+      ]
+    },
+    "_gaps": "2026-08-31 补截图后:37 个候选里 **18 个是 👁**(真看过截图)、2 个 🚫(库里没有/已废弃)、其余 17 个仍是 📖。本轮 8 批共 31 张截图,补齐了 input / select / tag / checkbox / switch / message / alert / 空态 / 分页 / 面包屑 / mask / tab 家族 / header / 两个供应商列表 / FilterSidebar。🔴 **仍是 📖 的那批别凭属性名下判断** —— 本轮光靠读名字就会错三处:以为 tag 是红的(实际中性灰)、以为 switch 开启是红的(实际蓝)、以为 position=bottom 线在底部(实际在顶部)。",
+    "_notLearned": "🚫 = 页面没打勾、这次没学:drawer / table / rate / menu / tree / cascader / autocomplete / list / anchor / skeleton / badge / card / calendar / statistic / avatar,以及 `业务组件（探索）` 页里的 MIC FilterSidebar / MIC FilterItem / MIC Supplier Ad / MIC TM Bar。其中 drawer / table / rate / MIC Supplier Ad **已发布进库且写了完整说明**。"
+  },
+  "_blindSpots": {
+    "_说明": "🔴 2026-09-01 实测。清册说「44 页学完」是真的，但**不等于 Web 端库全学完了**。别把「清册里没有」读成「库里没有」。",
+    "覆盖率": {
+      "文件页数": 77,
+      "全文件顶层已发布组件": 261,
+      "清册收录": 174,
+      "覆盖率": "约 67%",
+      "打勾范围内": "打勾页共约 179 个，清册收了 174 个 ≈ 97% —— **打勾范围内基本完整**",
+      "差额": "约 82 个全在 18 个未打勾页里（占全库 31%）"
+    },
+    "🔴 未打勾页里最该学的两页（各 19 个·MIC 业务组件）": {
+      "业务组件（探索）": {
+        "数量": 19,
+        "为什么重要": "说明是全库最详细、最贴 MIC 的：MIC FilterSidebar(1589 字) · MIC FilterItem(1364 字) · MIC Supplier Ad 主搜页聚焦广告(1133 字·含 5 断点实测值) · MIC TM Bar 主搜页贴底TM标。其中 MIC Supplier Ad 已发布进库。"
+      },
+      "产品列表+橱窗（待更新）": {
+        "数量": 19,
+        "为什么重要": "🔴 **这是 MIC 搜索结果页和商品列表的卡片组件**：ProductCard-主搜 · ProductCard-主搜/Variant3 · ProductCard-QP · ProductCard-QP/Variant3 · ProductCard——LV · ProductCard——LV(List) 等。页名带「（待更新）」，引用前要对线上。",
+        "跟在做的项目关系": "主搜相关项目直接用得上。"
+      }
+    },
+    "其余未打勾页（16 页·约 44 个）": "Menu菜单🤖 11 · Cascader 级联选择器🤖 6 · Calendar 日历🤖 6 · Tree树/List列表/Statistic/Anchor锚点/Badge徽标/Avatar头像/Rate评分/AutoComplete 各 2 · Skeleton/Drawer/Card/Table/金额区间 各 1。这些是通用控件，带 🤖 说明是 AI 整理但没打勾。",
+    "🔴 跟移动端盲区的性质对比": "Web 端的盲区是**有价值的未打勾页**（含 MIC 业务卡片，值得学）；移动端的盲区是 Symbols 页 214 个**旧文件残留**（重名散件、零 description，多半不值得学）。两边不是一回事，别一起处理。",
+    "要不要学": "⏳ 等吉吉拍。Web 端那轮我在 learning log 第五节「要你定的」第 5 条问过「打勾之外要不要学」，一直没拍。"
+  }
+}

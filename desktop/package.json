@@ -1,0 +1,97 @@
+{
+  "name": "uw-desktop",
+  "version": "0.1.9",
+  "description": "UED WorkBuddy 桌面版：给产品、设计、前端共用的 AI 工作台，用同事自己的 Claude Code 当引擎，飞鹊设计系统随应用携带，产物一键发给前端。",
+  "main": "main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dist": "electron-builder --mac"
+  },
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "productName": "UED WorkBuddy",
+  "private": true,
+  "build": {
+    "appId": "com.mic.ued.workbuddy",
+    "productName": "UED WorkBuddy",
+    "copyright": "UED 设计部",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main/**",
+      "renderer/**",
+      "packs/**",
+      "build/icon.png",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "packs/**"
+    ],
+    "extraResources": [
+      {
+        "from": "kbdocs",
+        "to": "kbdocs"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "UED-WorkBuddy-${version}-${arch}.${ext}",
+      "extendInfo": {
+        "LSMinimumSystemVersion": "12.0"
+      }
+    },
+    "dmg": {
+      "title": "UED WorkBuddy",
+      "contents": [
+        {
+          "x": 150,
+          "y": 190
+        },
+        {
+          "x": 430,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 580,
+        "height": 380
+      }
+    },
+    "npmRebuild": false,
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
+    "afterPack": "build/afterPack.js"
+  }
+}
