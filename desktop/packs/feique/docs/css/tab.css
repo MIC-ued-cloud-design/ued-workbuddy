@@ -1,0 +1,49 @@
+/* ===== 飞鹊 Tabs 标签页 ===== */
+
+/* Container — base = position:top, size:default */
+.tab { display:flex; align-items:center; background:#fff; gap:32px; font-family:'Roboto',sans-serif; }
+
+/* Tab item — base (top position) */
+.tab-item { display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 0; cursor:pointer; white-space:nowrap; font-size:14px; line-height:22px; font-weight:400; color:#555; border-bottom:2px solid transparent; transition:color .15s,border-color .15s,background .15s; user-select:none; }
+.tab-item.active { font-weight:600; color:#222; border-bottom-color:#222; }
+
+/* color=red */
+.tab-red .tab-item.active { border-bottom-color:#E64545; }
+
+/* size=large */
+.tab-lg { gap:40px; }
+.tab-lg .tab-item { padding:16px 0; font-size:18px; line-height:26px; border-bottom-width:3px; }
+
+/* size=small */
+.tab-sm { gap:16px; }
+.tab-sm .tab-item { padding:8px 0; gap:4px; }
+
+/* position=bottom */
+.tab-btm .tab-item { border-bottom:none; border-top:2px solid transparent; }
+.tab-btm .tab-item.active { border-top-color:#222; }
+.tab-btm.tab-red .tab-item.active { border-top-color:#E64545; }
+.tab-btm.tab-lg .tab-item { border-top-width:3px; }
+
+/* position=left (vertical) */
+.tab-left { flex-direction:column; align-items:flex-end; gap:16px; }
+.tab-left .tab-item { border-bottom:none; border-right:2px solid transparent; padding:8px 24px; }
+.tab-left .tab-item.active { border-right-color:#222; }
+.tab-left.tab-red .tab-item.active { border-right-color:#E64545; }
+.tab-left.tab-lg .tab-item { padding:12px 24px; font-size:18px; line-height:26px; border-right-width:3px; }
+.tab-left.tab-sm .tab-item { padding:4px 24px; gap:4px; }
+
+/* position=right (vertical) */
+.tab-right { flex-direction:column; align-items:flex-start; gap:16px; }
+.tab-right .tab-item { border-bottom:none; border-left:2px solid transparent; padding:8px 24px; }
+.tab-right .tab-item.active { border-left-color:#222; }
+.tab-right.tab-red .tab-item.active { border-left-color:#E64545; }
+.tab-right.tab-lg .tab-item { padding:12px 24px; font-size:18px; line-height:26px; border-left-width:3px; }
+.tab-right.tab-sm .tab-item { padding:4px 24px; gap:4px; }
+
+/* Card style — .tab-card */
+.tab-card { gap:0; }
+.tab-card .tab-item { background:#F5F7FA; border-bottom:none; border-top:2px solid transparent; padding:8px 24px; color:#555; }
+.tab-card .tab-item.active { background:transparent; border-top-color:#222; }
+.tab-card.tab-red .tab-item.active { border-top-color:#E64545; }
+.tab-card.tab-lg .tab-item { padding:12px 40px; font-size:18px; line-height:26px; border-top-width:3px; }
+.tab-card.tab-sm .tab-item { padding:4px 16px; gap:4px; }

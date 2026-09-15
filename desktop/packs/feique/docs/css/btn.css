@@ -1,0 +1,76 @@
+/* ===== 飞鹊 Button ===== */
+
+/* Base */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400; white-space: nowrap; cursor: pointer;
+  border: 1px solid transparent; outline: none; text-decoration: none;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+  -webkit-font-smoothing: antialiased;
+}
+.btn:disabled, .btn.disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+
+/* Size */
+.btn-lg { height: 40px; padding: 0 16px; font-size: 16px; line-height: 24px; border-radius: 8px; }
+.btn-md { height: 32px; padding: 0 16px; font-size: 14px; line-height: 22px; border-radius: 6px; }
+.btn-sm { height: 24px; padding: 0 8px;  font-size: 14px; line-height: 22px; border-radius: 4px; }
+
+/* Shape */
+.btn-round { border-radius: 1000px !important; }
+
+/* Primary / Red */
+.btn-primary { background: #E64545; border-color: #E64545; color: #fff; }
+.btn-primary:hover { background: #CF3E3E; border-color: #CF3E3E; color: #F0F1F2; }
+
+/* Primary / Blue */
+.btn-primary-blue { background: #007DFA; border-color: #007DFA; color: #fff; }
+.btn-primary-blue:hover { background: #0071E1; border-color: #0071E1; color: #EBF5FF; }
+
+/* Primary / Dark */
+.btn-primary-dark { background: #222; border-color: #222; color: #fff; }
+.btn-primary-dark:hover { background: #000; border-color: #000; color: #fff; }
+
+/* Secondary / Black border */
+.btn-secondary { background: #fff; border-color: #222; color: #222; }
+.btn-secondary:hover { background: #F0F1F2; border-color: #000; color: #000; }
+
+/* Secondary / Blue border */
+.btn-secondary-blue { background: #fff; border-color: #007DFA; color: #007DFA; }
+.btn-secondary-blue:hover { background: #EBF5FF; border-color: #0071E1; color: #0071E1; }
+
+/* Secondary / Gray */
+.btn-secondary-dark { background: #F5F7FA; border-color: #CED3D9; color: #222; }
+.btn-secondary-dark:hover { background: #E8EAED; border-color: #B0B8C1; color: #222; }
+
+/* Dashed / Black */
+.btn-dashed { background: #fff; border-color: #222; border-style: dashed; color: #222; }
+.btn-dashed:hover { background: #F0F1F2; border-color: #000; color: #000; }
+
+/* Dashed / Blue */
+.btn-dashed-blue { background: #fff; border: 1px dashed #007DFA; color: #007DFA; }
+.btn-dashed-blue:hover { background: #EBF5FF; border-color: #0071E1; color: #0071E1; }
+
+/* Dashed / Gray */
+.btn-dashed-dark { background: #F5F7FA; border: 1px dashed #CED3D9; color: #555555; }
+.btn-dashed-dark:hover { background: #F0F1F2; border-color: #CED3D9; color: #000; }
+
+/* Text */
+.btn-text { background: transparent; border-color: transparent; color: #222; }
+.btn-text:hover { background: #F0F1F2; color: #000; }
+
+/* Link */
+.btn-link { background: transparent; border-color: transparent; color: #007DFA; padding-left: 0; padding-right: 0; height: auto; }
+.btn-link:hover { color: #0071E1; }
+.btn-link.btn-lg { font-size: 16px; line-height: 24px; }
+.btn-link.btn-md { font-size: 14px; line-height: 22px; }
+.btn-link.btn-sm { font-size: 14px; line-height: 22px; }
+
+/* Icon in btn */
+.btn svg { flex-shrink: 0; }
+
+/* Icon Only size */
+.btn-icon-lg { padding: 9px; border-radius: 8px; }   /* icon 22×22，总尺寸 40×40 */
+.btn-icon-md { padding: 8px; border-radius: 6px; }   /* icon 16×16，总尺寸 32×32 */
+.btn-icon-sm { padding: 4px; border-radius: 4px; }   /* icon 16×16，总尺寸 24×24 */
+.btn-link.btn-icon-lg, .btn-link.btn-icon-md, .btn-link.btn-icon-sm { padding: 0; height: auto; border-radius: 0; }

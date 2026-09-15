@@ -1,0 +1,22 @@
+/* ===== 飞鹊 Radio 圆形单选框 ===== */
+.rd{display:inline-flex;align-items:center;gap:4px;cursor:pointer;}
+.rd-circle{width:16px;height:16px;border-radius:50%;border:1.5px solid #CED3D9;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-sizing:border-box;transition:border-color .15s;}
+.rd-circle::after{content:'';width:8px;height:8px;border-radius:50%;background:transparent;transition:background .15s;}
+.rd-label{font-size:14px;line-height:22px;color:#555;font-family:'Roboto',sans-serif;}
+.rd-hv .rd-circle{border-color:#222;}
+.rd-blue.rd-hv .rd-circle{border-color:#007DFA;}
+.rd-red.rd-hv .rd-circle{border-color:#E64545;}
+.rd-sel .rd-circle{border-color:#222;}
+.rd-sel .rd-circle::after{background:#222;}
+.rd-sel .rd-label{color:#222;}
+.rd-blue.rd-sel .rd-circle{border-color:#007DFA;}
+.rd-blue.rd-sel .rd-circle::after{background:#007DFA;}
+.rd-red.rd-sel .rd-circle{border-color:#E64545;}
+.rd-red.rd-sel .rd-circle::after{background:#E64545;}
+.rd-dis{cursor:not-allowed;}
+.rd-dis .rd-circle{border-color:#CED3D9;background:#F0F1F2;}
+.rd-dis.rd-sel .rd-circle::after{background:#B3B3B3;}
+.rd-dis .rd-label{color:#B3B3B3;}
+.rd-sm .rd-circle{width:12px;height:12px;}
+.rd-sm .rd-circle::after{width:6px;height:6px;}
+.rd-sm .rd-label{font-size:12px;line-height:18px;}

@@ -1,0 +1,24 @@
+/* ===== 飞鹊 Badge 徽标 ===== */
+
+/* Dot · 8×8 圆点 */
+.bdg-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#E64545; flex-shrink:0; }
+.bdg-dot-blue { background:#007DFA; }
+.bdg-dot-green { background:#00C88C; }
+.bdg-dot-orange { background:#FAAA00; }
+
+/* Number / Overflow / Text · 胶囊徽标 */
+.bdg { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:2px 4px; border-radius:999px; background:#E64545; color:#fff; font-family:'Roboto',sans-serif; font-size:12px; line-height:18px; font-weight:400; white-space:nowrap; box-sizing:border-box; }
+.bdg-pill { padding:2px 8px; }
+
+/* Status · 圆点 + 文字 */
+.bdg-status { display:inline-flex; align-items:center; gap:6px; font-family:'Roboto',sans-serif; font-size:12px; line-height:18px; color:#222; white-space:nowrap; }
+.bdg-status::before { content:''; width:8px; height:8px; border-radius:50%; flex-shrink:0; background:#B3B3B3; }
+.bdg-status-success::before { background:#00C88C; }
+.bdg-status-error::before { background:#E64545; }
+.bdg-status-warning::before { background:#FAAA00; }
+.bdg-status-processing::before { background:#007DFA; }
+
+/* Ribbon · 角标定位 */
+.bdg-ribbon { position:relative; display:inline-block; }
+.bdg-ribbon > .bdg,
+.bdg-ribbon > .bdg-dot { position:absolute; top:0; right:0; transform:translate(50%,-50%); z-index:1; }

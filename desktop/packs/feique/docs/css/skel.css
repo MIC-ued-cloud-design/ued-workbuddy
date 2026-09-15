@@ -1,0 +1,323 @@
+/* ===== 飞鹊 Skeleton 骨架屏 ===== */
+/*
+ * fd_skeleton — 内容加载占位组件，防止布局抖动，提升感知性能。
+ * Figma ComponentSet: 3893:68
+ *
+ * 变体 / Node ID / 结构 / 适用场景
+ * ──────────────────────────────────────────────────────────────────────
+ * text        3893:44  标题行 + 段落(3行+61%尾行)       文章详情/富文本内容区
+ * avatar-text 3893:51  40px圆形头像 + 右侧文字列(FILL)  评论/消息/联系人/社交动态
+ * card        3893:60  180px图片占位 + 文字区(p16)      产品列表卡片/文章卡片
+ * list        3902:44  3条目 32px圆形头像 + 内容列       搜索结果/消息/商品列表
+ *
+ * 色彩
+ * ──────────────────────────────────────────────────────────────────────
+ * 骨架块底色    #F5F7FA  (background/background 01)
+ * shimmer高光  #E8ECF0
+ * 分割线        #E6ECF2  (dividing line/border)
+ *
+ * 尺寸规格
+ * ──────────────────────────────────────────────────────────────────────
+ * 占位线高度    16px    (Ant Design 标准)
+ * 占位线圆角    4px
+ * 末尾行宽度    61%     (模拟真实最后一行不顶格)
+ * 列表副文字    75%     (模拟真实副标题不顶格)
+ * avatar头像   40×40px  cornerRadius=999
+ * list头像     32×32px  cornerRadius=999
+ * card图片高   180px
+ *
+ * 动效
+ * ──────────────────────────────────────────────────────────────────────
+ * shimmer 左→右光泽扫过，周期 1.8s，linear，infinite
+ *
+ * 类用法速查
+ * ──────────────────────────────────────────────────────────────────────
+ * .skel-bone          必选，所有占位块的 shimmer 动效基类
+ * .skel-line          文字占位条 (h=16px · radius=4px)
+ * .skel-avatar        头像占位圆 (40×40)
+ * .skel-list-avatar   列表头像占位圆 (32×32)
+ * .skel-image         图片占位块 (h=180px · w=100%)
+ * .skel-w-full / .skel-w-61 / .skel-w-75   宽度辅助
+ * .skel-paragraph     段落块 (flex-col · gap 8px · pt 8px)
+ * .skel-content       右侧内容列 (flex:1 · flex-col · gap 8px)
+ * .skel-text          type=text 容器 (flex-col · gap 8px · p=16px)
+ * .skel-avatar-text   type=avatar-text 容器 (flex · gap=16px · p=16px)
+ * .skel-card          type=card 容器 (flex-col · radius=4px · overflow:hidden)
+ * .skel-card-body     卡片文字区 (flex-col · gap 8px · p=16px)
+ * .skel-list          type=list 容器 (flex-col)
+ * .skel-list-item     列表条目 (flex · gap=12px · p=16px · align:center)
+ * .skel-divider       分割线 (h=1px · #E6ECF2)
+ */
+
+@keyframes skel-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+/* Base shimmer bone — 所有占位块共用 */
+.skel-bone {
+  background: linear-gradient(90deg, #F5F7FA 25%, #E8ECF0 50%, #F5F7FA 75%);
+  background-size: 1200px 100%;
+  animation: skel-shimmer 1.8s infinite linear;
+  flex-shrink: 0;
+}
+
+/* 文字占位线：16px 高，4px 圆角 */
+.skel-line { height: 16px; border-radius: 4px; }
+
+/* 圆形头像：avatar-text 用 40×40，list 用 32×32 */
+.skel-avatar      { width: 40px; height: 40px; border-radius: 999px; }
+.skel-list-avatar { width: 32px; height: 32px; border-radius: 999px; }
+
+/* 卡片图片占位：FILL 宽，180px 高 */
+.skel-image { width: 100%; height: 180px; }
+
+/* 宽度辅助类 */
+.skel-w-full { width: 100%; }
+.skel-w-61   { width: 61%; }
+.skel-w-75   { width: 75%; }
+
+/* 右侧内容列（avatar-text / list 共用） */
+.skel-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 段落组：标题行之后，行间 gap 8px，顶部额外 8px 间距 */
+.skel-paragraph {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* type=text */
+.skel-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+/* type=avatar-text */
+.skel-avatar-text {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  align-items: flex-start;
+}
+
+/* type=card */
+.skel-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.skel-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+/* type=list */
+.skel-list { display: flex; flex-direction: column; }
+.skel-list-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  align-items: center;
+}
+.skel-divider { height: 1px; background: #E6ECF2; flex-shrink: 0; }
+.brd-dark .brd-sep { color: #B3B3B3; }
+
+/* =============================================================
+   Statistic 统计数值
+   Figma: 飞鹊Edition2026 Web端 › node 3959-24
+   ---------------------------------------------------------------
+   结构：.stat > .stat-title + .stat-row(.stat-value / .stat-prefix-icon / .stat-suffix / .stat-trend)
+   变体维度：
+     type = value / trend / ranking / exposure / countdown-end / countdown-bar
+     size = default（24px 大值）
+   颜色 token：
+     #222222  text/title      主数值
+     #555555  text/main       标题 & 后缀
+     #00C88C  function/success  趋势向上 / 排名热度
+     #E64545  function/primary  趋势向下 / 排名图标色
+     #888888  text/tip        占位灰色
+     #007DFA  function/normal   倒计时进度条背景
+   图标 SVG（均为 16×16 viewBox，fill="currentColor"）：
+     trend-up:   M7.988 1.991L2.625 7.656L3.351 8.344L7.488 3.974V14H8.488V3.974L12.625 8.344L13.351 7.656Z
+     trend-down: M8 14.009L13.363 8.344L12.637 7.656L8.5 12.026V2H7.5V12.026L3.363 7.656L2.637 8.344Z
+   ---------------------------------------------------------------
+   USAGE:
+     基础数值：<div class="stat"><div class="stat-title">标题</div>
+                <div class="stat-row stat-row-baseline">
+                  <div class="stat-value">9,128</div>
+                  <div class="stat-suffix">件</div></div></div>
+     趋势：在 stat-row 内追加 <div class="stat-trend stat-trend-up/down">
+             <span class="stat-trend-icon"><svg ...趋势箭头.../></span>+12.5%</div>
+   ============================================================= */
+
+/* ---- 基础容器 ---- */
+.stat { display: inline-flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.stat-title { font-size: 14px; line-height: 22px; color: #555; font-weight: 400; white-space: nowrap; }
+
+/* ---- 数值行 ---- */
+.stat-value       { font-size: 24px; line-height: 30px; color: #222; font-weight: 600; white-space: nowrap; }
+.stat-value-plain { font-size: 24px; line-height: 30px; color: #222; font-weight: 400; white-space: nowrap; }
+.stat-row         { display: flex; gap: 4px; overflow: hidden; flex-shrink: 0; }
+.stat-row-baseline { align-items: baseline; }
+.stat-row-center   { align-items: center; }
+.stat-suffix      { font-size: 14px; line-height: 22px; color: #555; font-weight: 400; }
+.stat-prefix-icon { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; color: #E64545; }
+
+/* ---- 趋势（type=trend）---- */
+/* 图标：16×16 viewBox，CSS 缩放到 12×12；文字 12px */
+.stat-trend       { display: flex; gap: 2px; align-items: center; flex-shrink: 0; }
+.stat-trend-icon  { display: flex; align-items: center; justify-content: center; width: 12px; height: 12px; flex-shrink: 0; }
+.stat-trend-icon svg { width: 12px; height: 12px; }
+.stat-trend-up    { font-size: 12px; line-height: 18px; color: #00C88C; font-weight: 400; white-space: nowrap; }
+.stat-trend-down  { font-size: 12px; line-height: 18px; color: #E64545; font-weight: 400; white-space: nowrap; }
+
+/* ---- 排名（type=ranking）---- */
+.stat-rk-table    { width: 100%; border-collapse: collapse; }
+.stat-rk-table th { font-size: 12px; line-height: 18px; color: #888; font-weight: 400; padding: 8px 0; text-align: left; border-bottom: 1px solid #E6ECF2; }
+.stat-rk-table td { font-size: 14px; line-height: 22px; color: #222; padding: 12px 0; border-bottom: 1px solid #E6ECF2; }
+.stat-rk-idx      { width: 32px; flex-shrink: 0; }
+.stat-rk-heat     { font-size: 14px; color: #00C88C; }
+.stat-rc-ratio    { display: flex; align-items: center; gap: 3px; height: 100%; width: 144px; flex-shrink: 0; padding-left: 16px; font-size: 14px; line-height: 22px; white-space: nowrap; }
+.stat-rc-ratio-icon { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; }
+.stat-rc-ratio-icon svg { width: 16px; height: 16px; }
+.stat-ratio-up    { color: #00C88C; }
+.stat-ratio-down  { color: #E64545; }
+
+/* ---- 曝光（type=exposure）---- */
+.stat-exp-grid    { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.stat-exp-item    { display: flex; flex-direction: column; gap: 4px; }
+
+/* ---- 倒计时-胶囊（type=countdown-end）---- */
+.stat-cd-end      { display: flex; flex-direction: column; gap: 6px; width: 285px; background: #E64545; border-radius: 6px; padding: 15px 16px; }
+.stat-cd-end-label { font-size: 12px; line-height: 18px; color: rgba(255,255,255,0.7); font-weight: 400; }
+.stat-cd-end-row  { display: flex; align-items: baseline; gap: 2px; }
+.stat-cd-end-num  { font-size: 24px; line-height: 30px; color: #fff; font-weight: 600; }
+.stat-cd-end-sep  { font-size: 14px; line-height: 22px; color: rgba(255,255,255,0.7); margin: 0 2px; }
+.stat-cd-end-ms   { font-size: 14px; line-height: 22px; color: rgba(255,255,255,0.7); }
+
+/* ---- 倒计时-横条（type=countdown-bar）---- */
+.stat-cd-bar      { display: flex; align-items: center; justify-content: space-between; width: 600px; height: 64px; background: #007DFA; border-radius: 6px; padding: 0 16px; }
+.stat-cd-bar-left { display: flex; flex-direction: column; gap: 2px; }
+.stat-cd-bar-label { font-size: 12px; line-height: 18px; color: rgba(255,255,255,0.7); }
+.stat-cd-bar-row  { display: flex; align-items: baseline; gap: 2px; }
+.stat-cd-bar-num  { font-size: 24px; line-height: 30px; color: #fff; font-weight: 600; }
+.stat-cd-bar-sep  { font-size: 14px; line-height: 22px; color: rgba(255,255,255,0.7); margin: 0 4px; }
+
+/* =============================================================
+   Collapse 折叠面板
+   Figma: 飞鹊Edition2026 Web端 › node 3160-1418 / 3160-5458
+   ---------------------------------------------------------------
+   结构：
+     .clps > .clps-item(.is-open|.is-disabled) >
+       .clps-hd > (.clps-arrow + .clps-title)
+       .clps-bd > .clps-content(×N)
+
+   变体维度：
+     color   = default / red / blue
+     size    = sm(40px) / default(48px) / lg(56px,16px)
+     border  = bordered（默认）/ borderless（.clps-borderless）
+     state   = default / hover / disabled（.is-disabled）
+
+   图标：down-big 16×16 viewBox，fill="currentColor"
+     折叠：transform rotate(-90deg) → 指向右 →
+     展开：transform rotate(0deg)   → 指向下 ↓
+     path: M14.0454 4.66211L7.99995 10.6733L1.9547 4.66209L1.32019 5.30018
+           L7.99994 11.9423L14.6799 5.30022L14.0454 4.66211Z
+
+   颜色 token：
+     #ffffff     header 背景（默认关闭）
+     #f5f7fa     header 背景（hover / 展开 default）
+     #fff2f2     header 背景（展开 red）
+     #ebf5ff     header 背景（展开 blue）
+     #ced3d9     border / divider
+     #222222     title & icon 默认色
+     #e64545     title & icon（color=red）
+     #007dfa     title & icon（color=blue）
+     #555555     content 文本
+     #888888     disabled 文本 & icon
+   ---------------------------------------------------------------
+   USAGE:
+     <div class="clps [clps-red|clps-blue] [clps-sm|clps-lg] [clps-borderless]">
+       <div class="clps-item [is-open] [is-disabled]">
+         <div class="clps-hd" onclick="clpsToggle(this)">
+           <span class="clps-arrow"><svg .../></span>
+           <span class="clps-title">面板标题</span>
+         </div>
+         <div class="clps-bd">
+           <div class="clps-content">内容文本</div>
+         </div>
+       </div>
+     </div>
+   JS: function clpsToggle(hdEl) {
+     const item = hdEl.closest('.clps-item');
+     if (item.classList.contains('is-disabled')) return;
+     item.classList.toggle('is-open');
+   }
+   ============================================================= */
+
+/* ---- 容器 ---- */
+.clps { display: flex; flex-direction: column; border: 1px solid #ced3d9; border-radius: 4px; overflow: hidden; width: 100%; }
+.clps-item { display: flex; flex-direction: column; }
+.clps-item + .clps-item { border-top: 1px solid #ced3d9; }
+
+/* ---- Header ---- */
+.clps-hd { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; cursor: pointer; background: #fff; user-select: none; transition: background 0.15s; }
+.clps-hd:hover { background: #f5f7fa; }
+.clps-item.is-open > .clps-hd { background: #f5f7fa; }
+
+/* ---- 箭头图标 ---- */
+.clps-arrow { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; color: #222; transform: rotate(-90deg); transition: transform 0.2s ease; }
+.clps-item.is-open > .clps-hd > .clps-arrow { transform: rotate(0deg); }
+.clps-title { font-size: 14px; line-height: 22px; color: #222; font-weight: 400; flex: 1; min-width: 0; }
+
+/* ---- Body（展开/折叠动效）---- */
+.clps-bd { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.clps-item.is-open > .clps-bd { max-height: 1000px; }
+.clps-content { border-top: 1px solid #ced3d9; padding: 0 16px; font-size: 14px; line-height: 22px; color: #555; min-height: 48px; display: flex; align-items: center; background: #fff; }
+.clps-content + .clps-content { border-top: 1px solid #ced3d9; }
+
+/* ---- 颜色变体 red ---- */
+.clps-red .clps-item.is-open > .clps-hd { background: #fff2f2; }
+.clps-red .clps-item.is-open > .clps-hd .clps-title { color: #e64545; }
+.clps-red .clps-item.is-open > .clps-hd .clps-arrow { color: #e64545; }
+.clps-red .clps-hd:hover { background: #fff2f2; }
+
+/* ---- 颜色变体 blue ---- */
+.clps-blue .clps-item.is-open > .clps-hd { background: #ebf5ff; }
+.clps-blue .clps-item.is-open > .clps-hd .clps-title { color: #007dfa; }
+.clps-blue .clps-item.is-open > .clps-hd .clps-arrow { color: #007dfa; }
+.clps-blue .clps-hd:hover { background: #ebf5ff; }
+
+/* ---- 尺寸 small ---- */
+.clps-sm .clps-hd { height: 40px; }
+.clps-sm .clps-content { min-height: 40px; }
+
+/* ---- 尺寸 large ---- */
+.clps-lg .clps-hd { height: 56px; }
+.clps-lg .clps-title { font-size: 16px; line-height: 24px; }
+.clps-lg .clps-content { min-height: 56px; font-size: 16px; line-height: 24px; }
+
+/* ---- Borderless ---- */
+.clps-borderless { border: none; border-radius: 0; }
+.clps-borderless .clps-item { border-top: none; }
+.clps-borderless .clps-item + .clps-item { border-top: 1px solid #ced3d9; }
+
+/* ---- 禁用 ---- */
+.clps-item.is-disabled > .clps-hd { cursor: not-allowed; background: #f5f7fa; }
+.clps-item.is-disabled > .clps-hd .clps-title { color: #888; }
+.clps-item.is-disabled > .clps-hd .clps-arrow { color: #888; }

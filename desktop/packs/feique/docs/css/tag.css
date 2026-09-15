@@ -1,0 +1,34 @@
+/* ===== Tag 标签 ===== */
+/* Figma 2325:895 · type=line(描边) / areal(填充) · 12px/400/18lh · radius=4 · padding 0 4 */
+
+/* Base */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+/* type=line — 1px solid border */
+.tag-line-red        { border: 1px solid #E64545; color: #E64545; }
+.tag-line-orange     { border: 1px solid #FAAA00; color: #FAAA00; }
+.tag-line-blue       { border: 1px solid #007DFA; color: #007DFA; }
+.tag-line-green      { border: 1px solid #00C88C; color: #00C88C; }
+.tag-line-deepblue   { border: 1px solid #A3B8CC; color: #A3B8CC; }
+.tag-line-darkgray   { border: 1px solid #888888; color: #888888; }
+.tag-line-lightgray  { border: 1px solid #CED3D9; color: #888888; }
+
+/* type=areal — 实色填充 */
+.tag-areal-red         { background: #E64545; color: #fff; }
+.tag-areal-orange      { background: #FAAA00; color: #fff; }
+.tag-areal-blue        { background: #007DFA; color: #fff; }
+.tag-areal-green       { background: #00C88C; color: #fff; }
+.tag-areal-lightred    { background: #FCECEC; color: #555; }
+.tag-areal-lightorange { background: #FEF6E5; color: #555; }
+.tag-areal-lightblue   { background: #E6ECF2; color: #555; }
+.tag-areal-lightgreen  { background: #E6FAF4; color: #555; }

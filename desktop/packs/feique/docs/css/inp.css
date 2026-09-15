@@ -1,0 +1,77 @@
+/* ===== 飞鹊 Input 文本输入框 ===== */
+.inp { display:flex; align-items:center; background:#fff; border:1px solid #CED3D9; border-radius:4px; overflow:hidden; transition:border-color .15s,background .15s; font-size:14px; font-family:inherit; }
+.inp:hover { border-color:#888; }
+.inp:focus-within { border-color:#007DFA; }
+.inp-body { flex:1; display:flex; align-items:center; gap:8px; padding:4px 10px; min-width:0; }
+.inp-body input { flex:1; min-width:0; border:none; outline:none; background:transparent; font:inherit; color:#222; line-height:22px; }
+.inp-body input::placeholder { color:#B3B3B3; }
+/* Large */
+.inp-lg { border-radius:8px; font-size:16px; min-height:40px; }
+.inp-lg .inp-body { padding:6px 12px; gap:10px; }
+.inp-lg .inp-body input { line-height:24px; }
+/* Small */
+.inp-sm { font-size:12px; }
+.inp-sm .inp-body { padding:2px 8px; gap:6px; }
+.inp-sm .inp-body input { line-height:18px; }
+/* Simulated states */
+.inp-s-hover { border-color:#888 !important; }
+.inp-s-focused { border-color:#007DFA !important; }
+.inp-disabled { background:#F0F1F2 !important; cursor:not-allowed; pointer-events:none; }
+.inp-disabled .inp-body input { cursor:not-allowed; color:#B3B3B3; }
+/* Status */
+.inp-error   { border-color:#FF5252; }
+.inp-warning { border-color:#FAAA00; }
+.inp-success { border-color:#00C88C; }
+.inp-reminder{ border-color:#007DFA; }
+/* Pre/Post Tab */
+.inp-tab { display:flex; align-items:center; align-self:stretch; padding:4px 10px; background:#F5F7FA; color:#555; font-size:14px; white-space:nowrap; border-right:1px solid #CED3D9; flex-shrink:0; }
+.inp-tab-post { border-right:none; border-left:1px solid #CED3D9; }
+.inp-lg .inp-tab { padding:6px 12px; }
+.inp-sm .inp-tab { padding:2px 8px; }
+/* Icon-only tab */
+.inp-tab-icon { justify-content:center; padding:0 8px; }
+.inp-lg .inp-tab-icon { padding:0 12px; }
+.inp-sm .inp-tab-icon { padding:0 4px; }
+/* Select tab */
+.inp-tab-select { gap:8px; }
+/* Status icon row */
+.inp-row  { display:flex; align-items:center; gap:4px; }
+.inp-icon { display:flex; align-items:center; flex-shrink:0; }
+/* Caption */
+.inp-caption { font-size:14px; line-height:22px; color:#888; padding-top:2px; }
+.inp-caption-error   { color:#FF5252; }
+.inp-caption-warning { color:#FAAA00; }
+.inp-caption-success { color:#00C88C; }
+.inp-caption-reminder{ color:#007DFA; }
+/* Field wrap */
+.inp-field { display:flex; flex-direction:column; gap:4px; }
+/* Label */
+.inp-label { display:inline-flex; align-items:center; gap:4px; font-size:14px; color:#222; line-height:22px; }
+.inp-label-req { color:#FF5252; }
+.inp-label-opt { color:#555; font-size:12px; }
+/* Search body */
+.inp-search-body { flex:1; display:flex; align-items:center; gap:8px; padding:4px 4px 4px 8px; min-width:0; overflow:hidden; }
+.inp-search-body input { flex:1; min-width:0; border:none; outline:none; background:transparent; font:inherit; color:#222; line-height:22px; }
+.inp-search-body input::placeholder { color:#B3B3B3; }
+.inp-lg .inp-search-body { padding:6px 4px 6px 10px; gap:10px; }
+.inp-lg .inp-search-body input { line-height:24px; }
+.inp-sm .inp-search-body { padding:2px 4px 2px 8px; gap:8px; }
+.inp-sm .inp-search-body input { line-height:18px; }
+/* Clear icon */
+.inp-search-clear { display:flex; align-items:center; flex-shrink:0; color:#B3B3B3; cursor:pointer; transition:color .15s; }
+.inp-search-clear:hover { color:#888; }
+/* Search button — gray */
+.inp-search-btn { display:flex; align-items:center; justify-content:center; align-self:stretch; padding:0 8px; background:#F5F7FA; border-left:1px solid #CED3D9; flex-shrink:0; cursor:pointer; color:#555; transition:background .15s; }
+.inp-search-btn:hover { background:#E8EAED; }
+.inp-lg .inp-search-btn { padding:0 10px; }
+.inp-sm .inp-search-btn { padding:0 4px; }
+/* Search button — primary icon (red) */
+.inp-search-btn-primary { display:flex; align-items:center; justify-content:center; align-self:stretch; padding:0 8px; background:#E64545; flex-shrink:0; cursor:pointer; color:#fff; transition:background .15s; }
+.inp-search-btn-primary:hover { background:#CF3D3D; }
+.inp-lg .inp-search-btn-primary { padding:0 10px; }
+.inp-sm .inp-search-btn-primary { padding:0 4px; }
+/* Search button — primary text (red) */
+.inp-search-btn-text { display:flex; align-items:center; align-self:stretch; padding:0 16px; background:#E64545; flex-shrink:0; cursor:pointer; color:#fff; font-size:14px; line-height:22px; white-space:nowrap; transition:background .15s; }
+.inp-search-btn-text:hover { background:#CF3D3D; }
+.inp-lg .inp-search-btn-text { font-size:16px; line-height:24px; }
+.inp-sm .inp-search-btn-text { padding:0 8px; }

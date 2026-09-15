@@ -383,7 +383,7 @@ $('#fqPill').onclick = e => {
 function fqFixText(r) {
   return [`「飞鹊体检」对${r.rel}扫出${r.n}处不合规，逐条改掉，改完自己再对一遍：`, '',
     ...r.issues.map((i, k) => `${k + 1}. ${i.msg}`), '',
-    `规则来源：${S.boot.packDir}/DESIGN.md第5、5b节；组件规则原样从${S.boot.packDir}/docs/飞鹊Web组件库.css复制，类名保持飞鹊的，不自己写一套。改完在回答里说清每条改成了什么。`].join('\n');
+    `规则来源：${S.boot.packDir}/DESIGN.md第5、5b节；组件规则从${S.boot.packDir}/docs/css/里对应的文件整段复制（28类组件一类一个文件，清单见同目录INDEX.md），类名保持飞鹊的，不自己写一套。改完在回答里说清每条改成了什么。`].join('\n');
 }
 /* 宽度和缩放是两回事：宽度决定按多宽的画布渲染（自适应/1240/375），缩放只决定看多大。
    自适应档把用户缩放乘进 fit 系数里；定宽两档用 CSS zoom（它会重排、滚动条才对，transform 不会）。 */

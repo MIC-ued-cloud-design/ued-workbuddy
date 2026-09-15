@@ -1,0 +1,15 @@
+/* ===== scrollbar (Figma 2019:24778) ===== */
+/* Figma 组件名 fd_scrollbar，只有 thumb，无 track 层 */
+/* fill: text/auxiliary #888 · default opacity:0.5 · hover opacity:1 */
+/* size=large 8px · size=medium 6px · size=small 4px · border-radius: 40px */
+.scr{display:block;width:6px;border-radius:40px;background:#888;opacity:0.5;cursor:pointer;transition:opacity .15s;flex-shrink:0;}
+.scr:hover,.scr-hv{opacity:1;}
+.scr-lg{width:8px;}
+.scr-sm{width:4px;}
+/* 原生滚动条覆写（webkit）— opacity 不支持伪元素，等效用 rgba */
+.use-scr::-webkit-scrollbar{width:6px;height:6px;}
+.use-scr::-webkit-scrollbar-track{background:transparent;}
+.use-scr::-webkit-scrollbar-thumb{background:rgba(136,136,136,0.5);border-radius:40px;}/* text/auxiliary opacity:0.5 */
+.use-scr::-webkit-scrollbar-thumb:hover{background:#888;}/* text/auxiliary opacity:1 */
+.use-scr-lg::-webkit-scrollbar{width:8px;height:8px;}
+.use-scr-sm::-webkit-scrollbar{width:4px;height:4px;}

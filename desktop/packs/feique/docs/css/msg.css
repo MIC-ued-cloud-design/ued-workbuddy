@@ -1,0 +1,11 @@
+/* ===== Message 全局提示 ===== */
+.msg{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:#fff;font-family:'Roboto',sans-serif;font-size:16px;font-weight:400;line-height:24px;color:#222;}
+.msg-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.msg-icon svg{width:21px;height:21px;}
+.msg-normal .msg-icon{color:#007DFA;}
+.msg-error .msg-icon{color:#FF5252;}
+.msg-success .msg-icon{color:#00C88C;}
+.msg-warning .msg-icon{color:#FAAA00;}
+.msg-loading .msg-icon{color:#E64545;}
+.msg-spin{width:21px;height:21px;border-radius:50%;border:2px solid #E6ECF2;border-top-color:#E64545;animation:msg-spin .8s linear infinite;}
+@keyframes msg-spin{to{transform:rotate(360deg)}}

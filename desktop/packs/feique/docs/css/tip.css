@@ -1,0 +1,32 @@
+/* ===== Tooltip ===== */
+.tip{position:relative;display:inline-flex;flex-direction:column;max-width:266px;min-width:100px;}
+.tip-h{flex-direction:row;}/* left/right placements */
+.tip-body{padding:10px 16px;border-radius:4px;font-family:'Roboto',sans-serif;font-size:14px;font-weight:400;line-height:22px;word-break:break-word;}
+/* color=dark */
+.tip-dark .tip-body{background:#222;color:#fff;}
+.tip-dark .tip-arrow{color:#222;}
+/* color=light */
+.tip-light .tip-body{background:#fff;color:#222;}
+.tip-light .tip-arrow{color:#fff;}
+.tip-light{filter:drop-shadow(0 1px 3px rgba(0,0,0,0.12)) drop-shadow(0 4px 8px rgba(0,0,0,0.08)) drop-shadow(0 6px 18px rgba(0,0,0,0.05));}/* 二级投影 drop-shadow 近似 */
+/* arrow container */
+.tip-arrow{display:flex;align-items:center;flex-shrink:0;}
+/* top/bottom arrow: 12w × 6h */
+.tip-arrow-tb{justify-content:center;height:6px;width:100%;}
+.tip-arrow-tb::after{content:'';width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;}
+/* arrow pointing up (placement=bottom): ▲ */
+.tip-arrow-up::after{border-bottom:6px solid currentColor;}
+/* arrow pointing down (placement=top): ▼ */
+.tip-arrow-dn::after{border-top:6px solid currentColor;}
+/* left/right arrow: 6w × 12h */
+.tip-arrow-lr{justify-content:center;width:6px;align-self:stretch;}
+.tip-arrow-lr::after{content:'';width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;}
+/* arrow pointing left (placement=right): ◀ */
+.tip-arrow-lt::after{border-right:6px solid currentColor;}
+/* arrow pointing right (placement=left): ▶ */
+.tip-arrow-rt::after{border-left:6px solid currentColor;}
+/* arrow alignment */
+.tip-arrow-start{justify-content:flex-start;padding-left:12px;}
+.tip-arrow-end{justify-content:flex-end;padding-right:12px;}
+.tip-arrow-v-start{align-items:flex-start;padding-top:12px;}
+.tip-arrow-v-end{align-items:flex-end;padding-bottom:12px;}

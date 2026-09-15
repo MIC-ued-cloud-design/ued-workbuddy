@@ -1,0 +1,14 @@
+/* ===== 飞鹊 Selector Single 按钮式选择器（买家端）===== */
+/* 来源：Figma 节点 2211:478，已用 get_design_context 校正 */
+.ss{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:5px 16px;border:1px solid #DAE0E6;border-radius:4px;background:#fff;font-size:14px;line-height:22px;color:#222;cursor:pointer;white-space:nowrap;box-sizing:border-box;font-family:'Roboto',sans-serif;}
+.ss.ss-hv{background:#F4F4F4;border-color:#222;}
+.ss.ss-sel{background:#F0F1F2;border-width:2px;border-color:#222;}
+.ss.ss-dis{opacity:.4;cursor:not-allowed;pointer-events:none;}
+.ss.ss-round{border-radius:1000px;}
+.ss.ss-sm{height:28px;padding:5px 10px;font-size:12px;line-height:18px;}
+/* Red 主题红 */
+.ss.ss-red.ss-hv{background:#FFF2F2;border-color:#E64545;color:#E64545;}
+.ss.ss-red.ss-sel{background:#FFF2F2;border-width:2px;border-color:#E64545;color:#E64545;}
+/* Blue 主题蓝 */
+.ss.ss-blue.ss-hv{background:#EBF5FF;border-color:#007DFA;color:#007DFA;}
+.ss.ss-blue.ss-sel{background:#EBF5FF;border-width:2px;border-color:#007DFA;color:#007DFA;}

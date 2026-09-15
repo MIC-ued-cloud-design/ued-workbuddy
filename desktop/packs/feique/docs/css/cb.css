@@ -1,0 +1,32 @@
+/* ===== 飞鹊 Checkbox 复选框 ===== */
+/* 来源：Figma 节点 2211:477，已用 get_design_context 校正 */
+.cb{display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none;}
+.cb-box{width:16px;height:16px;border-radius:4px;border:1px solid #888;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-sizing:border-box;transition:border-color .15s,background .15s;}
+.cb-box .cb-icon-chk,.cb-box .cb-icon-half{display:none;}
+.cb-label{font-size:14px;line-height:22px;color:#555;font-family:'Roboto',sans-serif;}
+/* Hover */
+.cb-hv .cb-box{border-color:#555;}
+.cb-hv .cb-label{color:#222;}
+.cb-blue.cb-hv .cb-label,.cb-red.cb-hv .cb-label{color:#555;}
+/* Checked */
+.cb-sel .cb-box{background:#222;border-color:#222;}
+.cb-sel .cb-label{color:#222;}
+.cb-sel .cb-box .cb-icon-chk{display:block;}
+.cb-blue.cb-sel .cb-box{background:#007DFA;border-color:#007DFA;}
+.cb-red.cb-sel .cb-box{background:#E64545;border-color:#E64545;}
+/* Indeterminate */
+.cb-half .cb-box{background:#222;border-color:#222;}
+.cb-half .cb-label{color:#222;}
+.cb-half .cb-box .cb-icon-half{display:block;}
+.cb-blue.cb-half .cb-box{background:#007DFA;border-color:#007DFA;}
+.cb-red.cb-half .cb-box{background:#E64545;border-color:#E64545;}
+/* Disabled */
+.cb-dis{cursor:not-allowed;pointer-events:none;}
+.cb-dis .cb-box{border-color:#b3b3b3;background:#f0f1f2;}
+.cb-dis .cb-label{color:#b3b3b3;}
+.cb-dis.cb-sel .cb-box,.cb-dis.cb-half .cb-box{background:#b3b3b3;border-color:#b3b3b3;}
+/* Small — 14×14 */
+.cb-sm .cb-box{width:14px;height:14px;border-radius:4px;}
+.cb-sm .cb-label{font-size:12px;line-height:18px;}
+.cb-sm .cb-box .cb-icon-chk{width:8px;height:6px;}
+.cb-sm .cb-box .cb-icon-half{width:8px;}

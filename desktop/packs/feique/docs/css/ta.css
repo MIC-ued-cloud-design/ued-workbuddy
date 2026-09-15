@@ -1,0 +1,23 @@
+/* ===== 飞鹊 Textarea 文本域 ===== */
+.ta { display: flex; flex-direction: column; border: 1px solid #CED3D9; border-radius: 6px; background: #fff; position: relative; }
+.ta-input { border: none; outline: none; resize: none; background: transparent; font-family: inherit; font-size: 14px; line-height: 22px; color: #222; padding: 4px 10px 0; min-height: 52px; width: 100%; }
+.ta-input::placeholder { color: #B3B3B3; }
+.ta-footer { text-align: right; font-size: 14px; line-height: 22px; padding: 0 10px 4px; color: #B3B3B3; flex-shrink: 0; user-select: none; }
+.ta-resizer { position: absolute; bottom: 2px; right: 2px; width: 8px; height: 8px; pointer-events: none; color: #CED3D9; }
+/* Size */
+.ta-sm { border-radius: 4px; }
+.ta-sm .ta-input { font-size: 12px; line-height: 18px; padding: 4px 8px 0; min-height: 40px; }
+.ta-sm .ta-footer { font-size: 12px; line-height: 18px; padding: 0 8px 4px; }
+.ta-lg { border-radius: 8px; }
+.ta-lg .ta-input { font-size: 16px; line-height: 24px; padding: 6px 12px 0; min-height: 66px; }
+.ta-lg .ta-footer { font-size: 14px; line-height: 22px; padding: 0 12px 6px; }
+/* States */
+.ta-hover   { border-color: #888; }
+.ta-focused, .ta-typing { border-color: #007DFA; }
+.ta-filled  { border-color: #E6ECF2; }
+.ta-error   { border-color: #FF5252; }
+.ta-disabled { border-color: #E6ECF2; background: #F0F1F2; }
+.ta-disabled .ta-input { color: #B3B3B3; }
+.ta-error  .ta-count { color: #FF5252; }
+.ta-typing .ta-count { color: #222; }
+.ta-filled .ta-count { color: #B3B3B3; }

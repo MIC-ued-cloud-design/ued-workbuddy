@@ -1,0 +1,49 @@
+/* ===== 飞鹊 InputNumber 数字输入框 ===== */
+/* Default/Disable: 外层 border + overflow:hidden；Hover/Typing/Error: 外层无 border，内部各自显示 */
+.inp-num{display:inline-flex;align-items:stretch;border:1px solid #CED3D9;border-radius:6px;overflow:hidden;height:32px;}
+.inp-num-sm{border-radius:4px;height:24px;}
+.inp-num-lg{border-radius:8px;height:40px;}
+.inp-num-btn{display:flex;align-items:center;justify-content:center;background:#F5F7FA;border:none;padding:8px;cursor:pointer;flex-shrink:0;color:#222;transition:background .15s;box-sizing:border-box;}
+.inp-num-btn:hover{background:#e8eaec;}
+.inp-num-sm .inp-num-btn{padding:4px;}
+.inp-num-lg .inp-num-btn{padding:9px;}
+.inp-num>.inp-num-btn:first-child{border-right:1px solid #CED3D9;border-radius:5px 0 0 5px;}
+.inp-num>.inp-num-btn:last-child{border-left:1px solid #CED3D9;border-radius:0 5px 5px 0;}
+.inp-num-sm>.inp-num-btn:first-child{border-radius:3px 0 0 3px;}
+.inp-num-sm>.inp-num-btn:last-child{border-radius:0 3px 3px 0;}
+.inp-num-lg>.inp-num-btn:first-child{border-radius:7px 0 0 7px;}
+.inp-num-lg>.inp-num-btn:last-child{border-radius:0 7px 7px 0;}
+.inp-num-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
+.inp-num-lg .inp-num-icon{width:22px;height:22px;}
+.inp-num-f{flex:1;display:flex;align-items:center;justify-content:center;background:#fff;min-width:0;box-sizing:border-box;}
+.inp-num-f input{border:0;outline:none;background:transparent;width:100%;box-sizing:border-box;font-family:'Roboto',sans-serif;font-size:14px;line-height:22px;color:#222;padding:5px 10px;text-align:center;display:block;min-width:0;}
+.inp-num-sm .inp-num-f input{font-size:12px;line-height:18px;padding:3px 8px;}
+.inp-num-lg .inp-num-f input{font-size:16px;line-height:24px;padding:8px 12px;}
+/* left type: 输入区右侧圆角 */
+.inp-num-lt .inp-num-f{border-radius:0 5px 5px 0;}
+.inp-num-sm.inp-num-lt .inp-num-f{border-radius:0 3px 3px 0;}
+.inp-num-lg.inp-num-lt .inp-num-f{border-radius:0 7px 7px 0;}
+/* Hover/Typing/Error：border:none（不能用 transparent，否则子元素缩进 1px） */
+.inp-num-hv,.inp-num-foc,.inp-num-err{border:none;overflow:visible;}
+.inp-num-hv .inp-num-btn,.inp-num-foc .inp-num-btn,.inp-num-err .inp-num-btn{border:1px solid #CED3D9;}
+.inp-num-hv .inp-num-f{border:1px solid #888;}
+.inp-num-foc .inp-num-f{border:1px solid #007DFA;}
+.inp-num-err .inp-num-f{border:1px solid #FF5252;}
+/* Disable */
+.inp-num-dis{border:1px solid #CED3D9;overflow:hidden;}
+.inp-num-dis .inp-num-btn{opacity:.4;cursor:not-allowed;pointer-events:none;}
+.inp-num-dis .inp-num-f{background:#F0F1F2;}
+.inp-num-dis .inp-num-f input{color:#B3B3B3;}
+/* none type */
+.inp-num-no{display:inline-flex;align-items:center;border:1px solid #CED3D9;border-radius:6px;background:#fff;transition:border-color .15s;height:32px;box-sizing:border-box;}
+.inp-num-no.inp-num-sm{border-radius:4px;height:24px;}
+.inp-num-no.inp-num-lg{border-radius:8px;height:40px;}
+.inp-num-no input{border:0;outline:none;background:transparent;font-family:'Roboto',sans-serif;font-size:14px;line-height:22px;color:#222;padding:5px 10px;text-align:center;display:block;width:100%;}
+.inp-num-no.inp-num-sm input{padding:3px 8px;font-size:12px;line-height:18px;}
+.inp-num-no.inp-num-lg input{padding:8px 12px;font-size:16px;line-height:24px;}
+.inp-num-no.inp-num-hv{border-color:#888;}
+.inp-num-no.inp-num-foc{border-color:#007DFA;}
+.inp-num-no.inp-num-err{border-color:#FF5252;}
+.inp-num-no.inp-num-err input{color:#FF5252;}
+.inp-num-no.inp-num-dis{background:#F0F1F2;}
+.inp-num-no.inp-num-dis input{color:#B3B3B3;}

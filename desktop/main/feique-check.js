@@ -21,7 +21,16 @@ function lib(packDir) {
   const colors = new Set(); for (const m of css.matchAll(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g)) colors.add(norm(m[0]));
   /* DESIGN.md 色表里有、CSS 里未必出现的几个（页面底、分割线、状态浅底、品牌红） */
   ['#DA291C', '#FFFFFF', '#000000', '#F5F7FA', '#DAE0E6', '#E6ECF2', '#E6E6E6', '#F0F1F2', '#FEF6E5', '#FFF2F2', '#EBFBF6', '#B3B3B3', '#FDF1F1', '#EBF5FF', '#222222', '#555555', '#888888'].forEach(c => colors.add(c));
-  _lib = { classes, colors, prefixes: ['btn', 'inp', 'alert', 'tag', 'bdg', 'sel', 'pg', 'msg', 'tip', 'cb', 'rd', 'sw', 'skel', 'spin'] };
+  /* 飞鹊库自己有 5 处 font-weight:600（面包屑 current / Tabs 选中 / 骨架屏标题）。
+     模型把官方 CSS 原样抄进页面是我们要求它做的事，不能反过来判它违规 —— 但也不能把 600 整个放行，
+     否则模型自己写的 .my-title{font-weight:600} 就混过去了。所以只记下「官方哪个选择器是哪个值」，逐条对。 */
+  const offW = new Map();
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const w = /font-weight\s*:\s*([^;}]+)/.exec(m[2]);
+    if (!w || /^(400|700|normal|bold|inherit)$/.test(w[1].trim())) continue;
+    for (const sel of m[1].split(',')) offW.set(sel.trim().replace(/\s+/g, ' '), w[1].trim());
+  }
+  _lib = { classes, colors, offW, prefixes: ['btn', 'inp', 'alert', 'tag', 'bdg', 'sel', 'pg', 'msg', 'tip', 'cb', 'rd', 'sw', 'skel', 'spin'] };
   return _lib;
 }
 /* 从某个开标签起，按 div/section 深度找到它的闭合，返回内部 HTML */
@@ -45,11 +54,21 @@ function check(html, packDir) {
   const badFam = [...new Set(fams.filter(f => !/^['"]?Roboto/i.test(f) && !/monospace/i.test(f)))];
   if (badFam.length) issues.push({ rule: 'font', level: 'bad', msg: `字体不是 Roboto 首选：${badFam.slice(0, 3).join(' / ')}` });
 
-  /* 2 字重：只有 400 / 700 */
-  const ws = [...css.matchAll(/font-weight\s*:\s*([^;}]+)/g)].map(m => m[1].trim())
-    .concat([...css.matchAll(/\bfont\s*:\s*(?:italic\s+|oblique\s+)?(\d{3}|bold|bolder|lighter)\s/g)].map(m => m[1]));   // font: 500 14px/22px … 这种缩写也算
-  const badW = [...new Set(ws.filter(w => !/^(400|700|normal|bold|inherit)$/.test(w)))];
-  if (badW.length) issues.push({ rule: 'weight', level: 'bad', msg: `字重只有 400 / 700，出现了 ${badW.join('、')}` });
+  /* 2 字重：只有 400 / 700（官方库自己那几处 600 按选择器豁免，见 lib() 里的 offW） */
+  const ok = w => /^(400|700|normal|bold|inherit)$/.test(w);
+  const badW = new Set();
+  for (const m of css.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+    const sels = m[1].split(',').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean);
+    for (const d of [...m[2].matchAll(/font-weight\s*:\s*([^;}]+)/g)].map(x => x[1].trim())) {
+      if (ok(d)) continue;
+      if (sels.length && sels.every(sel => L.offW.get(sel) === d)) continue;   // 原样抄自飞鹊库，放行
+      badW.add(d.replace(/["';]/g, '').trim());
+    }
+  }
+  /* 规则块外的（内联 style="font-weight:600"、font: 500 14px/22px 缩写）一律照判，没有选择器可豁免 */
+  for (const d of [...css.replace(/\{[^{}]*\}/g, '').matchAll(/font-weight\s*:\s*([^;}"']+)/g)].map(x => x[1].trim())) if (!ok(d)) badW.add(d);
+  for (const d of [...css.matchAll(/\bfont\s*:\s*(?:italic\s+|oblique\s+)?(\d{3}|bold|bolder|lighter)\s/g)].map(x => x[1])) if (!ok(d)) badW.add(d);
+  if (badW.size) issues.push({ rule: 'weight', level: 'bad', msg: `字重只有 400 / 700，出现了 ${[...badW].join('、')}` });
 
   /* 3 色值：不在飞鹊表内的 */
   const cnt = {}; for (const m of css.matchAll(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g)) { const c = norm(m[0]); cnt[c] = (cnt[c] || 0) + 1; }

@@ -1,0 +1,48 @@
+/* ===== 飞鹊 Pagination ===== */
+.pg { display: inline-flex; align-items: center; gap: 4px; }
+.pg-item {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border: 1px solid #DAE0E6; border-radius: 4px;
+  background: #fff; color: #222; font-size: 14px;
+  cursor: pointer; transition: border-color .15s, color .15s; user-select: none; font-weight: 400;
+}
+.pg-item:hover { border-color: #888; }
+.pg-item.pg-active { border-color: #888; color: #E64545; font-weight: 700; }
+.pg-item.pg-disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.pg-arrow {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border: none; border-radius: 4px;
+  background: transparent; color: #222; cursor: pointer; transition: background .15s; padding: 0;
+}
+.pg-arrow:hover { background: #F0F1F2; }
+.pg-arrow.pg-disabled { color: #B3B3B3; cursor: not-allowed; pointer-events: none; }
+.pg-more {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border: 1px solid #DAE0E6; border-radius: 4px;
+  background: #fff; color: #888; cursor: default;
+}
+.pg-sm .pg-item, .pg-sm .pg-arrow, .pg-sm .pg-more { width: 24px; height: 24px; }
+.pg-total { font-size: 14px; color: #222; white-space: nowrap; }
+.pg-jumper { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #222; }
+.pg-input {
+  width: 50px; height: 32px; border: 1px solid #CED3D9; border-radius: 4px;
+  background: #fff; font-size: 14px; text-align: center; outline: none; font-family: inherit;
+  transition: border-color .15s;
+}
+.pg-input:focus { border-color: #E64545; }
+.pg-sm .pg-input { height: 24px; }
+.pg-simple-input {
+  width: 56px; height: 32px; border: 1px solid #CED3D9; border-radius: 4px;
+  background: #fff; font-size: 14px; text-align: center; outline: none; font-family: inherit;
+  transition: border-color .15s;
+}
+.pg-simple-input:focus { border-color: #E64545; }
+.pg-select-wrap { display: inline-flex; align-items: center; position: relative; }
+.pg-select {
+  height: 32px; border: 1px solid #CED3D9; border-radius: 4px; background: #fff;
+  font-size: 14px; color: #222; padding: 0 28px 0 8px; outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none; font-family: inherit; transition: border-color .15s;
+}
+.pg-select:focus { border-color: #E64545; }
+.pg-select-icon { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888; display: flex; }
+.pg-demo-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

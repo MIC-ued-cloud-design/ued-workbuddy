@@ -1,0 +1,46 @@
+/* ===== Loading / Spin 加载 ===== */
+/* 图标来源：飞鹊 Loading.svg · viewBox="0 0 16 16" 原始使用，不裁切 */
+/* SVG width/height = 容器尺寸，图标内圈随 viewBox 等比缩放 */
+
+/* Base */
+.spin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: spin-rotate .8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin-rotate { to { transform: rotate(360deg) } }
+
+/* Size — Figma 3169:893: sm=16 / md=20 / lg=32 */
+.spin-sm { width: 16px; height: 16px; }
+.spin-md { width: 20px; height: 20px; }
+.spin-lg { width: 32px; height: 32px; }
+
+/* Color — 通过 color 属性控制弧段 fill="currentColor" */
+.spin-red   { color: #E64545; }
+.spin-dark  { color: #222222; }
+.spin-blue  { color: #007DFA; }
+.spin-gray  { color: #CED3D9; }
+.spin-light { color: #FFFFFF; }
+
+/* Spin with description — arrange=vertical/horizontal · Size=small/default/large */
+.spin-desc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.spin-desc-v { flex-direction: column; }
+.spin-desc-h { flex-direction: row; }
+.spin-desc-text {
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  color: #222;
+}
+/* Size=large → 文字 16px/24lh */
+.spin-desc.spin-desc-lg .spin-desc-text { font-size: 16px; line-height: 24px; }
+/* vertical + small/large → gap=6 */
+.spin-desc-v.spin-desc-sm { gap: 6px; }
+.spin-desc-v.spin-desc-lg { gap: 6px; }

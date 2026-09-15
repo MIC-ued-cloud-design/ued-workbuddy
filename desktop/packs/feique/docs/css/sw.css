@@ -1,0 +1,34 @@
+/* ===== Switch 开关 (Figma 2216:13236) ===== */
+/* size=default(44×22) / small(28×16) · state=default/pressed/loading/disabled · active=true/false */
+@keyframes sw-spin{to{transform:rotate(360deg)}}
+.sw {
+  position: relative; display: inline-block; width: 44px; height: 22px;
+  border-radius: 16px; background: #B3B3B3; cursor: pointer;
+  transition: background .2s; box-sizing: border-box; vertical-align: middle;
+  user-select: none; flex-shrink: 0;
+}
+.sw-handle {
+  position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  border-radius: 16px; background: #fff;
+  box-shadow: 0 2px 4px rgba(0,35,11,0.2);
+  transition: transform .2s;
+}
+/* active=true */
+.sw-on { background: #007DFA; }
+.sw-on .sw-handle { transform: translateX(22px); }
+/* loading */
+.sw-loading { opacity: 0.4; pointer-events: none; }
+.sw-loading .sw-handle::after {
+  content: ''; position: absolute; inset: 2px; border-radius: 50%;
+  border: 1.5px solid transparent; border-top-color: #B3B3B3;
+  animation: sw-spin .6s linear infinite;
+}
+.sw-on.sw-loading .sw-handle::after { border-top-color: #007DFA; }
+/* disabled */
+.sw-disabled { opacity: 0.4; pointer-events: none; cursor: not-allowed; }
+/* size=small loading — spinner 圆直径≈10px（Figma arc vector 4.99 是 1/4 弧段，非整圆） */
+.sw-sm.sw-loading .sw-handle::after { inset: 1px; border-width: 1px; }
+/* size=small */
+.sw-sm { width: 28px; height: 16px; }
+.sw-sm .sw-handle { width: 12px; height: 12px; }
+.sw-sm.sw-on .sw-handle { transform: translateX(12px); }

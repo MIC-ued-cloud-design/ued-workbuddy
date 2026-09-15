@@ -1,0 +1,149 @@
+/* ===== Steps Items (Figma 3035:451) ===== */
+
+/* Steps Item / Horizontal (Figma 3035:665) */
+/* Steps Item / Progress Icon (Figma 3035:491)
+   Type=Basic Default 32×32: Finish(border #007DFA + yes2) · Process(bg #007DFA + 数字#FFF)
+     · Progress(同Process + ::after旋转环 inset:-2px) · Wait(bg #F0F1F2 + 数字#555) · Error(bg #FF5252 + delete#FFF)
+   Type=Basic Small 24×24: 同上，icon 缩小为 12×12
+   Type=Dot: Finish 8×8 #007DFA · Process 10×10 #007DFA · Wait 8×8 #CED3D9 · Error 8×8 #FF5252（无Progress状态）*/
+/* Steps Item / Tail (Figma 3035:1394) — Active #007DFA · Waiting #888888 */
+.stp{display:flex;gap:16px;align-items:flex-start;}
+.stp-item{flex:1;display:flex;flex-direction:column;align-items:flex-start;cursor:pointer;}
+.stp-item:last-child{flex:none;}
+.stp-head{display:flex;gap:8px;align-items:center;width:100%;}
+.stp-node{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:#F0F1F2;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:22px;color:#888;box-sizing:border-box;font-family:'Roboto',sans-serif;}
+.stp-node svg{width:16px;height:16px;}
+.stp-label{font-size:16px;line-height:24px;color:#888;white-space:nowrap;font-family:'Roboto',sans-serif;}
+.stp-tail{flex:1;height:1px;background:#888;align-self:center;}
+.stp-item:last-child > .stp-head .stp-tail{display:none;}/* 只隐藏 Basic Horizontal 最后一步的 tail */
+.stp-body{padding-left:40px;padding-top:4px;}
+.stp-desc{font-size:14px;line-height:22px;color:#888;}
+/* Status=Finish */
+.stp-done .stp-node{background:#fff;border:1px solid #007DFA;color:#007DFA;}
+.stp-done .stp-tail{background:#007DFA;}
+.stp-done .stp-label{color:#222;}
+.stp-done .stp-desc{color:#555;}
+/* Status=Process */
+.stp-cur .stp-node{background:#007DFA;color:#fff;}
+.stp-cur .stp-label{color:#222;}
+.stp-cur .stp-desc{color:#222;}
+/* Style=Custom Icon — .stp-custom（Figma 3035:694）
+   无圆圈背景，32×32 容器内放 24×24 自定义图标 */
+.stp.stp-custom .stp-node{background:none;border:none;}
+.stp.stp-custom .stp-node svg{width:24px;height:24px;}
+.stp.stp-custom .stp-done .stp-node{color:#007DFA;}
+.stp.stp-custom .stp-cur .stp-node{background:none;color:#007DFA;}
+.stp.stp-custom .stp-err .stp-node{background:none;color:#FF5252;}
+/* Status=Progress — 带旋转环，同 Process 色 + 36/28px 外圈 */
+.stp-prog .stp-node{background:#007DFA;color:#fff;position:relative;}
+.stp-prog .stp-label{color:#222;}
+.stp-prog .stp-desc{color:#222;}
+.stp-prog .stp-node::after{
+  content:'';position:absolute;inset:-2px;border-radius:50%;
+  border:1px solid #fff;border-top-color:#007DFA;
+  animation:spin-rotate .8s linear infinite;
+}
+/* Status=Error */
+.stp-err .stp-node{background:#FF5252;color:#fff;}
+.stp-err .stp-label{color:#FF5252;}
+.stp-err .stp-desc{color:#FF5252;}
+/* Steps Item / Vertical (Figma 3035:899) */
+.stp-v{flex-direction:column;gap:0;}
+.stp-v .stp-item{flex:none;width:100%;flex-direction:row;gap:16px;align-items:flex-start;}
+.stp-v .stp-head{display:none;}
+.stp-v .stp-body{display:none;}
+.stp-icon-col{display:flex;flex-direction:column;align-items:center;gap:6px;align-self:stretch;flex-shrink:0;width:32px;}
+.stp-icon-col .stp-tail{flex:1;width:1px;height:auto;align-self:auto;min-height:4px;}
+.stp-text-col{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:4px;padding-bottom:12px;}
+.stp-item:last-child .stp-text-col{padding-bottom:0;}
+/* Style=Basic Small — stp-sm 修饰符，适用于 Horizontal / Vertical */
+.stp-sm .stp-node{width:24px;height:24px;}
+.stp-sm .stp-node svg{width:12px;height:12px;}
+.stp-sm .stp-label{font-size:14px;line-height:22px;}
+.stp-sm .stp-body{padding-left:32px;}
+.stp-sm.stp-v .stp-icon-col{gap:4px;width:24px;}
+.stp-sm.stp-v .stp-text-col{padding-top:1px;}
+/* Steps Item / Dot Horizontal (Figma 3035:361) */
+.stp.stp-dot{gap:0;}/* 容器 gap=0，item 紧贴，tail 线段连续 */
+.stp-dot .stp-item{flex:1;flex-direction:column;align-items:center;gap:8px;padding-top:1px;}
+/* Order=First 左 tail / Order=Last 右 tail → opacity:0（Figma 用透明隐藏，保留占位） */
+.stp-dot .stp-item:first-child .stp-dhead .stp-tail:first-child{opacity:0;}
+.stp-dot .stp-item:last-child .stp-dhead .stp-tail:last-child{opacity:0;}
+.stp-dot .stp-cur{padding-top:0;}/* Process dot=10px，不需要 1px 补偿 */
+.stp-dhead{display:flex;align-items:center;gap:4px;width:100%;}
+.stp-dhead .stp-tail{height:3px;background:#E6ECF2;flex:1;min-width:0;}/* Dot tail = Style=Bold sw=3 */
+.stp-dnode{width:8px;height:8px;border-radius:50%;background:#CED3D9;flex-shrink:0;box-sizing:border-box;}
+/* Text Wrapper — 180px 固定宽度，居中在 item 内（Figma szH=FIXED 180） */
+.stp-dwrap{width:180px;display:flex;flex-direction:column;gap:2px;}
+.stp-dot .stp-label{text-align:center;}
+.stp-dot .stp-desc{text-align:center;}
+.stp-dot .stp-done .stp-dhead .stp-tail{background:#007DFA;}
+.stp-dot .stp-done .stp-dnode{background:#007DFA;}
+.stp-dot .stp-cur .stp-dnode{width:10px;height:10px;background:#007DFA;}
+.stp-dot .stp-cur .stp-dhead .stp-tail:first-child{background:#007DFA;}/* Process 左 tail 连 Finish */
+.stp-dot .stp-err .stp-dnode{background:#FF5252;}
+.stp-dot .stp-done .stp-label,.stp-dot .stp-cur .stp-label{color:#222;}
+.stp-dot .stp-done .stp-desc,.stp-dot .stp-cur .stp-desc{color:#555;}
+.stp-dot .stp-err .stp-label,.stp-dot .stp-err .stp-desc{color:#FF5252;}
+/* Dot Vertical — .stp-v.stp-dot（Figma 3035:440）
+   必须用 .stp-v.stp-dot 三级选择器覆盖 .stp-dot 的 Horizontal 默认值 */
+.stp-v.stp-dot .stp-item{flex-direction:row;align-items:flex-start;gap:16px;}
+.stp-v.stp-dot .stp-item:last-child{flex:none;}
+.stp-v.stp-dot .stp-icon-col{width:8px;padding-top:7px;padding-bottom:6px;}
+.stp-v.stp-dot .stp-cur .stp-icon-col{width:10px;}
+.stp-v.stp-dot .stp-text-col{padding-top:0;gap:4px;padding-bottom:10px;}
+.stp-v.stp-dot .stp-label{text-align:left;}
+.stp-v.stp-dot .stp-desc{text-align:left;margin-top:0;}
+.stp-v.stp-dot .stp-done .stp-icon-col .stp-tail{background:#007DFA;}
+/* Steps Item / Inline Step (Figma 3035:445) */
+.stp.stp-inline{display:inline-flex;position:relative;gap:4px;}/* inline-flex = Figma szH=HUG，容器收缩到内容宽度 */
+/* 背景连接线 — 绝对定位，dot 中心高度 (padding-top 8 + dot 6/2 = 11px) */
+.stp-inline-line{position:absolute;top:11px;left:24px;right:24px;height:1px;background:#888;}
+.stp-inline .stp-item{flex:none;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;position:relative;z-index:1;}
+.stp-inline .stp-item:last-child{flex:none;}
+.stp-inode{width:6px;height:6px;border-radius:50%;background:#fff;border:1px solid #E6ECF2;flex-shrink:0;box-sizing:border-box;}
+.stp-inline .stp-cur .stp-inode{background:#007DFA;border-color:#007DFA;}
+.stp-inline .stp-err .stp-inode{background:#FF5252;border-color:#FF5252;}
+.stp-inline .stp-item:hover{background:#F0F1F2;border-radius:4px;}
+.stp.stp-inline .stp-label{font-size:12px;line-height:20px;color:#555;text-align:center;white-space:nowrap;}/* 0-2-0→0-3-0 稳赢基类 .stp-done/.stp-cur 的 #222 */
+/* Steps / Navigation (Figma 3035:366) — type=Navigation, direction=Steps */
+/* Finish 节点背景使用 function/normal background: #EBF5FF */
+.stp-nav{gap:0;align-items:stretch;}
+.stp-nav .stp-item{flex:1;flex-direction:column;align-items:center;gap:0;padding:12px 0;border-bottom:1px solid #E6ECF2;cursor:pointer;}
+.stp-nav .stp-item:last-child{flex:1;}
+/* Content Wrapper — 包裹 head+body 整体居中 */
+.stp-nav-wrap{display:flex;flex-direction:column;}
+.stp-nav .stp-head{gap:8px;}
+.stp-nav .stp-node{width:32px;height:32px;font-size:14px;}
+.stp-nav .stp-label{font-size:14px;line-height:22px;}
+.stp-nav .stp-time{font-size:14px;line-height:22px;color:#555;font-family:'Roboto',sans-serif;white-space:nowrap;padding-left:8px;}
+.stp-nav .stp-tail{display:none;}
+.stp-nav .stp-body{display:block;padding-left:40px;padding-top:0;}
+.stp-nav .stp-desc{color:#555;}
+/* Navigation 箭头分隔符 right.svg #CED3D9 */
+.stp-nav-arrow{flex-shrink:0;width:16px;display:flex;align-items:center;justify-content:center;color:#CED3D9;align-self:center;}
+.stp-nav-arrow svg{width:16px;height:16px;}
+/* Navigation Wait — 覆盖全局 #888 为 #555 */
+.stp-nav .stp-item .stp-node{color:#555;background:#F0F1F2;}
+.stp-nav .stp-item .stp-label{color:#888;}
+.stp-nav .stp-item .stp-desc{color:#888;}
+.stp-nav .stp-item .stp-time{color:#888;}
+/* Navigation Status=Finish — 唯一有 2px 蓝色底边的状态 */
+.stp-nav .stp-done{border-bottom:2px solid #007DFA;}
+.stp-nav .stp-done .stp-node{background:#EBF5FF;border:1px solid #007DFA;color:#007DFA;}
+.stp-nav .stp-done .stp-label{color:#222;}
+.stp-nav .stp-done .stp-desc{color:#555;}
+.stp-nav .stp-done .stp-time{color:#555;}
+/* Navigation Status=Process — 底边保持默认 1px #E6ECF2，不加蓝色 */
+.stp-nav .stp-cur .stp-node{background:#007DFA;color:#fff;}
+.stp-nav .stp-cur .stp-label{color:#222;}
+.stp-nav .stp-cur .stp-desc{color:#555;}
+.stp-nav .stp-cur .stp-time{color:#555;}
+/* Navigation Status=Error */
+.stp-nav .stp-err{border-bottom-color:#FF5252;}
+.stp-nav .stp-err .stp-node{background:#FF5252;color:#fff;}
+.stp-nav .stp-err .stp-label{color:#FF5252;}
+/* Steps / Navigation Small — node 24px, label 14px */
+.stp-nav.stp-sm .stp-item{padding:8px 0;}
+.stp-nav.stp-sm .stp-node{width:24px;height:24px;}
+.stp-nav.stp-sm .stp-body{padding-left:32px;}

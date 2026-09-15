@@ -1,0 +1,51 @@
+/* ===== Breadcrumb 面包屑 ===== */
+/* Figma 2164:85 · state=default/hover/current · type=large/small */
+/* 分隔符: 飞鹊 icon=right 组件实例 16×16（compId=0:48081，非 big 版） */
+/* 两种主题: light(#888/#222) · dark(#B3B3B3/#FFF) */
+
+/* Base */
+.brd {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Link — state=default */
+.brd-item {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  color: #888;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* state=hover */
+.brd-item:hover { text-decoration: underline; }
+
+/* state=current (last item) */
+.brd-item-cur {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  color: #222;
+  cursor: default;
+}
+
+/* Separator — 飞鹊 icon=right 16×16，无额外 padding */
+.brd-sep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  flex-shrink: 0;
+}
+.brd-sep svg { width: 16px; height: 16px; }
+
+/* type=small */
+.brd-sm .brd-item { font-size: 12px; line-height: 18px; }
+.brd-sm .brd-item-cur { font-size: 12px; line-height: 18px; }
+.brd-sm .brd-sep svg { width: 16px; height: 16px; }
+
+/* dark mode — 用于深色背景 */
+.brd-dark .brd-item { color: #B3B3B3; }
+.brd-dark .brd-item-cur { color: #fff; }
