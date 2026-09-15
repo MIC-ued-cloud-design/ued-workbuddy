@@ -154,12 +154,12 @@ function ensureWorkspaceGuide() {
       '## 飞鹊设计系统（做任何MIC界面之前）', '',
       `飞鹊包在 \`${PACK_DIR}\`：`, '',
       '- `DESIGN.md` —— 字号、颜色、间距、圆角、按钮层级、视觉死命令。**先读它。**',
+      '- `COMPONENT-USAGE.md` —— **组件用法清册**（从 Figma 组件库读出来的真值：48 个组件的 key／节点号／尺寸／全部 variant 维度／设计师说明）。做页头页脚、产品卡、筛选栏、表单、弹层先读它。🔴 props 永远准，description 会过时；页名里的 ✅🤖 都是做完了，❌ 是不需要做。',
       '- `docs/css/INDEX.md` —— **砖表**：飞鹊 28 类组件的网页实现，一类一个文件（按钮/分页/输入框/下拉/级联/勾选/单选/开关/上传/步骤条/抽屉/Tabs/列表/面包屑/气泡/全局提示/加载/骨架/空状态/滚动条/徽标/标签/提示条/文本域/数字输入/按钮式选择/投影/reset）。做网页**先读它**，按这一页要用的 `cat docs/css/{_reset,btn,inp,…}.css` 读出来（带上 `_reset.css`，28 个全抄也才 73KB），**原样贴进 `<style>`**。🔴 **别重定向到文件**——那样内容没进你眼里，只会凭印象重写；贴完**不许改值**。**不自己写一套按钮 / 输入框 / 提示条**，也不发明飞鹊没有的变体。用法铁律在 `docs/飞鹊组件使用经验和规范.md` 第零、一节；权威源是 `docs/飞鹊Web组件库.css`（砖表是它按组件切开的，内容一样）。',
       '- `web-components.json` / `mobile-components.json` —— 组件清册。按钮、输入框、卡片、**页头页脚、LOGO、认证标**都在里面，每条带 Figma 的 key 和节点号、尺寸、颜色规则。',
-      '- `brand/` —— 品牌标识的现成 SVG（MIC LOGO 就在这儿，240×46）。',
-      '- `icons/` —— 295 个 UI 小图标。', '',
-      '**要放一个现成元素时的顺序：清册 → brand/ → icons/。**',
-      '🔴 别只搜 `icons/` —— 那里只有 UI 图标，LOGO 和页头这类在清册里。',
+      '- `brand/INDEX.md` —— **品牌与认证标识 18 个**：MIC LOGO、STS 担保交易、Audited 认证、Leading Factory 标杆工厂、钻石/金牌会员、供应商星级、评分条。🔴 这些标里的字**是矢量图形不是文字**，一律内联真 SVG，**一个都不许自己画或用文字拼**。',
+      '- `icons/INDEX.md` —— **295 个 UI 图标的检索索引**。🔴 按用途查这份，别靠文件名猜：要「Chat Now」的图标时搜 chat 只会命中 wechat（微信），真正的聊天图标叫 `tm.svg`（TM = Trade Manager）。索引里还列了 7 个文件名拼错的（`maill-send` 双 l、`ind-apprel` 少 a…），搜正确拼写一个都搜不到。', '',
+      '**要放一个现成元素时的顺序：brand/INDEX.md（品牌认证标）→ icons/INDEX.md（UI 图标）→ 组件清册（页头页脚、产品卡这类）。**',
       '🔴 品牌红 `#DA291C` 只属于 LOGO，界面主色是 `#E64545`，两个别混。',
       '🔴 品牌标识、页头、页脚、导航是MIC既有的东西，属于照抄范围，不是设计空间。三处都找不到就留灰色占位块并写明「待补真资产」——**不许自己画一个看着差不多的**。', '',
       ...(kb ? ['## 部门知识库', '', `路径 \`${kb.dir}\`（${kb.from}）。先读里面的 \`${kb.index}\`（一份索引，一行一个指针），按索引挑相关的几份读。`,
@@ -248,10 +248,12 @@ function systemPrompt(meta) {
        最后照印象手画了一个品牌LOGO。清册里其实早就有 mic-logo 这条（连品牌红#DA291C都写了）。
        所以这里把查找顺序写死，并且点名「不是图标的那些东西」在哪。 */
     ...(knowledgeDir() ? [`【有部门知识库，别凭记忆答】路径${knowledgeDir().dir}（${knowledgeDir().from}），先读里面的${knowledgeDir().index} —— 那是一份索引，一行一个指针；按索引挑相关的几份读，别整个目录乱翻、也别用grep满硬盘找。做任何MIC业务相关的活（搜索/询盘/交易订单/TM/RFQ/商机融合/会员/运营）之前先走这一步。里面有业务知识、方法论判据、各专项做法三类。`] : []),
-    `【要放一个现成元素时，按这个顺序找，别跳到"自己画"】① 先查组件清册 ${PACK_DIR}/web-components.json（移动端查mobile-components.json）——按钮、输入框、卡片、页头页脚、LOGO、认证标这些都在里面，条目里有Figma的key和节点号、尺寸、颜色规则 ② 品牌标识看 ${PACK_DIR}/brand/ 目录，LOGO已经是现成SVG，直接内联 ③ UI小图标看 ${PACK_DIR}/icons/（295个）。清册里给的是Figma节点号、不是图片，需要真SVG就用figma的download_assets按key导出。`,
+    `【要放一个现成元素时，按这个顺序找，别跳到"自己画"】① **品牌与认证标识**看 ${PACK_DIR}/brand/INDEX.md（18 个：MIC LOGO、STS 担保交易、Audited 认证、Leading Factory、钻石/金牌会员、供应商星级、评分条）——🔴 这些标里的字**是矢量图形不是文字节点**，拿彩色文字拼出来足够像、以至于没人会再去核对，一律 cat 真 SVG 整段内联。② **UI 图标**查 ${PACK_DIR}/icons/INDEX.md（295 个的检索索引，按用途找）——🔴 别靠文件名猜：要 Chat Now 的图标时搜 chat 只命中 wechat（微信），真正的聊天图标是 tm.svg（TM＝Trade Manager）；另有 7 个文件名拼错的也在索引里点了名。③ **页头页脚、产品卡、筛选侧栏、表单、弹层、日期选择**这类业务组件：先读 ${PACK_DIR}/COMPONENT-USAGE.md（**组件用法清册**，从 Figma 组件库逐页读出来的真值：每个组件的 key／节点号／尺寸／**全部 variant 维度**／设计师写的说明，比如 MIC Footer Search 有 1440/1366/1280/1024 四个断点、date picker 是 status×size×state×range 共 108 个组合、popover 有 12 个方位）。🔴 **props／variant 是机器读的永远准；description 是人写的会过时**，两者打架以 props 为准。🔴 组件库页名里的 ✅ 和 🤖 都是「已做完」，❌ 是「不需要做」，不是没做。清册里没有的再查 ${PACK_DIR}/web-components.json（移动端 mobile-components.json）。🔴🔴 **figma 的工具是延迟加载的，一开始不在你的工具表里，直接调会失败** —— 必须先跑一次 ToolSearch("select:mcp__plugin_figma_figma__get_metadata,mcp__plugin_figma_figma__download_assets") 把它们捞出来。2026-09-15 实测：模型读懂了「用 download_assets 导出真资产」，却因为手边没这个工具，一次没试就直接跳到「留占位」那条兜底了。**取资产四步**：① ToolSearch 捞工具 ② get_metadata(fileKey, nodeId) 看结构（业务组件多是 component set，里面按 breakpoint=1440/1366/1280/1024 分了 variant，挑你要的那个子节点 id）③ download_assets(fileKey, 子节点id, defaultFormat 传 svg) 拿到 URL ④ 立刻 curl -sL -o 文件 "URL"（URL 短命），再跑 python3 ${PACK_DIR}/tools/clean-figma-svg.py <文件> 清掉 Figma 画布杂质（组件集的紫色虚线框、画布底色，不清会在页面上多一块灰底加紫框）。🔴 **「留灰色占位块」是导不到时的兜底，不是第一选择；没试过就留占位＝没做。**`,
+
     `【开工第一步·先看砖表】做任何网页产物，第一件事是读${PACK_DIR}/docs/css/INDEX.md——飞鹊28类组件的网页实现清单（按钮/分页/输入框/数字输入框/文本域/下拉/级联/单选/按钮式单选/勾选框/开关/上传/步骤条/抽屉/列表/Tabs/面包屑/气泡/全局提示/加载/骨架屏/空状态/徽标/标签/提示条/滚动条/投影）。看这一页要用哪几个，就用一条 cat ${PACK_DIR}/docs/css/{_reset,btn,inp,…}.css 把它们读出来（一律带上_reset.css，28个全部加起来也才73KB），**把读到的内容原样贴进index.html的<style>**。🔴 **别把cat重定向到文件**（写成 > xxx.css 那样）——重定向了你就一个字节也没看见，只能凭印象重写，那等于没取；2026-09-15实测就是这么把btn-lg的圆角8px写成6px、padding 16px写成24px、还自己编了两个hover色的。🔴 贴进去之后**不许改里面的任何值**（高度/圆角/padding/字号/hover色都是定死的），门会拿飞鹊真值逐条比对，改了就报红。这一步不做，写出来的按钮和表单就都不是飞鹊的——2026-09-10两次实测都是这么翻车的。`,
     `【砖表里有的照抄，没有的不许手画】砖表里有的组件：类名保持飞鹊的、规则原样复制进单文件。🔴 不许自己另写一套.btn/.inp/.alert，不许借飞鹊前缀发明.btn-neutral这种飞鹊没有的变体。组件的高度、圆角、描边、字号一律以css/里的为准，DESIGN.md只管颜色和排版口径。🔴 砖表里没有的那25个（ProductCard八个变体、MIC Footer页脚、FilterSidebar筛选侧栏、Supplier Ad、TM Bar、vo-header/nav/sider、mic-logo）＝只有Figma没有CSS实现，它们恰恰是MIC真实页面的主力：清单在INDEX.md末尾那张表，带Figma key和节点号，用figma的download_assets按key导出真资产；导不到就画灰色占位块并在交付说明里写明「待补真资产」，手画一个看着差不多的比留空更糟。`,
 
+    `【规范怎么用·不只是值】${PACK_DIR}/docs/飞鹊设计规范-使用规则.md —— tokens.json 给的是值，这份给的是「什么时候用哪个」：7 级间距各自的场景（4=图标与文字 · 8=表单项 · 12=段落和label到输入框 · 16=卡片内padding · 24=区块 · 32=section · 48=首屏到内容），**禁止非 4px 倍数（5/10/15/25）**；圆角的等大公式 **外圆角＝内圆角＋padding**（4 标签小按钮 / 6 默认按钮输入框卡片 / 12 大卡片模态框）；阴影三级是**层级语义**不是深浅档（低＝下拉面板贴背景柔和 / 中＝卡片hover浮起 / 高＝对话框模态通知抽屉显著突出），全用或全不用；字阶控制在 3-5 种保持克制。♿ **无障碍是硬要求**：对比度≥4.5:1（大文本≥3:1）· 焦点样式不许 outline:none 且无替代（MIC 焦点＝2px #0071E1 50% 圆角4px 偏移1~2px）· 点击区域≥44×44px · 图片必有 Alt（装饰图 alt 留空）· 表单 label 绑 id · 纯色彩不能作唯一信息载体 · 语义化标签不用 div 模拟按钮。交付前过那份文档第 6 节的 10 条自查。`,
     `【多端与响应式】页面要适配多端就读${PACK_DIR}/docs/飞鹊响应式规则-AI友好型规范.md（断点、栅格、各端差异），别自己定断点。用法铁律读${PACK_DIR}/docs/飞鹊组件使用经验和规范.md第零、一节：参考页面只学布局，实现只能用飞鹊的砖。`,
     `【价格怎么写】页面上出现价格、起订量一律按${PACK_DIR}/docs/MIC英文价格规范-AI友好型.md：US$15.20-16.60（US$ 后不空格、区间用短横）、100 Pieces (MOQ)（不写Min. Order）。`,
     '【最常犯的三个组合错误，写完自查】① 实心红按钮全页只有一个（主CTA），其它动作用 .btn-secondary（白底黑边黑字）或 .btn-link，飞鹊没有「红描边按钮」 ② Alert提示条里不放按钮，动作是 .alert-link文字链 ③ 取消 / 次操作配 .btn-secondary，不是灰按钮。应用会在预览栏上跑一遍「飞鹊体检」，不过的会摆出来。',
@@ -330,6 +332,29 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
 }
 
+
+/* 注入预览 iframe 的测量探针：把页面真实内容宽高报给父窗口，父窗口据此决定按多宽渲染。
+   用 IIFE 不污染页面；只在被嵌进 iframe 时才跑；同值不重复上报，避免 resize 抖动。 */
+const FIT_PROBE = `
+<script>(function(){
+  if (window.parent === window) return;
+  var last = '';
+  function report(){
+    var d = document.documentElement, b = document.body || d;
+    var w = Math.max(d.scrollWidth||0, b.scrollWidth||0, d.offsetWidth||0);
+    var h = Math.max(d.scrollHeight||0, b.scrollHeight||0);
+    if (!w) return;
+    var k = w + 'x' + h;
+    if (k === last) return;
+    last = k;
+    try { window.parent.postMessage({ __uwFit: 1, w: w, h: h }, '*'); } catch (e) {}
+  }
+  window.addEventListener('load', report);
+  window.addEventListener('resize', report);
+  try { new ResizeObserver(report).observe(document.documentElement); } catch (e) {}
+  setTimeout(report, 0); setTimeout(report, 200); setTimeout(report, 800);
+})();<\/script>`;
+
 /* 项目文件走自定义协议给预览 iframe 用：uwproj://p/<项目id>/<相对路径> */
 protocol.registerSchemesAsPrivileged([{ scheme: 'uwproj', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 
@@ -346,6 +371,16 @@ app.whenReady().then(() => {
       const abs = path.normalize(path.join(base, rel));
       if (!abs.startsWith(base)) return new Response('forbidden', { status: 403 });
       if (!fs.existsSync(abs)) return new Response('not found', { status: 404 });
+      /* HTML 给预览用时注入一个测量探针：iframe 是 uwproj:// 而主窗口是 file://，跨源读不到
+         contentDocument，所以预览「自适应」档一直按写死的 1240 渲染 —— 页面宽过 1240 就被裁掉
+         （2026-09-15：一个 1400px 的产品列表页右边整条栏看不见）。探针只走协议层，不落盘，
+         不影响体检和交付产物（那两处读的都是磁盘文件）。 */
+      if (/\.html?$/i.test(abs)) {
+        return net.fetch(pathToFileURL(abs).toString()).then(async r => {
+          const html = await r.text();
+          return new Response(html + FIT_PROBE, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+        });
+      }
       return net.fetch(pathToFileURL(abs).toString());
     } catch (e) { return new Response(String(e), { status: 500 }); }
   });

@@ -10,7 +10,7 @@ const S = {
   project: null,          // { id, name, role, scene, files, dir, sessionId }
   logs: new Map(),        // id → { items: [], busy, startedAt, textOpen }
   pendingScene: null, pendingAbility: null,
-  tab: 'preview', width: 'auto', zoom: 1, previewFile: null, codeFile: null,
+  tab: 'preview', width: 'auto', zoom: 1, previewFile: null, codeFile: null, contentW: 0,
   figma: null,            // 这个项目动过的 Figma 记录（主进程从工具调用里抓的，不靠模型自觉写）
   timer: null,
 };
@@ -346,6 +346,7 @@ function fmtSize(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : n 
 function loadPreview() {
   if (!S.project || !S.previewFile) return;
   const fr = $('#preview');
+  S.contentW = 0;   // 上一个页面的宽度不能带到下一个
   fr.src = `uwproj://p/${encodeURIComponent(S.project.id)}/${S.previewFile.split('/').map(encodeURIComponent).join('/')}?t=${Date.now()}`;
   fitPreview();
   fqCheck();
@@ -399,7 +400,10 @@ function fitPreview() {
   }
   box.style.zoom = '';
   const pane = w.clientWidth - 32, ph = w.clientHeight - 32;
-  const base = 1240, scale = Math.min(1, pane / base) * z;
+  /* 🔴 base 曾写死 1240，页面宽过它就被 iframe 裁掉（1400px 的产品列表页右边整条栏看不见）。
+     现在用协议层探针报上来的真实内容宽度，封顶 2560 防止某个溢出元素把整页缩成米粒。 */
+  const base = Math.min(2560, Math.max(1240, S.contentW || 0));
+  const scale = Math.min(1, pane / base) * z;
   w.classList.add('fit');
   box.style.width = Math.round(base * scale) + 'px'; box.style.height = ph + 'px';
   fr.style.width = base + 'px'; fr.style.height = Math.round(ph / scale) + 'px';
@@ -440,6 +444,16 @@ window.addEventListener('keydown', e => {
   else if (e.key === '0') { e.preventDefault(); setZoom(1); }
 });
 window.addEventListener('resize', () => { if (S.view === 'work') fitPreview(); });
+/* 预览 iframe 跨源（uwproj:// vs file://），读不到 contentDocument，只能让页面自己把尺寸报上来。
+   探针在 main.js 的协议层注入（FIT_PROBE）。只认预览那个 iframe 发的，别的一律不理。 */
+window.addEventListener('message', e => {
+  const fr = $('#preview');
+  if (!e.data || e.data.__uwFit !== 1 || !fr || e.source !== fr.contentWindow) return;
+  const w = Math.ceil(e.data.w || 0);
+  if (!w || w === S.contentW) return;
+  S.contentW = w;
+  if (S.width === 'auto') fitPreview();
+});
 async function loadCode() {
   if (!S.project || !S.codeFile) { $('#codeView').textContent = ''; return; }
   const r = await uw.readFile({ id: S.project.id, rel: S.codeFile });

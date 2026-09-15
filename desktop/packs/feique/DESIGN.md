@@ -2,7 +2,10 @@
 
 > 这份是UED WorkBuddy桌面版随应用携带的飞鹊设计系统。做任何MIC / 飞鹊界面之前先读完这一页；
 > 数值以本目录 `tokens.json` 为准，用法与判断以 `docs/飞鹊组件使用经验和规范.md` 为准（51KB，做视觉稿必读一遍）。
-> 图标：本目录 `icons/` 共295个SVG（文件名即图标名，清单见 `icon-variants.txt`），一律内联SVG，不要用字体图标、不要自己画。
+> **规范怎么用看 `docs/飞鹊设计规范-使用规则.md`** —— tokens.json 给的是值，那份给的是「什么时候用哪个」：
+> 7 级间距各自的场景 · 圆角的「外圆角＝内圆角＋padding」等大公式 · 阴影三级的层级语义（低=下拉面板/中=卡片hover/高=对话框抽屉）· 字阶克制原则 · **完整的无障碍 WCAG 2.1 AA 要求与 10 条交付自查**。
+> 图标：本目录 `icons/` 共295个SVG，**按用途查 `icons/INDEX.md`（检索索引），别靠文件名猜**（搜 chat 只会命中 wechat 微信，聊天图标其实叫 `tm.svg`）；一律内联SVG，不要用字体图标、不要自己画。
+> 品牌与认证标识（LOGO/STS/Audited/Leading Factory/会员等级/星级）共18个，全在 `brand/`，清单见 `brand/INDEX.md`。
 > 组件清册：`web-components.json`（Web 44页）/ `mobile-components.json`（移动端）。有Figma MCP时按key取真组件，认key不认名。
 
 ## 1. 字体与字号
@@ -85,7 +88,7 @@
 1. 统一性：混乱不是丰富。装饰能省则省，投影全用或全不用，同类交互反馈必须一致。
 2. 层级三工具按优先级：颜色深浅 → 字重 → 字号。
 3. 信息精简，空间感是层级的一部分。
-4. 图标只用飞鹊295个SVG；缺省图在 `docs/` 同级 `sprites`（本包未带，需要时留空占位块 `#F0F1F2`）。
+4. 图标只用飞鹊295个SVG（查 `icons/INDEX.md`）；品牌认证标只用 `brand/` 里的18个（查 `brand/INDEX.md`）；缺省图在 `docs/` 同级 `sprites`（本包未带，需要时留空占位块 `#F0F1F2`）。
 5. 「算对了」不等于「做对了」：写完自己在1240与375两个宽度下看一遍。
 6. 🔴 品牌标识不许自己画，见第7节。手画的LOGO是最容易蒙混过关、也最丢人的一类错。
 
@@ -94,6 +97,9 @@
 **MIC LOGO就在这个包里：`brand/mic-logo.svg`**（240×46，取自飞鹊组件库 `mic-logo`，key `16b912f2a723fc29a132f2c1b05fae23cc2c25b0`，节点4596:1086）。直接内联进页面，按比例缩放，不要重画、不要用文字拼、不要换字体。
 
 - 🔴 **品牌红是 `#DA291C`，不是主色 `#E64545`。** 这两个是不同的红：`#E64545` 是界面主色（按钮、强调），`#DA291C` 只属于LOGO。LOGO的颜色**允许硬编码、不绑Paint Style、不许被override**。
+**认证与会员标识也在 `brand/`（2026-09-15 补全，共18个）**：STS担保交易5种形态、Audited认证3种、Leading Factory（🔴 **只有wordmark、没有icon**）、钻石/金牌会员、供应商星级、评分条、资质证书组。清单见 `brand/INDEX.md`。
+🔴🔴 **这些标里的字是矢量图形画出来的，不是文字节点** —— 拿「绿色Secured+深绿Trading」两段文字拼出来的担保交易标看着像、其实一眼假。2026-09-15实测栽过一次，已加机器门 `fake-brand` 拦截。
+
 - 🔴 **295个图标里那个 `mic.svg` 不是LOGO**，它是16×16单色 `#222` 的M字标图标，用在列表、标签这种小尺寸场合。拿它当页头LOGO是错的。
 - 🔴 **凡是品牌标识（LOGO、商标、认证标、支付标），拿不到真资产就留占位块并在交付说明里写明「待补真资产」——绝不允许照印象手画一个近似的。** 画出来的东西看着像那么回事，反而没人会去核，最后就这么发出去了。
 - MIC的页头、页脚、导航同理：这些是**既有的**，属于复刻范围，不是设计空间。做任何MIC页面之前先确认页头页脚取哪一族（飞鹊有5族页头 + 3族页脚，高度各不相同）。
@@ -101,9 +107,25 @@
 ### 要放一个现成元素时，按这个顺序找
 
 0. **做网页先看砖表 `docs/css/INDEX.md`**（§5b）—— 28类组件有现成CSS，挑要用的整段抄；清册是Figma坐标、不是网页实现。砖表里没有的那25个业务组件（产品卡/页头页脚/筛选侧栏/LOGO）才往下走第1步。
-1. **组件清册 `web-components.json`**（移动端 `mobile-components.json`）—— 按钮、输入框、卡片、**页头页脚、LOGO、认证标**都在里面，每条带Figma的key和节点号、尺寸、颜色规则。**这是第一站，不是最后一站。**
-2. **`brand/` 目录** —— 品牌标识的现成SVG，直接内联。
-3. **`icons/` 目录** —— 295个UI小图标。
+1. **组件用法清册 `COMPONENT-USAGE.md`** —— 🔴 **先读这份**。从 Figma 组件库逐页读出来的真值：
+   48 个组件的 key／节点号／尺寸／**全部 variant 维度**／设计师写的说明。
+   例：`MIC Footer Search` 有 1440/1366/1280/1024 四个断点（各高 280/280/280/316）；
+   `date picker input/basic` 是 status×size×state×range 共 **108 个组合**；`popover` 有 **12 个方位** × 明暗两色；
+   `form` 有 10 种场景（login/registration/inline/step form…）。
+   🔴 **props／variant 是机器读的、永远准；description 是人写的、会过时**，打架时以 props 为准
+   （`header-home` 的说明写断点 768/1024/1280/1366/1440，实际 props 是 1024/1280/1366/1440/**1920**）。
+   🔴 **组件库页名里的 `✅` 和 `🤖` 都表示「已做完」，`❌` 表示「不需要做」**，不是没做。
+   清册里没有的再查 **`web-components.json`**（移动端 `mobile-components.json`），里面有 key 和节点号。
+   🔴🔴 **figma 的工具是延迟加载的，一开始不在工具表里，直接调会失败** —— 先跑一次
+   `ToolSearch("select:mcp__plugin_figma_figma__get_metadata,mcp__plugin_figma_figma__download_assets")` 把它们捞出来。
+   **取资产四步**：① ToolSearch 捞工具 → ② `get_metadata(fileKey, nodeId)` 看结构（业务组件多是 component set，
+   按 `breakpoint=1440/1366/1280/1024` 分 variant，挑你要的那个子节点 id）→ ③ `download_assets(fileKey, 子节点id, svg)` 拿 URL
+   → ④ 立刻 `curl -sL -o` 下载（URL 短命），再跑 `python3 tools/clean-figma-svg.py <文件>` 清掉 Figma 画布杂质。
+   🔴 **「留灰色占位块」是导不到时的兜底，不是第一选择。** 2026-09-15 实测：模型读懂了「用 download_assets 导出真资产」，
+   却因为手边没这个工具（没 ToolSearch 过），一次没试就直接留了占位 —— 而那个页脚 `MIC Footer Search`（节点 `6173:1330`）
+   在 Figma 里好好地躺着，连 4 个断点都做齐了。
+2. **`brand/INDEX.md`** —— 品牌与认证标识18个（LOGO/STS担保交易/Audited认证/Leading Factory/钻石·金牌会员/供应商星级/评分条），现成SVG直接内联。
+3. **`icons/INDEX.md`** —— 295个UI小图标的检索索引，**按用途查、别按文件名猜**。
 
 🔴 **别只搜 `icons/`。** 那里只有UI图标；LOGO、页头这类在清册里。2026-09-10实测过一次反例：模型13次打开这个包，每次都只在 `icons/` grep图标名，从没想到去清册查LOGO，最后自己画了一个 —— 而清册里那条早就在。
 

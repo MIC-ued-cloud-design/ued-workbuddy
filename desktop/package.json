@@ -1,12 +1,12 @@
 {
   "name": "uw-desktop",
-  "version": "0.1.10",
+  "version": "0.1.15",
   "description": "UED WorkBuddy 桌面版：给产品、设计、前端共用的 AI 工作台，用同事自己的 Claude Code 当引擎，飞鹊设计系统随应用携带，产物一键发给前端。",
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "dist": "electron-builder --mac"
+    "dist": "node build/check-main.js && electron-builder --mac"
   },
   "license": "UNLICENSED",
   "type": "commonjs",

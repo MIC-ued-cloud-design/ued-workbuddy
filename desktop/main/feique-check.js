@@ -30,7 +30,18 @@ function lib(packDir) {
     if (!w || /^(400|700|normal|bold|inherit)$/.test(w[1].trim())) continue;
     for (const sel of m[1].split(',')) offW.set(sel.trim().replace(/\s+/g, ' '), w[1].trim());
   }
-  _lib = { classes, colors, offW, prefixes: ['btn', 'inp', 'alert', 'tag', 'bdg', 'sel', 'pg', 'msg', 'tip', 'cb', 'rd', 'sw', 'skel', 'spin'] };
+  /* 品牌标识的内容指纹：从 brand/*.svg 取 path 数据，用来判断页面里那个标是真资产还是手画的。
+     只看有没有 <svg> 标签是不够的 —— 手画的也是 svg。 */
+  const brand = [];
+  try {
+    const bd = path.join(packDir, 'brand');
+    for (const f of fs.readdirSync(bd).filter(x => x.endsWith('.svg'))) {
+      const t = fs.readFileSync(path.join(bd, f), 'utf8');
+      const ds = [...t.matchAll(/\sd="([^"]{40,})"/g)].map(m => m[1].slice(0, 60));
+      if (ds.length) brand.push({ file: f, marks: ds });
+    }
+  } catch (e) { /* 包里没有 brand/ 就不查这条，不因此把整个体检搞崩 */ }
+  _lib = { classes, colors, offW, brand, prefixes: ['btn', 'inp', 'alert', 'tag', 'bdg', 'sel', 'pg', 'msg', 'tip', 'cb', 'rd', 'sw', 'skel', 'spin'] };
   return _lib;
 }
 /* 从某个开标签起，按 div/section 深度找到它的闭合，返回内部 HTML */
@@ -130,6 +141,30 @@ function check(html, packDir) {
   const mo = (html.match(/\(\s*Min\.?\s*Order\s*\)/gi) || []).length; if (mo) priceBad.push(`"(Min. Order)" ${mo}处，规范写 "(MOQ)"`);
   const dash = (text.match(/US\$\d[\d,.]*\s*[~–—]\s*\d/g) || []).length; if (dash) priceBad.push(`价格区间用了 ~ 或长横线${dash}处，规范是短横 -`);
   if (priceBad.length) issues.push({ rule: 'price', level: 'bad', msg: `价格写法不合规范：${priceBad.join('；')}（docs/MIC英文价格规范-AI友好型.md）` });
+
+  /* 10 手画品牌资产：页面里出现这些专有名词，却没用 brand/ 里的真 SVG。
+     这些标的字在飞鹊里是矢量图形不是文字节点，拿彩色文字拼出来足够像、以至于没人会再去核对。 */
+  const BRANDS = [
+    { name: 'Secured Trading', re: /secured\s*trading/i, files: /^sts-/ },
+    { name: 'Audited',         re: /\bAudited\b/,         files: /^audited-/ },
+    { name: 'Leading Factory', re: /leading\s*factory/i,  files: /^leading-factory-/ },
+  ];
+  /* 🔴 必须先剥标签再匹配：手画的标常常是 <span>Secured</span><span>Trading</span>
+     这样拼出来的，正则按连续文本找就一个都抓不到（2026-09-15 第一版门就漏在这儿）。
+     剥完标签「Secured」「Trading」会直接相邻，所以词间用 \s* 允许零间隔。 */
+  const plain = html.replace(/<style[\s\S]*?<\/style>/gi, '')
+                    .replace(/<script[\s\S]*?<\/script>/gi, '')
+                    .replace(/<[^>]+>/g, '');
+  for (const b of BRANDS) {
+    if (!b.re.test(plain)) continue;
+    const mine = (L.brand || []).filter(x => b.files.test(x.file));
+    if (!mine.length) continue;                                  // 包里没有这个标就不判
+    const used = mine.some(x => x.marks.some(d => html.includes(d)))   // 原样内联了真 SVG
+              || mine.some(x => html.includes(x.file));               // 或用 <img src> 引了它
+    if (!used) issues.push({ rule: 'fake-brand', level: 'bad',
+      msg: `「${b.name}」是手画/文字拼的。它在飞鹊里是整体矢量（字也是画出来的，不是文字节点），` +
+           `要用 brand/ 里的真 SVG：${mine.map(x => x.file).join(' / ')}（清单见 brand/INDEX.md）` });
+  }
 
   const badN = issues.filter(i => i.level === 'bad').length;
   return { issues, ok: badN === 0, n: issues.length, badN, fqUsed: fqUsed.length };
