@@ -394,7 +394,7 @@ textarea::placeholder{color:var(--ink-3)}
 .ckbody{border-top:1px solid var(--line-2);padding:4px 15px 6px}
 .ckrow{display:flex;gap:11px;padding:10px 15px;align-items:flex-start;border-radius:var(--ctl-r)}
 .ckrow:hover{background:var(--soft)}
-.ckbox{width:16px;height:16px;flex:none;margin-top:2px;border:1px solid var(--ctl);border-radius:var(--r-xs);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.ckbox{width:16px;height:16px;flex:none;margin-top:3.7px;border:1px solid var(--ctl);border-radius:var(--r-xs);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .ckbox.on{background:var(--accent);border-color:var(--accent)}
 .ckbox svg{width:11px;height:11px;color:#fff}
 .cktx{flex:1;font-size:13px;color:var(--ink);line-height:1.75}
@@ -732,7 +732,7 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 
 /* 自查表：勾选框点击区放大 */
 .ckrow{padding:11px 12px}
-.ckbox{width:20px;height:20px;margin-top:0}
+.ckbox{width:20px;height:20px;margin-top:1.7px}
 .ckbox svg{width:13px;height:13px}
 .ckh{padding:14px 13px}
 .ckbody{padding:2px 10px 4px}
@@ -1047,7 +1047,9 @@ a.wz-doc:hover{background:var(--accent-fill);color:var(--accent-ink)}
   transition:background .12s,border-color .12s}
 .wz-opt:hover{background:var(--soft-2)}
 .wz-opt.wzon{background:var(--accent-fill);border-color:var(--accent-line)}
-.wz-opt .bx{width:18px;height:18px;flex:0 0 auto;margin-top:2px;border:1px solid var(--ctl);
+/* 方块中心对齐首行文字的「汉字/大写字块」光学中心，不是行盒中心 —— 字体 ascent(1em)/descent(0.2em) 不对称，行盒中心比文字墨迹中心高约 0.04em。
+   算法：margin-top = (行高 - 方块高)/2 + 0.04 x 字号。改字号或行高必须重算这个值。 */
+.wz-opt .bx{width:18px;height:18px;flex:0 0 auto;margin-top:3.6px;border:1px solid var(--ctl);
   border-radius:var(--r-xs);background:var(--white);position:relative}
 .wz-opt.rd .bx{border-radius:50%}
 .wz-opt.wzon .bx{border-color:var(--accent);background:var(--accent)}

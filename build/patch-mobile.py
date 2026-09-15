@@ -273,7 +273,7 @@ textarea{font-size:16px;min-height:88px;padding:14px 15px 6px}
 
 /* 自查表：勾选框点击区放大 */
 .ckrow{padding:11px 12px}
-.ckbox{width:20px;height:20px;margin-top:0}
+.ckbox{width:20px;height:20px;margin-top:1.7px}
 .ckbox svg{width:13px;height:13px}
 .ckh{padding:14px 13px}
 .ckbody{padding:2px 10px 4px}

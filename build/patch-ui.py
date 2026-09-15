@@ -81,7 +81,7 @@ CSS = r'''
 .ckbody{border-top:1px solid var(--line-2);padding:4px 15px 6px}
 .ckrow{display:flex;gap:11px;padding:10px 15px;align-items:flex-start;border-radius:var(--ctl-r)}
 .ckrow:hover{background:var(--soft)}
-.ckbox{width:16px;height:16px;flex:none;margin-top:2px;border:1px solid var(--ctl);border-radius:var(--r-xs);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.ckbox{width:16px;height:16px;flex:none;margin-top:3.7px;border:1px solid var(--ctl);border-radius:var(--r-xs);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .ckbox.on{background:var(--accent);border-color:var(--accent)}
 .ckbox svg{width:11px;height:11px;color:#fff}
 .cktx{flex:1;font-size:13px;color:var(--ink);line-height:1.75}

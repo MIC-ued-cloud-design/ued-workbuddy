@@ -162,7 +162,9 @@ a.wz-doc:hover{background:var(--accent-fill);color:var(--accent-ink)}
   transition:background .12s,border-color .12s}
 .wz-opt:hover{background:var(--soft-2)}
 .wz-opt.wzon{background:var(--accent-fill);border-color:var(--accent-line)}
-.wz-opt .bx{width:18px;height:18px;flex:0 0 auto;margin-top:2px;border:1px solid var(--ctl);
+/* 方块中心对齐首行文字的「汉字/大写字块」光学中心，不是行盒中心 —— 字体 ascent(1em)/descent(0.2em) 不对称，行盒中心比文字墨迹中心高约 0.04em。
+   算法：margin-top = (行高 - 方块高)/2 + 0.04 x 字号。改字号或行高必须重算这个值。 */
+.wz-opt .bx{width:18px;height:18px;flex:0 0 auto;margin-top:3.6px;border:1px solid var(--ctl);
   border-radius:var(--r-xs);background:var(--white);position:relative}
 .wz-opt.rd .bx{border-radius:50%}
 .wz-opt.wzon .bx{border-color:var(--accent);background:var(--accent)}
