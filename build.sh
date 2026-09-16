@@ -36,7 +36,7 @@ step_no=0
 fail(){ echo; echo "❌ 第 $step_no 步挂了：$1"; echo "   产物是半截的，别提交。修完重跑 build.sh。"; exit 1; }
 
 # ── 0. 源头体检 ───────────────────────────────────────────────────
-hr; echo "0/11  源头体检"
+hr; echo "0/12  源头体检"
 SRC_HOW="$(python3 -c "
 import sys; sys.path.insert(0,'build'); import _src
 print(_src.biz_dirs()[1])")" || fail "源头解析（build/_src.py）"
@@ -91,21 +91,22 @@ print(' '.join(m.groups()) if m else '- - -')")
 before_sz=$(wc -c < index.html | tr -d ' ')
 
 # ── 1-7. 重建 ────────────────────────────────────────────────────
-run(){ step_no=$1; shift; echo; hr; echo "$step_no/11  $1"; shift; "$@" || fail "$*"; }
+run(){ step_no=$1; shift; echo; hr; echo "$step_no/12  $1"; shift; "$@" || fail "$*"; }
 
 run 1 "组件清册 / token / 自查表 / 目录 → index.html" python3 build/gen-data.py
 run 2 "桌面版能力清单 → 产品/前端/能力卡"            python3 build/gen-roles.py
-run 3 "业务知识与方法论正文 → kb.js"                  python3 build/gen-kb.py
-run 4 "资料库界面"                                    python3 build/patch-ui.py
-run 5 "检索与模型接入"                                python3 build/patch-ai.py
-run 6 "接力到终端（必须在向导之前）"                  python3 build/patch-terminal.py
-run 7 "选项式向导 → wizard.html（本地版·不部署）"     python3 build/patch-wizard.py
-run 8 "产物预览（必须在接力到终端之后）"              python3 build/patch-preview.py
-run 9 "手机版版面（必须最后）"                        python3 build/patch-mobile.py
+run 3 "图标（网页 favicon + 客户端 icns）"             python3 build/gen-icons.py
+run 4 "业务知识与方法论正文 → kb.js"                  python3 build/gen-kb.py
+run 5 "资料库界面"                                    python3 build/patch-ui.py
+run 6 "检索与模型接入"                                python3 build/patch-ai.py
+run 7 "接力到终端（必须在向导之前）"                  python3 build/patch-terminal.py
+run 8 "选项式向导 → wizard.html（本地版·不部署）"     python3 build/patch-wizard.py
+run 9 "产物预览（必须在接力到终端之后）"              python3 build/patch-preview.py
+run 10 "手机版版面（必须最后）"                        python3 build/patch-mobile.py
 
 # ── 8. 门 ────────────────────────────────────────────────────────
-echo; hr; echo "10/11  门"
-step_no=10
+echo; hr; echo "11/12  门"
+step_no=11
 python3 build/secret-check.py || fail "secret-check：有东西像密钥，别推"
 echo "  ✅ 没扫到密钥"
 
@@ -127,7 +128,7 @@ if [ "$FULL" = "1" ]; then
 fi
 
 # ── 9. 摘要 ──────────────────────────────────────────────────────
-echo; hr; echo "11/11  这次构建改了什么"
+echo; hr; echo "12/12  这次构建改了什么"
 after_kb=$(python3 -c "
 import re
 h=open('kb.js',encoding='utf-8').read(300)
