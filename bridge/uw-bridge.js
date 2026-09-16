@@ -29,13 +29,15 @@ const { spawn, spawnSync } = require('child_process');
 const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
+const crypto = require('crypto');   // 预览票用
 
 /* 拉起终端那两条路住在隔壁文件里。用 try 包着：装到一半只下来一个文件时，
    桥照样能起、问答照样能用，只是终端标成不可用 —— 半装状态别让整个桥起不来。 */
 let TERM = null, TERM_ERR = null;
 try { TERM = require('./uw-terminal'); } catch (e) { TERM_ERR = e.message; }
 
-const VERSION   = '1.3.0';   // 1.3.0（2026-09-09）：拉起终端两条路（系统终端 / 页面内终端）—— 见 uw-terminal.js
+const VERSION   = '1.4.0';   // 1.4.0（2026-09-15）：看产物 —— 任务目录里做出来的网页，直接在 UW 页面里预览
+// 1.3.0（2026-09-09）：拉起终端两条路（系统终端 / 页面内终端）—— 见 uw-terminal.js
 // 1.2.0（2026-09-09）：--effort low —— 首字 42 秒里有 37.7 秒是 extended thinking，页面那段全在转圈
 // 1.1.0（2026-09-09）：读网页 —— 用独立 Chrome 取正文当资料，Claude 仍不开任何工具
 const HOST      = '127.0.0.1';
@@ -293,6 +295,73 @@ function runClaude({ system, prompt, model }, onDelta, onSpawn){
   });
 }
 
+/* ══════════════════════════════════════════════════════════════
+   看产物：任务目录里做出来的网页，直接喂给 UW 页面里的 iframe。
+
+   桌面版是 fs.watch + 自定义协议 uwproj://，网页版没有这两样，所以：
+     · 列产物走 GET /work/list（页面轮询，1.2 秒一次）
+     · 读文件走 GET /work/file/…（iframe 的 src）
+
+   🔴 为什么读文件这条要发票，而别的路由只查 Origin：
+   iframe 的 src 是浏览器直接导航，**一个 Origin 头都不带**，
+   照抄 originOk 的话 iframe 永远 403 —— 而且症状是「预览一片空白」，
+   看不出是被自己的安全检查挡的。所以照终端那套发票：
+   票在 POST /work/session 那一跳发（那跳有 Origin 把着），iframe 带着票来。
+   跟终端票的两处不同：预览要反复加载（刷新、换文件），所以票
+   ① 不是用完即删，TTL 内可重复用 ② 绑死一个任务目录，拿 A 的票读不了 B。
+
+   🔴 目录穿越：rel 一律 resolve 之后回头核它还在不在 WORK_ROOT 里面，
+   不做字符串层面的 '..' 过滤 —— 那种过滤漏得比挡得多。 */
+const WORK_ROOT = path.join(os.homedir(), 'UW工作区');
+const PV_TTL    = 15 * 60 * 1000;      // 票活 15 分钟，够看完一轮
+const PV_MAX    = 40;
+const PV_EXT    = { '.html':'text/html; charset=utf-8', '.htm':'text/html; charset=utf-8',
+  '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8',
+  '.json':'application/json; charset=utf-8', '.svg':'image/svg+xml',
+  '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.gif':'image/gif',
+  '.webp':'image/webp', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2',
+  '.mp4':'video/mp4', '.txt':'text/plain; charset=utf-8', '.md':'text/plain; charset=utf-8' };
+const PV_MAXSIZE = 64 * 1024 * 1024;   // 单文件上限；克隆出来的整页 demo 能到几十兆
+const pvTickets = new Map();
+
+/* rel（任务目录名，可带子路径）→ 绝对路径。越界一律 null，调用方据此 404。 */
+function pvResolve(rel){
+  if (typeof rel !== 'string' || !rel) return null;
+  const abs = path.resolve(WORK_ROOT, rel);
+  const root = path.resolve(WORK_ROOT);
+  if (abs !== root && !abs.startsWith(root + path.sep)) return null;
+  return abs;
+}
+function pvIssue(rel){
+  const now = Date.now();
+  for (const [t, v] of pvTickets) if (v.expiresAt <= now) pvTickets.delete(t);
+  if (pvTickets.size >= PV_MAX) pvTickets.delete(pvTickets.keys().next().value);
+  const token = crypto.randomBytes(24).toString('base64url');
+  pvTickets.set(token, { rel, expiresAt: now + PV_TTL });
+  return { ticket: token, expiresInMs: PV_TTL };
+}
+/* 票对不对得上这个任务目录。不删票 —— 预览要反复加载。 */
+function pvCheck(token, rel){
+  const t = pvTickets.get(token);
+  if (!t || t.expiresAt <= Date.now()) return false;
+  return rel === t.rel || rel.startsWith(t.rel + '/');
+}
+/* 列任务目录里的产物。带 mtime，页面拿它比对「有没有变」。
+   node_modules 这类目录跳过 —— 克隆底板会带一堆，扫进去又慢又没用。 */
+function pvList(dir, base, out, depth){
+  if (depth > 4 || out.length >= 300) return;
+  let ents; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+  for (const e of ents) {
+    if (e.name.startsWith('.') || e.name === 'node_modules') continue;
+    const abs = path.join(dir, e.name), rel = base ? base + '/' + e.name : e.name;
+    if (e.isDirectory()) { pvList(abs, rel, out, depth + 1); continue; }
+    const ext = path.extname(e.name).toLowerCase();
+    if (!PV_EXT[ext]) continue;
+    let st; try { st = fs.statSync(abs); } catch (e2) { continue; }
+    out.push({ rel, ext, size: st.size, mtime: st.mtimeMs });
+  }
+}
+
 /* ── HTTP ── */
 function readBody(req){
   return new Promise((resolve, reject) => {
@@ -319,7 +388,8 @@ const server = http.createServer(async (req, res) => {
       ok: true, name: 'uw-bridge', version: VERSION, port: PORT, dev: DEV,
       allowed: originOk(origin),                       // 页面据此判断自己能不能用，别只看 ok
       claude: { found: !!CLAUDE, via: CLAUDE ? CLAUDE.via : null },
-      web: { ok: !!findChrome(), running: !!(chrome && chrome.alive), allow: WEB_ALLOW, maxUrls: WEB_MAX_URLS },   // 页面据此决定要不要把问题里的网址发过来
+      web: { ok: !!findChrome(), running: !!(chrome && chrome.alive), allow: WEB_ALLOW, maxUrls: WEB_MAX_URLS },
+      preview: { ok: true, root: WORK_ROOT },   // 页面据此决定要不要显示产物预览那一栏   // 页面据此决定要不要把问题里的网址发过来
       /* 页面据此决定「打开系统终端」和「页面内终端」两个按钮给不给、给了要不要灰。
          external 只要有 claude 就能用；builtin 还要两个可选依赖。 */
       terminal: terminal ? Object.assign({ external: !!CLAUDE }, terminal.status())
@@ -436,6 +506,47 @@ const server = http.createServer(async (req, res) => {
       /* 打不开也别只回个失败：把目录和该敲的命令给出去，同事自己开终端也能接着干 */
       : { ok: false, ...common, error: { code: 'open_failed', message: '没能自动打开终端' },
           manual: 'cd ' + JSON.stringify(task.root) + ' && claude' });
+  }
+
+  /* 任务目录里有哪些产物。页面每 1.2 秒问一次，拿 mtime 比对有没有变。 */
+  if (req.method === 'GET' && url === '/work/list') {
+    if (!originOk(origin)) return fail(res, 403, 'bad_origin', '只接受UW页面发来的请求');
+    const rel = new URL(req.url, 'http://x').searchParams.get('rel') || '';
+    const abs = pvResolve(rel);
+    if (!abs || !fs.existsSync(abs)) return sendJson(res, 200, { ok: true, rel: rel, files: [], gone: true });
+    const files = []; pvList(abs, '', files, 0);
+    files.sort((a, b) => b.mtime - a.mtime);
+    return sendJson(res, 200, { ok: true, rel: rel, files: files });
+  }
+
+  /* 领一张预览票。iframe 带不了 Origin，所以把来源检查挪到这一跳。 */
+  if (req.method === 'POST' && url === '/work/session') {
+    if (!originOk(origin)) return fail(res, 403, 'bad_origin', '只接受UW页面发来的请求');
+    let body; try { body = JSON.parse(await readBody(req) || '{}'); } catch (e) { return fail(res, 400, 'bad_request', '请求体不合法'); }
+    const rel = String(body.rel || '');
+    const abs = pvResolve(rel);
+    if (!abs || !fs.existsSync(abs)) return fail(res, 404, 'no_task', '找不到这个任务目录');
+    return sendJson(res, 200, { ok: true, rel: rel, ...pvIssue(rel) });
+  }
+
+  /* 把一个产物读出来当 iframe 的 src。这条不查 Origin（iframe 不带），查票。 */
+  if (req.method === 'GET' && url.startsWith('/work/file/')) {
+    const q = new URL(req.url, 'http://x');
+    const rel = decodeURIComponent(url.slice('/work/file/'.length));
+    const token = q.searchParams.get('t') || '';
+    if (!pvCheck(token, rel)) return fail(res, 403, 'bad_ticket', '预览票过期了，回页面重新点一次');
+    const abs = pvResolve(rel);
+    if (!abs) return fail(res, 403, 'out_of_root', '只给看工作区里的东西');
+    let st; try { st = fs.statSync(abs); } catch (e) { return fail(res, 404, 'no_file', '这个文件不在了'); }
+    if (!st.isFile()) return fail(res, 404, 'no_file', '这不是一个文件');
+    if (st.size > PV_MAXSIZE) return fail(res, 413, 'too_big', '这个文件超过64MB，预览不了');
+    const type = PV_EXT[path.extname(abs).toLowerCase()];
+    if (!type) return fail(res, 415, 'bad_type', '这种文件不给预览');
+    res.writeHead(200, { 'content-type': type, 'content-length': st.size,
+      'cache-control': 'no-store',
+      /* 🔴 只准 UW 页面把它嵌进 iframe。别人拿到票也套不进自己的页面。 */
+      'content-security-policy': "frame-ancestors " + ALLOW.join(' ') + " http://localhost:* http://127.0.0.1:*" });
+    return fs.createReadStream(abs).pipe(res);
   }
 
   /* 正在跑的终端会话（页面刷新后据此问「要不要接回去」） */

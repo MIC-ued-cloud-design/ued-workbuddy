@@ -286,8 +286,12 @@ function uwtCloseChooser(){ document.getElementById('uwtMask').classList.remove(
 /* 「就让 WorkBuddy 答」= 走原来那条页面内问答。向导自己有 wzAsk，别在这儿重复一份。 */
 function uwtAskHere(){
   uwtCloseChooser();
-  if(typeof window.wzAsk === 'function') window.wzAsk();
-  else if(window.wbRun && UWT.payload && UWT.payload.prompt) window.wbRun(UWT.payload.prompt);
+  var p = UWT.payload || {};
+  /* 向导那条路有自己的收尾（要把勾选结果一起带走），场景卡这条直接送进页面问答。
+     🔴 不能只判 wzAsk 存不存在 —— 它是全局函数，向导没开也在，
+     只判存在的话场景卡的提示词一次都送不出去，而且看不出来。 */
+  if(p.src !== 'card' && typeof window.wzAsk === 'function') window.wzAsk();
+  else if(window.wbRun && p.prompt) window.wbRun(p.prompt);
 }
 function uwtCopyTask(){
   var t = (UWT.payload && UWT.payload.prompt) || '';
@@ -350,6 +354,8 @@ function uwtGo(method){
     .catch(function(e){ uwtFail({ error:{ message: e && e.message || '连不上桥' } }); });
 }
 function uwtDone(j){
+  /* 系统终端这条路页面这头是瞎的，产物预览是唯一能看见进展的地方，更要挂上 */
+  if(typeof window.uwPreviewWatch === 'function') window.uwPreviewWatch(j.rel || j.dir || '');
   var where = j.terminal ? ('已经在' + j.terminal + '里开好了') : '已经开好了';
   if(window.fqToast) fqToast(where + ' · 任务单在' + (j.rel || j.dir));
 }
@@ -423,6 +429,9 @@ function uwtGripInit(){
 }
 
 function uwtOpenDrawer(j, isAttach){
+  /* 一开终端就开始盯任务目录 —— 产物一出现，主区顶上那张预览卡自己会长出来。
+     放在这儿而不是等第一个文件写出来：同事看得见「在盯着」比事后才冒出来强。 */
+  if(typeof window.uwPreviewWatch === 'function') window.uwPreviewWatch(j.rel || j.dir || '');
   document.getElementById('uwtDrawer').classList.add('uwt-on');
   uwtSplitOn();
   uwtGripInit();
@@ -593,6 +602,42 @@ window.addEventListener('resize', function(){
   }
   setTimeout(tick, 2500);
   setInterval(tick, 30000);
+})();
+
+/* ── 发送时分流 ─────────────────────────────────────
+   有些卡没有工具就真的做不了（读交付包、量代码、改文件）。
+   这一层包在 patch-ai 定义的 submitTask 外面：该走终端的先弹「交给谁做」，
+   剩下的照旧在页面里答。包在外面而不是改里面，是因为那个函数按构建顺序
+   在这之前才定义完 —— 顺序反了这层就白挂。
+
+   🔴 为什么要拦在发送这一步、而不是点卡片时就说：
+   点卡片时人还没写完内容，这时候弹窗等于打断；等他写完再问，
+   选项里那条「不开终端，就让 WorkBuddy 答」也才有意义。 */
+(function(){
+  var inner = window.submitTask;
+  if(typeof inner !== 'function') return;     /* patch-ai 没跑过就别装这层 */
+  window.submitTask = function(){
+    var t = (S.text||'').trim();
+    if(!t) return;
+    var card = (typeof wbCardNeedsTerm === 'function') ? wbCardNeedsTerm() : null;
+    var abi  = S.ability && window.WBROLES
+             ? (window.WBROLES.abilities||[]).find(function(a){ return a.id === S.ability; }) : null;
+    var item = card || abi;
+    if(!item || typeof window.wbHandoff !== 'function') return inner.apply(this, arguments);
+
+    var prompt = (typeof wbCardPrompt === 'function') ? wbCardPrompt(item) : (item.prompt||'');
+    prompt = prompt.replace(/\{\{input\}\}/g, t).replace(/\{\{project\}\}/g, item.n||'任务');
+    window.wbHandoff({
+      src: 'card',
+      task: item.n, card: item.n, scene: S.role || '',
+      prompt: prompt, chars: prompt.length,
+      out: item.out ? [String(item.out).replace(/<[^>]+>/g,'')] : [],
+      docs: (item.uses||[]).map(function(u){ return u[0]; }),
+      skills: []
+    });
+  };
+  /* 页面里那条「就让 WorkBuddy 答」仍要能回到原来的路 */
+  window.uwtAskHereFallback = inner;
 })();
 '''
 
