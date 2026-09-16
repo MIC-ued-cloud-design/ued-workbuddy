@@ -7,7 +7,30 @@
 set -e
 S="$HOME/.claude/skills/mic-fullstack/scripts"
 D="$(cd "$(dirname "$0")/.." && pwd)/restore-tools"
-[ -d "$S" ] || { echo "本机没装 mic-fullstack skill，跳过同步（用仓库里现有那份）"; exit 0; }
+# 🔴 没装 skill 时别再说「用仓库里现有那份」——那句话是误导的（2026-09-15 推完仓才发现）：
+#    git 仓里只有 16 个脚本，**node_modules 被 .gitignore 挡在外面**，而这些脚本全都 require
+#    puppeteer-core。光 clone 这个仓建出来的 app，restore-tools 一跑就报「找不到模块」。
+#    所以这里分两种情况说清楚，不含糊过去。
+if [ ! -d "$S" ]; then
+  if [ -d "$D/online-reach/node_modules/puppeteer-core" ]; then
+    echo "ℹ️  本机没装 mic-fullstack skill，跳过同步。"
+    echo "   restore-tools/ 里已有 node_modules，脚本能跑，直接打包没问题。"
+    exit 0
+  fi
+  cat <<'TIP'
+❌ 本机没装 mic-fullstack skill，而 restore-tools/online-reach/node_modules 也不在。
+
+   这两样缺一，还原工具链就跑不起来（reach.js / geom-check.js / live-clone.js 等
+   全部 require puppeteer-core）。现在打包出来的 app，那部分功能是坏的。
+
+   两条路挑一条：
+   ① 装 mic-fullstack skill，再跑一次本脚本（推荐，顺便把脚本同步到最新）
+   ② 只补依赖：cd restore-tools/online-reach && npm i puppeteer-core
+
+   （git 仓里不收 node_modules 是故意的：2226 个文件 29M，不适合进公开仓。）
+TIP
+  exit 1
+fi
 mkdir -p "$D/online-reach" "$D/restore-coverage"
 # 🔴 find-chrome.js 必须在这份清单里：reach.sh / shot-node.js 都 require 它，
 #    漏了的话同事拿到的包里这两个脚本会直接报「找不到模块」——比没改之前更糟。
@@ -49,6 +72,11 @@ for f in "$D/online-reach"/*.js "$D/restore-coverage"/*.js; do
   case "$f" in *.snippet.js) continue;; esac
   node --check "$f" >/dev/null 2>&1 || { echo "❌ $(basename "$f") 语法不过"; exit 1; }
 done
-echo "自检通过：依赖齐全 + 所有 js 语法可解析"
+[ -d "$D/online-reach/node_modules/puppeteer-core" ] || {
+  echo "❌ 同步完了但 node_modules/puppeteer-core 不在 —— 打出来的包里还原工具链是坏的。"
+  echo "   先看 rsync 那步是不是失败了，或者手动 cd restore-tools/online-reach && npm i puppeteer-core"
+  exit 1
+}
+echo "自检通过：依赖齐全（含 puppeteer-core）+ 所有 js 语法可解析"
 
 echo "已同步：$(ls "$D/online-reach"/*.js | wc -l | tr -d ' ') 个 online-reach 脚本 + $(ls "$D/restore-coverage" | wc -l | tr -d ' ') 个 restore-coverage 文件 · $(du -sh "$D" | cut -f1)"
