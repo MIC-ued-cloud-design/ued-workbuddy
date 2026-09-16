@@ -58,6 +58,10 @@ FACE = {
     'breakdown':  ('fq_batch',     '→ 一份<em>任务单</em>，设计和前端各自能直接领走。',
                    [['MIC 业务知识库', 0]],
                    '这个需求要拆给设计和前端。\n需求文档：（贴 PRD 链接，或把文件拖进来）'),
+    # 🔴 下面三张是前端角色的。2026-09-16 吉吉定「网页版也去掉前端角色」跟客户端对齐，
+    # capabilities.json 里已经没有 frontend 了，所以这三行现在不会被用到 ——
+    # 留着是因为它们只是「界面怎么写」的查表，客户端哪天把前端加回来就直接能用；
+    # 真删了下次还得重写一遍。缺了会 die，多了不会。
     'receive':    ('fq_folder',    '→ 按飞鹊规范落好的<em>组件代码</em>，附逐项对照。',
                    [['飞鹊组件库', 0], ['交付规范', 0]],
                    '按这份交付包把页面落成组件代码。\n交付包：（贴 Figma 链接，或把文件拖进来）'),
@@ -100,9 +104,12 @@ def main():
     caps = json.load(open(CAPS, encoding='utf-8'))
 
     roles = {r['id']: r for r in caps.get('roles', [])}
-    for need in ('design', 'product', 'frontend'):
-        if need not in roles:
-            die('能力清单里缺角色：' + need)
+    # 🔴 只有 design 是必需的（六类阶段的提示词从它来）；其余角色跟着
+    # capabilities.json 走，别在这儿写死名单 ——
+    # 2026-09-16 吉吉定「网页版也去掉前端角色」，写死 frontend 的话构建会直接挂。
+    if 'design' not in roles:
+        die('能力清单里缺 design 角色')
+    extra = [r['id'] for r in caps.get('roles', []) if r['id'] != 'design']
 
     # ① 设计 19 张卡的提示词，按卡名对回网页版的 SCENES（两边名字一致，join 得上）
     dprompt = {}
@@ -129,7 +136,7 @@ def main():
 
     # ② 产品 / 前端
     out_roles = []
-    for rid in ('product', 'frontend'):
+    for rid in extra:
         r = roles[rid]
         cards = []
         for s in r.get('scenes', []):
@@ -167,8 +174,8 @@ def main():
         page = page.replace(anchor, anchor + '\n' + block, 1)
     open(PAGE, 'w', encoding='utf-8').write(page)
 
-    print('  产品 %d 张 · 前端 %d 张 · 能力 %d 张 · 设计卡提示词 %d 条'
-          % (len(out_roles[0]['cards']), len(out_roles[1]['cards']), len(abilities), len(dprompt)))
+    print('  ' + ' · '.join('%s %d 张' % (r['n'], len(r['cards'])) for r in out_roles)
+          + ' · 能力 %d 张 · 设计卡提示词 %d 条' % (len(abilities), len(dprompt)))
     need = [c['n'] for r in out_roles for c in r['cards'] if c['need'] == 'term']
     print('  这几张没有工具做不了，会走「交给终端做」：' + '、'.join(need))
 

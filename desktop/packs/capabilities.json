@@ -327,36 +327,6 @@
       ],
       "placeholder": true,
       "placeholderNote": "产品这一侧先留坑位：下面几张是示例，正式的场景卡由产品小组按自己的工作方式来写。"
-    },
-    {
-      "id": "frontend",
-      "name": "前端",
-      "desc": "接收交付包、还原、接入",
-      "scenes": [
-        {
-          "id": "receive",
-          "title": "接收交付包并还原",
-          "desc": "读设计交付包，按飞鹊规范落成组件代码",
-          "kind": "code",
-          "prompt": "你在 UED WorkBuddy 桌面版里工作，当前目录是项目「{{project}}」。先读 {{pack}}/DESIGN.md。\n\n任务：设计同事交了一个交付包，位置：\n\n{{input}}\n\n1. 先读交付包里的 `交付说明.md` 和 `manifest.json`，列出页面、状态和 token 对照。\n2. 按说明把稿子落成可复用的前端代码（默认 Vue 3 单文件组件，输入里另有要求就按要求），写到项目目录 `src/`。\n3. 颜色、字号、间距、圆角一律用 token 变量，不写魔法数；变量表写到 `src/tokens.css`。\n4. 写 `还原对照.md`：设计稿里每个状态在代码里对应哪个 prop 或 class，哪些交付说明里没写清、你按什么假设做的。"
-        },
-        {
-          "id": "tovue",
-          "title": "HTML 稿转组件",
-          "desc": "把一份 HTML 视觉稿拆成组件并抽 token",
-          "kind": "code",
-          "prompt": "你在 UED WorkBuddy 桌面版里工作，当前目录是项目「{{project}}」。先读 {{pack}}/DESIGN.md。\n\n任务：把下面这份 HTML 稿转成组件代码：\n\n{{input}}\n\n要求：拆分粒度按「一个可复用的界面块一个组件」；颜色、字号、间距、圆角全部抽成 `src/tokens.css` 变量并与飞鹊 token 对齐；每个组件带 props 说明和状态；最后写 `组件清单.md`。"
-        },
-        {
-          "id": "fidelity",
-          "title": "走查还原度",
-          "desc": "对照设计稿逐项量代码实现",
-          "kind": "review",
-          "prompt": "你在 UED WorkBuddy 桌面版里工作，当前目录是项目「{{project}}」。\n\n任务：对照设计稿检查前端实现的还原度。设计稿与实现位置：\n\n{{input}}\n\n输出 `还原走查.md`：按 尺寸 / 间距 / 字号 / 颜色 / 圆角 / 描边 / 状态 逐项列「位置 · 设计值 · 实现值 · 差多少」，只报有差的项，最后给修改清单。"
-        }
-      ],
-      "placeholder": true,
-      "placeholderNote": "前端这一侧先留坑位：下面几张是示例，正式的场景卡由前端小组按自己的工作方式来写。"
     }
   ],
   "abilities": [

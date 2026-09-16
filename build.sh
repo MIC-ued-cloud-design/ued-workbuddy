@@ -94,7 +94,7 @@ before_sz=$(wc -c < index.html | tr -d ' ')
 run(){ step_no=$1; shift; echo; hr; echo "$step_no/12  $1"; shift; "$@" || fail "$*"; }
 
 run 1 "组件清册 / token / 自查表 / 目录 → index.html" python3 build/gen-data.py
-run 2 "桌面版能力清单 → 产品/前端/能力卡"            python3 build/gen-roles.py
+run 2 "桌面版能力清单 → 角色卡 / 能力卡"              python3 build/gen-roles.py
 run 3 "图标（网页 favicon + 客户端 icns）"             python3 build/gen-icons.py
 run 4 "业务知识与方法论正文 → kb.js"                  python3 build/gen-kb.py
 run 5 "资料库界面"                                    python3 build/patch-ui.py
