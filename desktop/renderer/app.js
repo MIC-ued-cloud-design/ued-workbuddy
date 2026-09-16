@@ -954,8 +954,15 @@ $$('select.sel').forEach(enhanceSelect);
 const W = { open: false, key: null, card: null, group: null, role: null, step: 0, ans: {}, rows: [], hits: [], state: 'idle', tok: 0, extra: '' };
 const CK = '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
 function wizKeyFor(role, card) {
-  if (!role.groups) return null;
-  for (const g of role.groups) { const i = g.cards.findIndex(c => c.id === card.id); if (i >= 0) return { key: g.id + '/' + i, group: g }; }
+  /* 分组角色（设计）：键 = 分组id/序号。2026-09-16 补：产品/前端这两个角色用的是 role.scenes、
+     没有 groups，原来第一行直接 return null —— 等于它们永远拿不到向导，写了也不触发。
+     改成回落到 role.id/序号，数据结构和界面都不用动。 */
+  if (role.groups) {
+    for (const g of role.groups) { const i = g.cards.findIndex(c => c.id === card.id); if (i >= 0) return { key: g.id + '/' + i, group: g }; }
+    return null;
+  }
+  const i = (role.scenes || []).findIndex(c => c.id === card.id);
+  if (i >= 0) return { key: role.id + '/' + i, group: { id: role.id, name: role.name } };
   return null;
 }
 function wizDef() { return S.boot.wizards[W.key]; }
