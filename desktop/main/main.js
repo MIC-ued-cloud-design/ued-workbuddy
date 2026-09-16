@@ -178,6 +178,20 @@ function ensureWorkspaceGuide() {
    所以应用里的 Claude 对飞鹊、对业务的「记忆」等于零，只能满硬盘 grep。
    这里主动把真正那个 memory 目录找出来，加进可读范围并在提示词里点名。 */
 let _kb = undefined;
+let _rt;
+/* 还原工具链在哪。跟 knowledgeDir 同一个套路：本机装了 skill 就用本机的（脚本最新、
+   puppeteer 依赖也齐），同事那台回落到随应用带的那份。两边都没有就返回 null，
+   提示词会降级成「只守规矩、不指路径」。 */
+function restoreToolsDir() {
+  if (_rt !== undefined) return _rt;
+  _rt = null;
+  const local = path.join(os.homedir(), '.claude', 'skills', 'mic-fullstack', 'scripts');
+  if (fs.existsSync(path.join(local, 'online-reach', 'geom-check.js'))) return (_rt = { dir: local, from: '本机 skill' });
+  const packed = path.join(process.resourcesPath || '', 'restore-tools');
+  if (fs.existsSync(path.join(packed, 'online-reach', 'geom-check.js'))) _rt = { dir: packed, from: '随应用携带' };
+  return _rt;
+}
+
 function knowledgeDir() {
   if (_kb !== undefined) return _kb;
   _kb = null;
@@ -251,7 +265,7 @@ function systemPrompt(meta) {
     `【要放一个现成元素时，按这个顺序找，别跳到"自己画"】① **品牌与认证标识**看 ${PACK_DIR}/brand/INDEX.md（18 个：MIC LOGO、STS 担保交易、Audited 认证、Leading Factory、钻石/金牌会员、供应商星级、评分条）——🔴 这些标里的字**是矢量图形不是文字节点**，拿彩色文字拼出来足够像、以至于没人会再去核对，一律 cat 真 SVG 整段内联。② **UI 图标**查 ${PACK_DIR}/icons/INDEX.md（295 个的检索索引，按用途找）——🔴 别靠文件名猜：要 Chat Now 的图标时搜 chat 只命中 wechat（微信），真正的聊天图标是 tm.svg（TM＝Trade Manager）；另有 7 个文件名拼错的也在索引里点了名。③ **页头页脚、产品卡、筛选侧栏、表单、弹层、日期选择**这类业务组件：先读 ${PACK_DIR}/COMPONENT-USAGE.md（**组件用法清册**，从 Figma 组件库逐页读出来的真值：每个组件的 key／节点号／尺寸／**全部 variant 维度**／设计师写的说明，比如 MIC Footer Search 有 1440/1366/1280/1024 四个断点、date picker 是 status×size×state×range 共 108 个组合、popover 有 12 个方位）。🔴 **props／variant 是机器读的永远准；description 是人写的会过时**，两者打架以 props 为准。🔴 组件库页名里的 ✅ 和 🤖 都是「已做完」，❌ 是「不需要做」，不是没做。清册里没有的再查 ${PACK_DIR}/web-components.json（移动端 mobile-components.json）。🔴🔴 **figma 的工具是延迟加载的，一开始不在你的工具表里，直接调会失败** —— 必须先跑一次 ToolSearch("select:mcp__plugin_figma_figma__get_metadata,mcp__plugin_figma_figma__download_assets") 把它们捞出来。2026-09-15 实测：模型读懂了「用 download_assets 导出真资产」，却因为手边没这个工具，一次没试就直接跳到「留占位」那条兜底了。**取资产四步**：① ToolSearch 捞工具 ② get_metadata(fileKey, nodeId) 看结构（业务组件多是 component set，里面按 breakpoint=1440/1366/1280/1024 分了 variant，挑你要的那个子节点 id）③ download_assets(fileKey, 子节点id, defaultFormat 传 svg) 拿到 URL ④ 立刻 curl -sL -o 文件 "URL"（URL 短命），再跑 python3 ${PACK_DIR}/tools/clean-figma-svg.py <文件> 清掉 Figma 画布杂质（组件集的紫色虚线框、画布底色，不清会在页面上多一块灰底加紫框）。🔴 **「留灰色占位块」是导不到时的兜底，不是第一选择；没试过就留占位＝没做。**`,
 
     `【开工第一步·先看砖表】做任何网页产物，第一件事是读${PACK_DIR}/docs/css/INDEX.md——飞鹊28类组件的网页实现清单（按钮/分页/输入框/数字输入框/文本域/下拉/级联/单选/按钮式单选/勾选框/开关/上传/步骤条/抽屉/列表/Tabs/面包屑/气泡/全局提示/加载/骨架屏/空状态/徽标/标签/提示条/滚动条/投影）。看这一页要用哪几个，就用一条 cat ${PACK_DIR}/docs/css/{_reset,btn,inp,…}.css 把它们读出来（一律带上_reset.css，28个全部加起来也才73KB），**把读到的内容原样贴进index.html的<style>**。🔴 **别把cat重定向到文件**（写成 > xxx.css 那样）——重定向了你就一个字节也没看见，只能凭印象重写，那等于没取；2026-09-15实测就是这么把btn-lg的圆角8px写成6px、padding 16px写成24px、还自己编了两个hover色的。🔴 贴进去之后**不许改里面的任何值**（高度/圆角/padding/字号/hover色都是定死的），门会拿飞鹊真值逐条比对，改了就报红。这一步不做，写出来的按钮和表单就都不是飞鹊的——2026-09-10两次实测都是这么翻车的。`,
-    `【砖表里有的照抄，没有的不许手画】砖表里有的组件：类名保持飞鹊的、规则原样复制进单文件。🔴 不许自己另写一套.btn/.inp/.alert，不许借飞鹊前缀发明.btn-neutral这种飞鹊没有的变体。组件的高度、圆角、描边、字号一律以css/里的为准，DESIGN.md只管颜色和排版口径。🔴 砖表里没有的那25个（ProductCard八个变体、MIC Footer页脚、FilterSidebar筛选侧栏、Supplier Ad、TM Bar、vo-header/nav/sider、mic-logo）＝只有Figma没有CSS实现，它们恰恰是MIC真实页面的主力：清单在INDEX.md末尾那张表，带Figma key和节点号，用figma的download_assets按key导出真资产；导不到就画灰色占位块并在交付说明里写明「待补真资产」，手画一个看着差不多的比留空更糟。`,
+    `【砖表里有的照抄，没有的不许手画】砖表里有的组件：类名保持飞鹊的、规则原样复制进单文件。🔴 不许自己另写一套.btn/.inp/.alert，不许借飞鹊前缀发明.btn-neutral这种飞鹊没有的变体。组件的高度、圆角、描边、字号一律以css/里的为准，DESIGN.md只管颜色和排版口径。🔴 **整块业务组件（产品卡、页头页脚、筛选侧栏这类）先看 docs/blocks/** —— 里面是 HTML+CSS 一起给的成品片段，cat 出来把 <style> 和结构原样贴进页面、只换文案图片、填掉标了 SLOT 的认证标，**里面的值一个都别改**（跟砖表同一个规矩）。2026-09-15 实测同一个产品卡：自己照截图拼＝按钮跑到右上角、认证标尺寸全错；cat 片段＝逐坐标对得上真值。**能 cat 到的就绝不自己拼。**blocks/ 里还没有的才走下面这条：🔴 blocks/ 里还没有的那些（ProductCard八个变体、MIC Footer页脚、FilterSidebar筛选侧栏、Supplier Ad、TM Bar、vo-header/nav/sider、mic-logo）＝只有Figma没有CSS实现，它们恰恰是MIC真实页面的主力：清单在INDEX.md末尾那张表，带Figma key和节点号，用figma的download_assets按key导出真资产；导不到就画灰色占位块并在交付说明里写明「待补真资产」，手画一个看着差不多的比留空更糟。`,
 
     `【规范怎么用·不只是值】${PACK_DIR}/docs/飞鹊设计规范-使用规则.md —— tokens.json 给的是值，这份给的是「什么时候用哪个」：7 级间距各自的场景（4=图标与文字 · 8=表单项 · 12=段落和label到输入框 · 16=卡片内padding · 24=区块 · 32=section · 48=首屏到内容），**禁止非 4px 倍数（5/10/15/25）**；圆角的等大公式 **外圆角＝内圆角＋padding**（4 标签小按钮 / 6 默认按钮输入框卡片 / 12 大卡片模态框）；阴影三级是**层级语义**不是深浅档（低＝下拉面板贴背景柔和 / 中＝卡片hover浮起 / 高＝对话框模态通知抽屉显著突出），全用或全不用；字阶控制在 3-5 种保持克制。♿ **无障碍是硬要求**：对比度≥4.5:1（大文本≥3:1）· 焦点样式不许 outline:none 且无替代（MIC 焦点＝2px #0071E1 50% 圆角4px 偏移1~2px）· 点击区域≥44×44px · 图片必有 Alt（装饰图 alt 留空）· 表单 label 绑 id · 纯色彩不能作唯一信息载体 · 语义化标签不用 div 模拟按钮。交付前过那份文档第 6 节的 10 条自查。`,
     `【多端与响应式】页面要适配多端就读${PACK_DIR}/docs/飞鹊响应式规则-AI友好型规范.md（断点、栅格、各端差异），别自己定断点。用法铁律读${PACK_DIR}/docs/飞鹊组件使用经验和规范.md第零、一节：参考页面只学布局，实现只能用飞鹊的砖。`,
@@ -261,6 +275,8 @@ function systemPrompt(meta) {
     /* ↓ 这三条治「应用做出来的页面不如终端像」。实测过：应用产出的页面 token 层面是满分（色值全在表内、
        字重只有400/700、字号与圆角全合规），差的不是规范，是**没有参照物、也从不回看自己做的东西**。
        终端里那套之所以像，是因为每次都先取真页面/真设计稿当参照，做完再截图并排比对。 */
+    ...(restoreToolsDir() ? [`【还原线上页面·按这四步，别自己发明流程】做「照线上做 / 1:1 还原某个页面」这类活，工具在 ${restoreToolsDir().dir}（${restoreToolsDir().from}）：\n① **抽规格用 online-reach/responsive-spec-extract.js，别自己写 evaluate_script 刨 DOM** —— 它会二分逼出真实断点（不用猜 1279 还是 1280）、跨 375-1920 抓全 w/x/margin/padding/min-width/max-width/gap/flex 并 dump 命中的 @media 规则。随宽度变的值抓的是「函数」不是「点」，单一宽度读一次就当常量必错。\n② **写完用 online-reach/geom-check.js 逐值对位，全绿 exit 0 才算完**。「看一眼截图觉得差不多」不算验证 —— 参照物本身残缺的时候，回看只能发现你跟你自己不一致，发现不了参照缺了一块。\n③ 要把线上页面整个搬下来当离线底座，用 online-reach/live-clone.js，再跑 clone-offline-check.js 查外链/断图/JS 错。\n🔴 这套脚本要本机装了 Google Chrome（reach.sh 起的是独立 Chrome 实例，不碰用户日常浏览器）。报「Chrome/CDP 没起来」就是没装或路径不对，**这时候别自己写 evaluate_script 硬来**，改用 chrome-devtools 的 MCP，并且守住下面那三条禁令。\n④ 还原 Figma 稿则是另一套：restore-coverage/figma-restore-dump.snippet.js 贴进 use_figma 抽真值成 manifest，每个元素打 data-node-id，再跑 geom-check 按 node-id 自动对位；coverage-check.js 负责查有没有整块漏掉。`] : []),
+    `【取参照物的三条禁令 · 2026-09-15 三条全栽过】不管有没有上面那套工具，这三条都得守：\n① **禁止 outerHTML.slice(N) 这种截断取样**。那次 slice(0,3000) 把产品卡切掉了后半截，按钮那段一个字节没读到，模型就自己编了个位置放到右上角。要么整段取全，要么按子节点分段取完再拼。\n② **截图要截目标元素本身，不是整页视口**。整页截图里目标只占一小块，还会被 fixed 侧栏、广告位盖住 —— 那次列表卡的按钮区正好被右侧 Sponsored 栏挡住，模型看到的「参照」本来就没有按钮。截完自问一句：这个组件的四条边都在画面里吗。\n③ **量哪个变体就只能做哪个变体**。那次点了列表/网格切换、量完网格就没切回来，后面全部精确测量都做在网格版上，交付的却是列表版。要出 N 个变体就对 N 个变体各量一遍。`,
     '【先拿参照物，再动手】只要这次是「还原 / 复刻 / 照着某个已有页面或设计稿做」：动手前必须先把参照物取到手——Figma稿用figma的MCP读真值，线上页面用chrome-devtools的MCP打开截图、或跑 ~/.claude/skills/mic-fullstack/scripts/online-reach/reach.sh。参照物拿不到就先问用户要，不要凭印象画一版当交付。就算用户没说「还原」，只要做的是MIC线上已有的页面类型（询盘、搜索、产详、发送成功页、登录注册……），也先用chrome-devtools打开线上同类页看一眼再动手——参照物先于灵感。只有明确是「从零设计、线上没有同类页」时，才按DESIGN.md的规范值自由发挥。',
     '【做完自己看一眼】页面写完不算完：用chrome-devtools的MCP把产物打开截图，自己看一遍，有参照物就并排比对，把对不上的地方改掉再交。没看过的成品不要交出去——用户在右边看到的就是你没检查过的那一版。',
     '【Figma稿怎么交】做Figma稿时产物在Figma文件里、不在项目目录，所以每做完一个节点要补两件事：①用get_screenshot拿到链接后curl存一张PNG到项目的「设计稿」目录，文件名用节点的名字 ②在回答里说清动了哪个文件的哪些节点。不做这两件，用户在应用里看不到你做了什么，交付给前端时也没有东西可指。',

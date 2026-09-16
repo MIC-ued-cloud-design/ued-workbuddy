@@ -1,6 +1,6 @@
 {
   "name": "uw-desktop",
-  "version": "0.1.15",
+  "version": "0.1.17",
   "description": "UED WorkBuddy 桌面版：给产品、设计、前端共用的 AI 工作台，用同事自己的 Claude Code 当引擎，飞鹊设计系统随应用携带，产物一键发给前端。",
   "main": "main/main.js",
   "scripts": {
@@ -40,6 +40,10 @@
       {
         "from": "kbdocs",
         "to": "kbdocs"
+      },
+      {
+        "from": "restore-tools",
+        "to": "restore-tools"
       }
     ],
     "mac": {
@@ -52,15 +56,13 @@
         {
           "target": "dmg",
           "arch": [
-            "arm64",
-            "x64"
+            "universal"
           ]
         },
         {
           "target": "zip",
           "arch": [
-            "arm64",
-            "x64"
+            "universal"
           ]
         }
       ],

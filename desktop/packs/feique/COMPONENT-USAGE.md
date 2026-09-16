@@ -29,6 +29,14 @@
   - variant：breakpoint(1440/1366/1280/1024)
   - 4 个断点各高 280/280/280/316
   - `key 82a1826d2b2f416e3e84d67ff7989cf5b2522cfe` · `node 6173:1330`
+  - 🔴 **已有网页实现，别自己拼**：`cat docs/blocks/mic-footer-search.html`（已对过真值 95 项·一套 flex-wrap 覆盖四档）
+- **MIC Footer Product / 产品详情页脚**  `1488x1027`  SET · 4 个 variant
+  - variant：breakpoint(1440/1366/1280/1024)
+  - 4 个断点各高 205/205/205/241
+  - 🔴 **2026-09-15 补录** —— 这个组件原来整条不在清册里（footer 族只收了 footer-home / Footer Search / footer-activity）
+  - 🔴 **已有网页实现，别自己拼**：`cat docs/blocks/mic-footer-product.html`（已对过真值 64 项）
+  - 🔴 分隔竖线 **#555555**，跟 Footer Search 的 #CED3D9 不一样；链接清单也不同（这里有 English，那边没有）
+  - `node 6181:1549`
 - **footer-activity**  `1440x169`  单组件
   - 活动搜索页脚·自适应单组件(拖宽即可适配任意 viewport)。结构 2 group(group1 6 link；group2 row1 Privacy/Declaration/User Agreement + row2 Copyright 含蓝 Focus link)。height 169 = pt30+g1(18)+20+g2(41)+pb40。font 全 12 · link text/main #555 · Focus Technology 用 primary/supplier 蓝 · bg background/background 01 #F5F7FA
   - `key 6a98eb240195a4443388086e660609c7d05c10f0` · `node 6187:1342`
@@ -520,19 +528,26 @@
 - **ProductCard-主搜**  `804x625`  SET · 2 个 variant
   - variant：Property 1(ProductCard——主搜/ProductCard-hover——主搜)
   - 主搜结果页产品卡（网格版），默认态+hover 态
+  - 🔴 **已有网页实现，别自己拼**：`cat docs/blocks/product-card-grid.html`（HTML+CSS 一起给，已对过真值）
+  - 🔴 跟列表版三处不同别照抄：标题 14px 两行 / 价格 20px / **公司名 #888 不是 #222**
   - `key e9d2a2f857be9da599aa035eef5e36d7b28bd034` · `node 7490:1339`
 - **ProductCard-主搜(List)**  `1207x832`  SET · 2 个 variant
   - variant：Property 1(ProductCard—— 主搜(List)/ProductCard—— 主搜(List)-hover)
   - 主搜结果页产品卡（列表版）
+  - 🔴 **已有网页实现，别自己拼**：`cat docs/blocks/product-card-list.html`（HTML+CSS 一起给，已对过真值）
   - `key ed698a0ad82597bb86184910097fc42b52cbeae7` · `node 7974:7314`
 - **ProductCard-QP**  `778x600`  SET · 2 个 variant
   - variant：Property 1(ProductCard——QP/ProductCard-hover——QP)
   - 🔴 QP 产品卡。**隐藏槽位 `ic_STS单个`** —— 担保交易标在卡里是默认隐藏的图层，要显示就打开它，**别自己拿文字拼一个 Secured Trading**
   - `key dc65800d98b1fc0dccf082213f75a3996ec1641e` · `node 7490:1338`
+- 🔴 **已有网页实现**：`cat docs/blocks/product-card-qp-grid.html`（QP 网格版，已对过真值）
 - **ProductCard-QP(List)**  `1558x826`  SET · 2 个 variant
   - variant：Property 1(ProductCard-QP(List)/ProductCard-QP(List)-hover)
   - QP 产品卡列表版
+  - 🔴 **已有网页实现**：`cat docs/blocks/product-card-qp-list.html`（已对过真值）
+  - 🔴 跟主搜列表版四处不同：根顶对齐 / 价格无 (FOB Price) / 属性区是一整段两行描述 / 底行是 Audited+5.0/5+评价语不是星级
   - `key 2a7119b4f75ee0d570e342aa6a331e722f89b6ae` · `node 7974:7315`
+- 🔴 **已有网页实现**：`cat docs/blocks/product-card-lv-grid.html`（已对过真值·无购物车无心形·按钮 Regular）
 - **ProductCard ——LV**  `708x594`  SET · 2 个 variant
   - variant：state(Default/Find similar items)
   - 🔴 LV 产品卡。state=Find similar items 是「找相似」展开态；**隐藏槽位 `similar Btn/icon`**
@@ -540,6 +555,7 @@
 - **ProductCard——LV(List)**  `1560x705`  SET · 2 个 variant
   - variant：Property 1(ProductCard——LV(List)/ProductCard——LV(List)-hover)
   - LV 产品卡列表版
+  - 🔴 **已有网页实现**：`cat docs/blocks/product-card-lv-list.html`（**三栏**：图｜产品信息｜公司信息·已对过真值）
   - `key 2a73e30c98d5a4c64407b42cd096aaf0028463a7` · `node 7490:3336`
 - **similar Btn**  `351x80`  SET · 2 个 variant
   - variant：Property 1(similar icon/similar icon-expand)
@@ -717,15 +733,22 @@
   - `key 16b912f2a723fc29a132f2c1b05fae23cc2c25b0` · `node 4596:1086`
 - **vo-header**  `1600x85`  SET · 1 个 variant
   - variant：state(default)
-  - VO 后台顶栏 1600×85。MIC LOGO(240×46) + 右侧菜单(账户/消息/通知/询盘篮/App/语言)。菜单 12px、账户 14px、badge 18px 红底白字 12px
+  - VO 后台顶栏 1600×85。MIC LOGO(240×46) + 右侧菜单(账户/消息/通知/询盘篮/App/语言)。
+    🔴 **2026-09-15 逐节点实测订正**：菜单**六项全是 12px**，没有「账户 14px」这一档（原记 14px 是错的）；
+    badge 高 **20px**（padding 1/6·圆角 8），不是 18px —— 18px 那个是 vo-sider 的 count-badge，两者规格不同
+  - 🔴 **已有网页实现，别自己拼**：`cat docs/blocks/vo-header.html`（已对过真值 47 项·LOGO 已内联）
   - `key 56bd0fd58dd6219ded4f62ab47db34db8f3f4b9b` · `node 4596:881`
 - **vo-nav**  `1600x40`  SET · 3 个 variant
   - variant：selected(business/showroom/product)
   - VO 后台二级导航 1600×40。8 个 nav-item + 数据罗盘 quick 入口。14px Roboto 白字
+  - 🔴 底色 #406080 / 选中 #284159 / 数据罗盘胶囊 #5B80A6 —— 这三个蓝是 VO 后台专用，不是飞鹊 primary #007DFA，别拿 token 替换
+  - 🔴 **已有网页实现，别自己拼**：`cat docs/blocks/vo-nav.html`（已对过真值 37 项·换选中项＝挪 von-on 类）
   - `key 39dab5212ae12ec6520eb826e8d2c7ce00ef8cb5` · `node 4596:912`
 - **vo-sider**  `210x782`  SET · 2 个 variant
   - variant：group(inquiry/settings)
   - VO 后台左侧栏 210 宽。分组标题 #888、普通项 #555、选中项用 MIC/VO sidebar selected bg
+  - 🔴 两个 variant（inquiry / settings）**逐节点完全相同，只差哪一项选中**，不是两份结构
+  - 🔴 **已有网页实现，别自己拼**：`cat docs/blocks/vo-sider.html`（已对过真值 68 项）
   - `key 7d9470408f1b2b99d1c95e78c1f7601469b0964b` · `node 4596:973`
 
 ### 响应式规范（1）

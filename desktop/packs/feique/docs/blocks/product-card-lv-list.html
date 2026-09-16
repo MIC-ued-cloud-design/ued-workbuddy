@@ -1,0 +1,124 @@
+<!--
+飞鹊 · ProductCard——LV(List) —— LV 产品卡（列表版）
+
+真值出处：Figma gcanH38jg2SMmXwrcC6FP8 · node 7490:3336 · variant Property 1=ProductCard——LV(List)
+2026-09-15 从组件逐节点抽出，不是照截图估的。
+
+【怎么用】
+1. 下面 <style> 整段贴进你页面的 <style>，一个值都别改。
+2. <article class="lvl"> 整段贴进页面，只替换：图片 src、文案、链接。
+3. 带 SLOT 的位置必须 cat 出真 SVG 替换掉，路径已写死。
+
+【尺寸口径 —— 🔴 这是三栏，不是两栏】
+单卡 1520×281，padding 10（不是 20）。三栏之间：图↔中栏 gap 20，中栏↔右栏 gap 50。
+宽度构成 10 + [260 + 20 + 702] + 50 + 468 + 10 = 1520
+左栏 产品图 260×260（圆角 8）｜中栏 702 产品信息｜右栏 468 公司信息
+
+【🔴 跟其它四张产品卡差别最大的一张】
+· **三栏布局**，公司信息单独占右栏（公司名 / Company Video / Audited / 经营类型 / 评分）。
+· **没有购物车、没有收藏心形**。图上是「找相似」按钮，40×40 贴图**右上角**（right 0 / top 0）。
+  🔴 LV 网格版的找相似在图**左下**，两版位置不一样，别照抄。
+· **按钮文字 Regular(400)**，主搜和 QP 都是 Bold。
+· 价格右边跟着一条「Get Latest Price >」文字链（14px），主搜/QP 是「(FOB Price)」。
+· 属性区是三行「Usage: / Size: / Cover Material:」+ 一个「More ›」，行高 21px（14px 的 150%）。
+· 标签是 OEM/ODM 这类描边标签，不是 Secured Trading 那种彩色认证标。
+
+【hover 态没做】
+组件有 hover 态：图上的找相似会展开成「Find similar items」胶囊。这里只做了默认态。
+
+【内联图标出自 icons/，不是手画的】
+similarity.svg（找相似 24×24）· video.svg（Company Video 14×14）· shop.svg（经营类型 14×14）
+star-f.svg（评分星 14×14）· tm.svg（Chat now 16×16，填充改 #007DFA）· right.svg（More 箭头 14×14）
+-->
+
+<style>
+.lvl{font-family:Roboto,Helvetica,Arial,sans-serif;display:flex;align-items:flex-start;padding:10px;background:#fff;box-sizing:border-box}
+.lvl *,.lvl *::before,.lvl *::after{box-sizing:border-box}
+.lvl-media{position:relative;flex:0 0 260px;width:260px;height:260px;border-radius:8px;overflow:hidden;background:#F5F5F5;margin-right:20px}
+.lvl-media>img{width:100%;height:100%;object-fit:cover;display:block}
+/* 找相似：图右上角（网格版在左下，别照抄） */
+.lvl-similar{position:absolute;right:0;top:0;width:40px;height:40px;padding:8px;border:0;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.lvl-similar svg{width:24px;height:24px;display:block}
+.lvl-main{flex:0 0 702px;width:702px;margin-right:50px}
+.lvl-title{margin:0;font-size:14px;line-height:22px;font-weight:400;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl-title b{font-weight:700}
+.lvl-tags{display:flex;align-items:center;gap:6px;width:fit-content;height:20px;margin-top:4px}
+.lvl-tag{height:20px;padding:0 4px;border:1px solid #6C89A6;border-radius:4px;font-size:12px;line-height:18px;color:#6C89A6}
+.lvl-price-row{display:flex;align-items:flex-start;gap:10px;width:fit-content;margin-top:16px}
+.lvl-price{font-size:20px;line-height:26px;font-weight:700;color:#222}
+.lvl-price-link{font-size:14px;line-height:22px;color:#222;text-decoration:none}
+.lvl-moq{font-size:14px;line-height:22px;color:#222}
+/* 属性三行：行高 21px = 14px 的 150% */
+.lvl-attrs{margin-top:14px;font-size:14px;line-height:21px;color:#222}
+.lvl-attrs b{font-weight:400;color:#222}
+.lvl-more{display:flex;align-items:center;gap:4px;width:fit-content;margin-top:4px;font-size:14px;line-height:14px;color:#222;text-decoration:none}
+.lvl-more svg{width:14px;height:14px;display:block}
+.lvl-actions{display:flex;align-items:center;gap:10px;width:fit-content;margin-top:14px}
+/* 🔴 LV 的按钮文字是 Regular，主搜/QP 是 Bold */
+.lvl-btn{width:125px;height:38px;padding:5px 10px;border-radius:1000px;font-family:inherit;font-size:14px;line-height:22px;font-weight:400;display:inline-flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;text-decoration:none}
+.lvl-btn-primary{background:#E64545;color:#fff;border:0}
+.lvl-btn-line{background:#fff;color:#222;border:1px solid #222}
+.lvl-btn svg{width:16px;height:16px;display:block}
+.lvl-side{flex:0 0 468px;width:468px}
+.lvl-company{height:22px;font-size:14px;line-height:22px;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl-row{display:flex;align-items:center;gap:6px;height:22px;margin-top:10px;font-size:14px;line-height:22px;color:#222}
+.lvl-row svg{width:14px;height:14px;display:block;flex:none}
+.lvl-audited{height:20px;margin-top:10px}
+.lvl-audited svg{height:16px;width:auto;display:block}
+.lvl-rate{display:flex;align-items:center;gap:4px;height:22px;margin-top:10px;font-size:14px;line-height:22px;color:#000}
+.lvl-rate svg{width:14px;height:14px;display:block}
+</style>
+
+<article class="lvl">
+  <div class="lvl-media">
+    <img src="产品图.jpg" alt="">
+    <button class="lvl-similar" type="button" aria-label="Find similar items">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13H5.25V14H3C2.44772 14 2 13.5523 2 13V10.75H3V13ZM14 10.75V13C14 13.5523 13.5523 14 13 14H10.75V13H13V10.75H14ZM7.71875 4.3125C9.51368 4.3125 10.9688 5.76757 10.9688 7.5625C10.9688 8.32063 10.7096 9.01845 10.2744 9.57129L11.4805 10.7891L10.7695 11.4922L9.54199 10.2529C9.02206 10.606 8.39457 10.8125 7.71875 10.8125C5.92382 10.8125 4.46875 9.35743 4.46875 7.5625C4.46875 5.76757 5.92382 4.3125 7.71875 4.3125ZM7.71875 5.3125C6.47611 5.3125 5.46875 6.31986 5.46875 7.5625C5.46875 8.80514 6.47611 9.8125 7.71875 9.8125C8.96139 9.8125 9.96875 8.80514 9.96875 7.5625C9.96875 6.31986 8.96139 5.3125 7.71875 5.3125ZM5.25 3H3V5.25H2V3C2 2.44772 2.44772 2 3 2H5.25V3ZM13 2C13.5523 2 14 2.44772 14 3V5.25H13V3H10.75V2H13Z" fill="#222222"/></svg>
+    </button>
+  </div>
+
+  <div class="lvl-main">
+    <h3 class="lvl-title">Factory Direct Selling <b>Greenhouse</b> Cross <b>Connector</b> - U-Type Galvanized Aluminum Steel Cross <b>Connectors</b></h3>
+    <div class="lvl-tags">
+      <span class="lvl-tag">OEM/ODM</span>
+      <span class="lvl-tag">Sample Order</span>
+    </div>
+    <div class="lvl-price-row">
+      <span class="lvl-price">US$0.48-0.60</span>
+      <a class="lvl-price-link" href="#">Get Latest Price &gt;</a>
+    </div>
+    <div class="lvl-moq">1,000 Pieces (MOQ)</div>
+    <div class="lvl-attrs">Usage: Production Greenhouse<br>Size: Small<br>Cover Material: Galvanized</div>
+    <a class="lvl-more" href="#">More
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.85353 4.64644L10.2071 7.99999L6.85353 11.3535L6.14642 10.6464L8.79287 7.99999L6.14642 5.35355L6.85353 4.64644Z" fill="#222222"/></svg>
+    </a>
+    <div class="lvl-actions">
+      <a class="lvl-btn lvl-btn-primary" href="#">Send Inquiry</a>
+      <a class="lvl-btn lvl-btn-line" href="#">
+        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1ZM6.5 3C4.01472 3 2 5.01472 2 7.5C2 9.96312 3.98044 11.9689 6.44336 12L10 13L9.08984 11.1797C10.2873 10.3369 11 8.96434 11 7.5C11 5.01472 8.98528 3 6.5 3Z" fill="#007DFA"/></svg>
+        Chat now
+      </a>
+    </div>
+  </div>
+
+  <div class="lvl-side">
+    <div class="lvl-company">Jiangsu Leader Greenhouse Equipment Co., Ltd.Jiangsu Leader Greenhouse Equipment</div>
+    <div class="lvl-row">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 3C11.5523 3 12 3.44772 12 4V5.64453L14.2363 4.25586C14.5694 4.04899 15 4.28858 15 4.68066V11.3135C15 11.7068 14.5664 11.9467 14.2334 11.7373L12 10.332V12C12 12.5523 11.5523 13 11 13H2C1.44772 13 1 12.5523 1 12V4C1 3.44772 1.44772 3 2 3H11ZM2 12H11V4H2V12ZM12 6.82129V9.15039L14 10.4082V5.5791L12 6.82129ZM5 4.6875V5.6875H3V4.6875H5Z" fill="#222222"/></svg>
+      Company Video
+    </div>
+    <div class="lvl-audited">
+      <!-- SLOT Audited 认证标 46×16：cat brand/productcard/audited.svg 整段贴到这里 -->
+    </div>
+    <div class="lvl-row">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2C13.5523 2 14 2.44772 14 3V4.6875C13.9948 5.47312 13.6003 6.1662 13 6.58398V13C13 13.5523 12.5523 14 12 14H4C3.44772 14 3 13.5523 3 13V6.58398C2.39963 6.16621 2.00516 5.47315 2 4.6875V3C2 2.44772 2.44772 2 3 2H13ZM9.8418 6.11133C9.41262 6.6524 8.74729 7 8 7C7.25271 7 6.58738 6.6524 6.1582 6.11133C5.73191 6.65242 5.07042 6.99998 4.32812 7C4.21679 7 4.10716 6.99265 4 6.97754V13H5.6875V9C5.6875 8.44772 6.13522 8 6.6875 8H9.3125C9.86478 8 10.3125 8.44772 10.3125 9V13H12V6.97656C11.8928 6.99169 11.7832 7 11.6719 7C10.9296 7 10.2681 6.6524 9.8418 6.11133ZM6.6875 9V12.9688H9.3125V9H6.6875ZM3 4.6875C3.00837 5.4138 3.59984 6 4.32812 6C5.05639 5.99997 5.64788 5.41379 5.65625 4.6875H6.66309C6.67152 5.4138 7.26681 6 8 6C8.73319 6 9.32848 5.4138 9.33691 4.6875H10.3438C10.3521 5.4138 10.9436 6 11.6719 6C12.3545 5.99997 12.9165 5.48493 12.9912 4.82227L13 4.6875V3H3V4.6875Z" fill="#222222"/></svg>
+      Manufacturer/Factory &amp; Trading Company
+    </div>
+    <div class="lvl-rate">
+      <span>5.0</span>
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.44771 1.62658C9.11641 2.98241 10.2983 5.3787 10.2983 5.3787C10.2983 5.3787 12.941 5.76297 14.4363 5.98038C14.8463 6.04 15.0096 6.54331 14.713 6.83261C13.631 7.88797 11.7187 9.75322 11.7187 9.75322C11.7187 9.75322 12.1701 12.387 12.4256 13.8772C12.4956 14.2857 12.0679 14.5969 11.7011 14.4039C10.3637 13.7003 7.99996 12.4568 7.99996 12.4568C7.99996 12.4568 5.63622 13.7003 4.29882 14.4039C3.93203 14.5969 3.50434 14.2857 3.57436 13.8772C3.82978 12.387 4.28121 9.75322 4.28121 9.75322C4.28121 9.75322 2.36891 7.88797 1.28693 6.83261C0.990334 6.54331 1.15364 6.04 1.56365 5.98038C3.05891 5.76297 5.70165 5.3787 5.70165 5.3787C5.70165 5.3787 6.88351 2.98241 7.55221 1.62658C7.73558 1.2548 8.26434 1.2548 8.44771 1.62658Z" fill="#E8B786"/></svg>
+      <span>(1)</span>
+      <span>"Fast Dispatch"</span>
+    </div>
+  </div>
+</article>

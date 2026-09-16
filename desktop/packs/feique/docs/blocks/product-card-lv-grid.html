@@ -1,0 +1,100 @@
+<!--
+飞鹊 · ProductCard——LV —— LV 产品卡（网格版）
+
+真值出处：Figma gcanH38jg2SMmXwrcC6FP8 · node 6717:1481 · variant state=Default
+2026-09-15 从组件逐节点抽出，不是照截图估的。
+
+【怎么用】
+1. 下面 <style> 整段贴进你页面的 <style>，一个值都别改。
+2. <article class="lvg"> 整段贴进页面，只替换：图片 src、文案、链接。
+3. 带 SLOT 的位置必须 cat 出真 SVG 替换掉，路径已写死。
+
+【尺寸口径】
+单卡 300×554（定宽）。产品图 260×260。卡片圆角 16、产品图圆角 8。
+高度构成 20 + 260 + 10 + [44 + 5+20 + 16+48 + 14+38 + 12+46] + 20 = 553（组件标 554）
+
+【🔴 LV 卡跟主搜 / QP 卡差别最大，别拿那两个的经验套】
+· **没有购物车按钮**，底部只有 Send Inquiry + Chat now 两个。
+· **按钮文字是 Regular(400)，不是 Bold** —— 主搜和 QP 都是 Bold，这里照真值用 400。
+· **没有收藏心形**，图上是「找相似」按钮（40×40，图**左下**，left 0 / bottom 20）。
+  🔴 列表版的找相似在图**右上**，两版位置不一样。
+· **没有 Secured Trading / 品证标那一行**，取而代之的是 OEM/ODM 这类**描边标签**。
+· 卡片圆角 16（主搜/QP 是直角白卡）。
+· 供应商行是「Audited + 公司名(#888)」，评分行是「5.0 ★ (1) 评价语」，全 14px/22 #000。
+
+【一处没取到真值，我按截图做的】
+「找相似」圆按钮的底色在组件 fills 里没取到，截图看是白色半透明，这里用 rgba(255,255,255,.9)。
+要精确值就去 node 6717:1481 里读 similar Btn 的 fills。
+
+【hover 态没做】
+组件有 hover 态：图下方会出现一条「Find similar items」胶囊按钮。这里只做了默认态。
+
+【内联图标出自 icons/，不是手画的】
+similarity.svg（找相似 24×24）· tm.svg（Chat now 16×16，填充改 #007DFA）· star-f.svg（评分星 14×14）
+-->
+
+<style>
+.lvg{font-family:Roboto,Helvetica,Arial,sans-serif;width:300px;padding:20px;background:#fff;border-radius:16px;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start}
+.lvg *,.lvg *::before,.lvg *::after{box-sizing:border-box}
+.lvg-media{position:relative;width:260px;height:260px;border-radius:8px;overflow:hidden;background:#F5F5F5}
+.lvg-media>img{width:100%;height:100%;object-fit:cover;display:block}
+/* 找相似：图左下，left 0 / bottom 20（列表版在右上，别照抄） */
+.lvg-similar{position:absolute;left:0;bottom:20px;width:40px;height:40px;padding:8px;border:0;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.lvg-similar svg{width:24px;height:24px;display:block}
+.lvg-title{margin:10px 0 0;font-size:14px;line-height:22px;font-weight:400;color:#222;height:44px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lvg-title b{font-weight:700}
+.lvg-tags{display:flex;align-items:center;gap:6px;height:20px;margin-top:5px}
+.lvg-tag{height:20px;padding:0 4px;border:1px solid #6C89A6;border-radius:4px;font-size:12px;line-height:18px;color:#6C89A6}
+.lvg-price{margin-top:16px;font-size:20px;line-height:26px;font-weight:700;color:#222}
+.lvg-moq{font-size:14px;line-height:22px;color:#222}
+.lvg-actions{display:flex;align-items:center;gap:10px;margin-top:14px}
+/* 🔴 LV 的按钮文字是 Regular，主搜/QP 是 Bold */
+.lvg-btn{width:125px;height:38px;padding:5px 10px;border-radius:1000px;font-family:inherit;font-size:14px;line-height:22px;font-weight:400;display:inline-flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;text-decoration:none}
+.lvg-btn-primary{background:#E64545;color:#fff;border:0}
+.lvg-btn-line{background:#fff;color:#222;border:1px solid #222}
+.lvg-btn svg{width:16px;height:16px;display:block}
+.lvg-sup{display:flex;align-items:center;gap:10px;height:22px;margin-top:12px}
+.lvg-sup svg{height:16px;width:auto;display:block;flex:none}
+.lvg-sup-name{font-size:14px;line-height:22px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvg-rate{display:flex;align-items:center;gap:4px;height:22px;margin-top:2px;font-size:14px;line-height:22px;color:#000}
+.lvg-rate svg{width:14px;height:14px;display:block}
+</style>
+
+<article class="lvg">
+  <div class="lvg-media">
+    <img src="产品图.jpg" alt="">
+    <button class="lvg-similar" type="button" aria-label="Find similar items">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13H5.25V14H3C2.44772 14 2 13.5523 2 13V10.75H3V13ZM14 10.75V13C14 13.5523 13.5523 14 13 14H10.75V13H13V10.75H14ZM7.71875 4.3125C9.51368 4.3125 10.9688 5.76757 10.9688 7.5625C10.9688 8.32063 10.7096 9.01845 10.2744 9.57129L11.4805 10.7891L10.7695 11.4922L9.54199 10.2529C9.02206 10.606 8.39457 10.8125 7.71875 10.8125C5.92382 10.8125 4.46875 9.35743 4.46875 7.5625C4.46875 5.76757 5.92382 4.3125 7.71875 4.3125ZM7.71875 5.3125C6.47611 5.3125 5.46875 6.31986 5.46875 7.5625C5.46875 8.80514 6.47611 9.8125 7.71875 9.8125C8.96139 9.8125 9.96875 8.80514 9.96875 7.5625C9.96875 6.31986 8.96139 5.3125 7.71875 5.3125ZM5.25 3H3V5.25H2V3C2 2.44772 2.44772 2 3 2H5.25V3ZM13 2C13.5523 2 14 2.44772 14 3V5.25H13V3H10.75V2H13Z" fill="#222222"/></svg>
+    </button>
+  </div>
+
+  <h3 class="lvg-title">Factory Direct Selling <b>Greenhouse Cross Connector</b> - U-Type Galvanized Aluminum Profile</h3>
+
+  <div class="lvg-tags">
+    <span class="lvg-tag">OEM/ODM</span>
+    <span class="lvg-tag">Sample Order</span>
+  </div>
+
+  <div class="lvg-price">US$0.48-0.60</div>
+  <div class="lvg-moq">1,000 Pieces (MOQ)</div>
+
+  <div class="lvg-actions">
+    <a class="lvg-btn lvg-btn-primary" href="#">Send Inquiry</a>
+    <a class="lvg-btn lvg-btn-line" href="#">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1ZM6.5 3C4.01472 3 2 5.01472 2 7.5C2 9.96312 3.98044 11.9689 6.44336 12L10 13L9.08984 11.1797C10.2873 10.3369 11 8.96434 11 7.5C11 5.01472 8.98528 3 6.5 3Z" fill="#007DFA"/></svg>
+      Chat now
+    </a>
+  </div>
+
+  <div class="lvg-sup">
+    <!-- SLOT Audited 认证标 46×16：cat brand/productcard/audited.svg 整段贴到这里 -->
+    <span class="lvg-sup-name">Tianjin Longlong Metal Product</span>
+  </div>
+
+  <div class="lvg-rate">
+    <span>5.0</span>
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.44771 1.62658C9.11641 2.98241 10.2983 5.3787 10.2983 5.3787C10.2983 5.3787 12.941 5.76297 14.4363 5.98038C14.8463 6.04 15.0096 6.54331 14.713 6.83261C13.631 7.88797 11.7187 9.75322 11.7187 9.75322C11.7187 9.75322 12.1701 12.387 12.4256 13.8772C12.4956 14.2857 12.0679 14.5969 11.7011 14.4039C10.3637 13.7003 7.99996 12.4568 7.99996 12.4568C7.99996 12.4568 5.63622 13.7003 4.29882 14.4039C3.93203 14.5969 3.50434 14.2857 3.57436 13.8772C3.82978 12.387 4.28121 9.75322 4.28121 9.75322C4.28121 9.75322 2.36891 7.88797 1.28693 6.83261C0.990334 6.54331 1.15364 6.04 1.56365 5.98038C3.05891 5.76297 5.70165 5.3787 5.70165 5.3787C5.70165 5.3787 6.88351 2.98241 7.55221 1.62658C7.73558 1.2548 8.26434 1.2548 8.44771 1.62658Z" fill="#E8B786"/></svg>
+    <span>(1)</span>
+    <span>“Fast Dispatch”</span>
+  </div>
+</article>

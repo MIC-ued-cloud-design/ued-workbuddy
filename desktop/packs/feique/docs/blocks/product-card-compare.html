@@ -1,0 +1,69 @@
+<!--
+飞鹊 · product-card —— 简化产品卡（带 Select 勾选，用于对比/推荐位）
+
+真值出处：Figma gcanH38jg2SMmXwrcC6FP8 · node 10752:2633
+2026-09-15 从组件逐节点抽出，不是照截图估的。
+
+【怎么用】
+1. 下面 <style> 整段贴进你页面的 <style>，一个值都别改。
+2. <article class="pcc"> 整段贴进页面，只替换：图片 src、文案、链接。
+3. 带 SLOT 的位置必须 cat 出真 SVG 替换掉，路径已写死。
+
+【尺寸口径】
+单卡 253×367。产品图 229×229（圆角 8）。padding 上右左 12、下 16。
+高度构成 12 + 229 + 8+68 + 8+26 + 16 = 367
+
+【🔴 这张卡里有一半元素在组件里是隐藏的，默认态不要画出来】
+组件里 visible=false 的（做默认态一律不显示）：
+· 底部那条「Chat Now」按钮（229×40 pill，白底 1px #222，16px Bold）—— **默认是隐藏的**
+· 图上的轮播指示器（6 个 16×3 白条）、左右翻页箭头（36×36）、删除按钮（36×36）
+· 占位文字「[ Product Image ]」、两个 select-pill
+默认态图上**只有右上角那个 Select 胶囊**（93×36，top 10 / right 10）。
+要用那些隐藏态，去 node 10752:2633 里按名字取，别自己造一个。
+
+【跟其它五张产品卡不是一路】
+这张没有 Secured Trading、没有供应商行、没有评分、没有 Send Inquiry。
+它是「勾选对比」场景的卡：图 + Select 勾选 + 品证标 + 标题 + 价格。价格 **18px Bold**
+（主搜网格 20px / 主搜列表 26px / LV 20px，四个值都不一样，别照抄）。
+
+【内联图标出自 icons/】
+yes2.svg —— 勾选框里的勾。🔴 飞鹊有三个勾：yes 是圆圈+勾、yes-f 是实心圆挖勾、
+**checkbox 要用 yes2（纯勾）**，别拿错。
+-->
+
+<style>
+.pcc{font-family:Roboto,Helvetica,Arial,sans-serif;width:253px;padding:12px 12px 16px;background:#fff;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start}
+.pcc *,.pcc *::before,.pcc *::after{box-sizing:border-box}
+.pcc-media{position:relative;width:229px;height:229px;border-radius:8px;overflow:hidden;background:#F5F5F5}
+.pcc-media>img{width:100%;height:100%;object-fit:cover;display:block}
+/* Select 胶囊：图右上，top 10 / right 10 */
+.pcc-select{position:absolute;top:10px;right:10px;height:36px;padding:7px 14px;border:0;border-radius:1000px;background:#fff;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit}
+.pcc-box{width:20px;height:20px;padding:4px;border:1px solid #222;border-radius:4px;background:#222;display:flex;align-items:center;justify-content:center;flex:none}
+.pcc-box svg{width:12px;height:12px;display:block}
+.pcc-box svg path{fill:#fff}
+.pcc-select-label{font-size:14px;line-height:22px;color:#222}
+.pcc-badge{height:22px;margin-top:8px}
+.pcc-badge svg{height:22px;width:auto;display:block}
+.pcc-title{margin:2px 0 0;width:229px;font-size:14px;line-height:22px;font-weight:400;color:#222;height:44px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pcc-price{margin-top:8px;font-size:18px;line-height:26px;font-weight:700;color:#222}
+</style>
+
+<article class="pcc">
+  <div class="pcc-media">
+    <img src="产品图.jpg" alt="">
+    <button class="pcc-select" type="button" aria-pressed="true">
+      <span class="pcc-box">
+        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.98836 6.94178L1.28125 7.64889L6.231 12.5986L14.7163 4.11336L14.0092 3.40625L6.231 11.1844L1.98836 6.94178Z" fill="#222222"/></svg>
+      </span>
+      <span class="pcc-select-label">Select</span>
+    </button>
+  </div>
+
+  <div class="pcc-badge">
+    <!-- SLOT 品证标 116×22：cat brand/productcard/certified.svg 整段贴到这里 -->
+  </div>
+
+  <h3 class="pcc-title">High Quality Luxury Designs Furniture Couch Living Room Fabric Sofa</h3>
+
+  <div class="pcc-price">US$350.00-750.00</div>
+</article>

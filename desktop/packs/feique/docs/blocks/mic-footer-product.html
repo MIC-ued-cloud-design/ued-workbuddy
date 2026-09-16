@@ -1,0 +1,126 @@
+<!--
+飞鹊 · MIC Footer Product / 产品详情页脚
+
+真值出处：Figma gcanH38jg2SMmXwrcC6FP8 · node 6181:1549（组件集）· variant 6180:1342（breakpoint=1440）
+2026-09-15 从组件逐节点抽出的几何与样式，不是照截图估的。
+元素上的 data-node-id 就是 Figma 节点号，用来机器复验（见文末），贴进页面可以留着。
+
+【怎么用】
+1. 下面 <style> 整段贴进你页面的 <style>，一个值都别改。
+2. <footer class="mfp"> 整段贴进页面底部，只替换：链接 href、文案。
+3. 带 SLOT 注释的位置要换成真图，路径已写死在注释里。
+
+【尺寸口径 —— 一套实现覆盖四个断点，不需要 @media】
+Figma 里这个组件有 1440/1366/1280/1024 四个 variant，高度 205/205/205/241。
+四档的差别只有一件事：两行链接在窄屏折成两行。所以实现只用 flex-wrap，
+不写任何媒体查询，宽度给多少就自己排 —— 断点是结果，不是输入。
+高度构成（1440）：30 + 46 + 20 + 23 + 20 + 26 + 40 = 205
+                  ↑pt  ↑链接组        ↑版权组       ↑执照  ↑pb
+窄到 1024 时链接组 46 → 82（两行各 36），总高 241。
+
+【三个最容易做错的地方】
+· 分隔竖线是 #555555（1×12）。**Footer Search 那个页脚的分隔线是 #CED3D9**，两个页脚不一样，别互相抄。
+· 这个页脚的链接清单跟 Footer Search 也不一样：这里有 English 和 China Wholesale、
+  Chinese Manufacturers/Suppliers；Footer Search 没有 English，而且是 China Manufacturers/Suppliers
+  ＋ Wholesale Products ＋ Continent Channel。**两份清单逐条核过，确认是真的不同，不是抄漏。**
+· 页脚顶边那条 1px #CED3D9 用的是 box-shadow:inset，不是 border-top。
+  Figma 里这条描边是 INSIDE（画在 205 之内），写成 border-top 会把总高撑成 206 ——
+  实测就差这 1px，容差能混过去，但四档全都偏 1px。底色是 #E3E4E6（不是白色，也不是 #F5F7FA）。
+
+【🔴 换行位置跟 Figma 会差一项 —— 这是已知的，别去"修"】
+（「换行位置」＝一行放不下时，从哪一项开始挪到下一行。）
+跟 Figma 的 1024 档截图逐行比过：
+· 每行末尾挂一根孤立的分隔竖线（下一行以「| xxx」开头）—— **组件里本来就是这样**，不是实现出来的毛病。
+· 但第一行能放下几项会差一个：Figma 把 "Mobile Site" 留在第一行、只把 "| Insights" 挤下去；
+  浏览器里 "Mobile Site" 也被挤下去了。原因是 Chrome 把这串文字算宽约 7px：Figma 有自己的排版引擎，
+  跟浏览器对同一串字算出的宽度本来就差约 1%（实测「Focus Technology Co., Ltd.」12px Roboto：
+  Figma 算 144、Chrome 算 145.9）。十来个词累起来就够挤掉一项。
+  **不要靠硬编 <br> 或固定断点去对齐它** —— 真实页面的文案是活的，从哪一项换行本来就该由实际渲染宽度决定，
+  写死反而会在换文案/换语言时排错。四个断点的**高度**是精确对上的（205/205/205/241），这才是要守的约束。
+
+【组件没定义的】
+链接 hover / visited 态组件里没有，需要时问设计，别自己定。
+工商营业执照那个 26×26 圆形图在组件里就是张占位图（图层名带 placeholder），要换成真图。
+
+【怎么复验】
+· **随包能直接做的**：把这个片段放进任意宽度的容器里量整体高度 ——
+  1440 / 1366 / 1280 三档应该都是 205，1024 档是 241。对不上就是改坏了。
+· **源码仓里有机器门**（不随应用分发，在 UED WorkBuddy 的源码仓 desktop/ 目录下）：
+  `node build/verify-block.js --block packs/feique/docs/blocks/mic-footer-product.html --truth build/blocks-truth/mic-footer-product.json`
+  它按元素上的 data-node-id 逐个跟 Figma 真值比 64 项，全绿才算过。真值表里写明了每一项的期望值。
+-->
+
+<style>
+.mfp{font-family:Roboto,Helvetica,Arial,sans-serif;background:#E3E4E6;box-shadow:inset 0 1px 0 #CED3D9;box-sizing:border-box}
+.mfp *,.mfp *::before,.mfp *::after{box-sizing:border-box}
+.mfp-grid{padding:0 20px}
+.mfp-links{display:flex;flex-direction:column;align-items:center;gap:20px;padding:30px 0 40px}
+.mfp-group{display:flex;flex-direction:column;align-items:center;align-self:stretch;gap:5px;padding-bottom:5px}
+.mfp-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:10px;row-gap:0}
+.mfp-row a,.mfp-row span{font-size:12px;line-height:18px;font-weight:400;color:#555555;text-decoration:none;white-space:nowrap}
+.mfp-sep{flex:0 0 1px;width:1px;height:12px;background:#555555}
+.mfp-inline{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;align-self:stretch;gap:10px;padding-bottom:5px}
+.mfp-inline .mfp-row{column-gap:10px}
+.mfp-gov{display:flex;flex-direction:row;align-items:center;justify-content:center;align-self:stretch;gap:5px;height:26px}
+.mfp-gov-ico{flex:0 0 26px;width:26px;height:26px;border-radius:13px;overflow:hidden;background:#D8D8D8}
+.mfp-gov-ico img{width:100%;height:100%;object-fit:cover;display:block}
+.mfp-gov span{font-size:12px;line-height:18px;font-weight:400;color:#555555}
+</style>
+
+<footer class="mfp" data-node-id="6180:1342">
+  <div class="mfp-grid" data-node-id="6180:1343">
+    <div class="mfp-links" data-node-id="6180:1344">
+
+      <div class="mfp-group" data-node-id="6180:1345">
+        <div class="mfp-row" data-node-id="6180:1346">
+          <a href="#" data-node-id="6180:1347">Hot Products</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1349">China Products</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1351">Chinese Manufacturers/Suppliers</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1353">China Wholesale</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1355">Wholesale Price</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1357">Industry Sites</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1359">Regional Channels</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1361">Product Index</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1363">Mobile Site</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1365">Insights</a>
+        </div>
+        <div class="mfp-row" data-node-id="6180:1366">
+          <span data-node-id="6180:1367">Language Options:</span><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1369">English</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1371">Espa&ntilde;ol</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1373">Portugu&ecirc;s</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1375">Fran&ccedil;ais</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1377">Русский язык</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1379">Italiano</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1381">Deutsch</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1383">Nederlands</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1385">العربية</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1387">한국어</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1389">日本語</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1391">हिन्दी</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1393">ภาษาไทย</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1395">T&uuml;rk&ccedil;e</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1397">Ti&#7871;ng Vi&#7879;t</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1399">Bahasa Indonesia</a>
+        </div>
+      </div>
+
+      <div class="mfp-inline" data-node-id="6180:1400">
+        <div class="mfp-row" data-node-id="6185:2"><span data-node-id="6180:1401">Focus Technology Co., Ltd.</span></div>
+        <i class="mfp-sep"></i>
+        <div class="mfp-row" data-node-id="6185:3">
+          <a href="#" data-node-id="6180:1403">User Agreement</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1405">Declaration</a><i class="mfp-sep"></i>
+          <a href="#" data-node-id="6180:1407">Privacy Policy</a>
+        </div>
+      </div>
+
+      <div class="mfp-gov" data-node-id="6180:1408">
+        <!-- SLOT 工商营业执照徽章 26×26 圆形：组件里是占位图，换成真图 <img src="…"> -->
+        <div class="mfp-gov-ico" data-node-id="6180:1409"></div>
+        <span data-node-id="6180:1410">工商营业执照</span>
+      </div>
+
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,54 @@
+<!--
+飞鹊 · vo-nav —— VO（供应商后台）二级导航
+
+真值出处：Figma gcanH38jg2SMmXwrcC6FP8 · node 4596:912（组件集）· variant 4596:913（selected=business）
+2026-09-15 从组件逐节点抽出。data-node-id 是 Figma 节点号，用来机器复验。
+
+【怎么用】
+<style> 整段贴进页面，<nav class="von"> 贴在 vo-header 下面。
+换选中项＝把 von-on 这个类挪到对应的 <a> 上，别的不用动。
+
+【尺寸口径】
+1600×40 固定高，左右各留 20。八个导航项宽度由文案撑开（padding 左右各 20），
+所以「产品/展示厅/商机…」宽度各不相同，别写死。右边「数据罗盘」是个圆角胶囊形状的入口按钮，
+外面还包一层 padding-left:10 的壳。
+
+【颜色 —— 这三个值只在 VO 后台用，飞鹊通用 token 里没有】
+底色 #406080 · 选中项底色 #284159 · 数据罗盘胶囊 #5B80A6 · 文字全白 14px/22
+这三个蓝不是飞鹊的 primary（#007DFA），是 VO 后台自己的深蓝导航色，别拿 token 替换。
+
+【怎么复验】
+· **随包能直接做的**：量整体尺寸应该是 1600×40。
+· **源码仓里有机器门**（不随应用分发）：
+  `node build/verify-block.js --block packs/feique/docs/blocks/vo-nav.html --truth build/blocks-truth/vo-nav.json`
+  逐元素比 37 项，全绿才算过。
+
+【组件没定义的】
+hover 态、以及导航项超过一屏怎么办，组件里都没有，需要时问设计。
+组件里有三个 variant（business / showroom / product），差别只是哪一项选中，结构完全一样。
+-->
+
+<style>
+.von{font-family:Roboto,Helvetica,Arial,sans-serif;display:flex;flex-direction:row;align-items:center;height:40px;padding:0 20px;background:#406080;box-sizing:border-box}
+.von *,.von *::before,.von *::after{box-sizing:border-box}
+.von-item{display:flex;flex-direction:row;align-items:center;justify-content:center;height:40px;padding:0 20px;text-decoration:none}
+.von-item>span{font-size:14px;line-height:22px;font-weight:400;color:#FFFFFF;white-space:nowrap}
+.von-on{background:#284159}
+.von-quick{display:flex;flex-direction:row;align-items:center;height:40px;padding-left:10px}
+.von-quick-link{display:flex;flex-direction:row;align-items:center;justify-content:center;height:26px;padding:0 15px;border-radius:30px;background:#5B80A6;text-decoration:none}
+.von-quick-link>span{font-size:14px;line-height:22px;font-weight:400;color:#FFFFFF;white-space:nowrap}
+</style>
+
+<nav class="von" data-node-id="4596:913">
+  <a class="von-item" href="#" data-node-id="4596:914"><span data-node-id="4596:915">Virtual Office</span></a>
+  <a class="von-item" href="#" data-node-id="4596:916"><span data-node-id="4596:917">产品</span></a>
+  <a class="von-item" href="#" data-node-id="4596:918"><span data-node-id="4596:919">展示厅</span></a>
+  <a class="von-item von-on" href="#" data-node-id="4596:920"><span data-node-id="4596:921">商机</span></a>
+  <a class="von-item" href="#" data-node-id="4596:922"><span data-node-id="4596:923">营销</span></a>
+  <a class="von-item" href="#" data-node-id="4596:924"><span data-node-id="4596:925">交易</span></a>
+  <a class="von-item" href="#" data-node-id="4596:926"><span data-node-id="4596:927">资产</span></a>
+  <a class="von-item" href="#" data-node-id="4596:928"><span data-node-id="4596:929">国际物流</span></a>
+  <div class="von-quick" data-node-id="4596:930">
+    <a class="von-quick-link" href="#" data-node-id="4596:931"><span data-node-id="4596:932">数据罗盘</span></a>
+  </div>
+</nav>
