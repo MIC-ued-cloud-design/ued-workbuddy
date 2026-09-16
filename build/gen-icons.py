@@ -23,10 +23,33 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-SRC  = os.path.join(ROOT, 'icon-source.png')
+SRC  = os.path.join(ROOT, 'icon-source.png')            # 网页版用
+# 客户端单独一张：吉吉 2026-09-16 定「只换客户端的」。
+# 网页版那张外面带一圈光晕，按实心方块缩到 80.5% 之后光晕还铺在方块外面，
+# 在 Dock 里看着像多了一块底色；客户端这张没有光晕，缩完更利落。
+# 🔴 两张图别互换 —— 网页那张是 favicon 满幅用的，客户端这张是按网格留白用的。
+SRC_DESK = os.path.join(ROOT, 'icon-source-desktop.png')
 DESK = os.path.join(ROOT, 'desktop', 'build')
 
-MAC_TARGET = 0.805      # 苹果网格 824÷1024
+# 🔴 客户端图标要**按 macOS 网格留白**：1024 画布里图稿占 824（80.5%）。
+# 2026-09-16 在 macOS 26.5.1 上用「全新 bundle id + 全新路径 + 全新 Dock 格子」
+# 对照实测（同一张源图，只改这一个变量）：
+#   留白 80.5% → Dock 里干净、跟邻居等大 ✅
+#   铺满 100%  → 系统给它套一圈浅灰框、还把图标缩小 ❌
+# 也就是说 macOS 26 仍按老规矩预期你留白；你铺满它就当超框，自己补一层底。
+#
+# 🔴🔴 中途我一度改成「铺满」，是被缓存骗的：Dock 的图标缓存按 bundle id 存，
+# 极其顽固（清缓存目录 / 杀 iconservicesagent / 重登记 / 换路径 全都没用），
+# 于是「改了没变化」被我误读成「这个方向不对」。
+# **判据：验图标改动必须换一个全新 bundle id 去看，在原 app 上看到的是旧贴图。**
+#
+# 🔴 换完图标怎么让本机 Dock 真的更新（2026-09-16 实测出来的唯一有效顺序）：
+#   ① 先把那一格从 Dock 摘掉（defaults 改 persistent-apps）→ killall Dock
+#   ② **在摘掉的状态下**清 $(getconf DARWIN_USER_CACHE_DIR)com.apple.iconservices*
+#      ＋ killall -9 iconservicesagent ＋ lsregister -f
+#   ③ 用一个**新 GUID** 把那一格放回去 → killall Dock
+#   带着那一格清缓存无效（试过七八轮）；只 killall Dock 无效；换路径无效（缓存按 bundle id）。
+MAC_TARGET = 0.805
 MASTER     = 1024
 
 
@@ -46,27 +69,30 @@ def solid_bbox(im):
 
 
 def main():
-    if not os.path.exists(SRC):
-        die('找不到主图：' + SRC)
-    im = Image.open(SRC).convert('RGBA')
+    for p in (SRC, SRC_DESK):
+        if not os.path.exists(p):
+            die('找不到主图：' + p)
+    im = Image.open(SRC).convert('RGBA')          # 网页版
+    imd = Image.open(SRC_DESK).convert('RGBA')    # 客户端
     W = im.size[0]
     x0, y0, x1, y1 = solid_bbox(im)
     cur = (x1 - x0 + 1) / W
-    print('  主图 %dx%d · 实心方块占 %.1f%%' % (im.size[0], im.size[1], 100 * cur))
+    print('  网页版主图 %dx%d · 实心方块占 %.1f%%' % (im.size[0], im.size[1], 100 * cur))
 
-    # ── 客户端：缩到 macOS 网格，四周留透明边 ──
-    scale = (MAC_TARGET / cur) * (MASTER / W)
-    nw = max(1, round(W * scale))
-    small = im.resize((nw, nw), Image.LANCZOS)
-    sx0, sy0, sx1, sy1 = solid_bbox(small)
-    off = (round(MASTER / 2 - (sx0 + sx1) / 2), round(MASTER / 2 - (sy0 + sy1) / 2))
+    # ── 客户端：把实心方块裁出来，按网格缩到 80.5% 居中 ──
+    dx0, dy0, dx1, dy1 = solid_bbox(imd)
+    print('  客户端主图 %dx%d · 实心方块占 %.1f%%'
+          % (imd.size[0], imd.size[1], 100.0 * (dx1 - dx0 + 1) / imd.size[0]))
+    crop = imd.crop((dx0, dy0, dx1 + 1, dy1 + 1))
+    inner = round(MASTER * MAC_TARGET)
     mac = Image.new('RGBA', (MASTER, MASTER), (0, 0, 0, 0))
-    mac.paste(small, off, small)
+    mac.alpha_composite(crop.resize((inner, inner), Image.LANCZOS), ((MASTER - inner) // 2,) * 2)
     mx0, my0, mx1, my1 = solid_bbox(mac)
     got = 100.0 * (mx1 - mx0 + 1) / MASTER
     if abs(got - MAC_TARGET * 100) > 1.0:
-        die('客户端图标没落在网格上：%.1f%%，目标 %.1f%%' % (got, MAC_TARGET * 100))
-    print('  客户端 · 实心方块 %.1f%%（目标 %.1f%%）' % (got, MAC_TARGET * 100))
+        die('客户端图标没落在网格上：%.1f%%，目标 %.1f%% —— 铺满会被系统套一圈浅灰框'
+            % (got, MAC_TARGET * 100))
+    print('  客户端 · 图稿占 %.1f%%（目标 %.1f%%·铺满会被系统套框）' % (got, MAC_TARGET * 100))
 
     out = os.path.join(DESK, 'icon.iconset')
     shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
