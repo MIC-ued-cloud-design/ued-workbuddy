@@ -13,3 +13,17 @@
 .use-scr::-webkit-scrollbar-thumb:hover{background:#888;}/* text/auxiliary opacity:1 */
 .use-scr-lg::-webkit-scrollbar{width:8px;height:8px;}
 .use-scr-sm::-webkit-scrollbar{width:4px;height:4px;}
+
+/* Firefox / 标准属性。值跟上面 webkit 那套一模一样，只是换个写法表达同一个设计。
+   只写 webkit 的话，交付给前端的页面在 Firefox 里还是系统滚动条。 */
+.use-scr,.use-scr-lg,.use-scr-sm{scrollbar-width:thin;scrollbar-color:rgba(136,136,136,.5) transparent;}
+
+/* 🔴 飞鹊组件**自己就会滚**的容器，默认就长飞鹊滚动条，不用每个页面记得挂 .use-scr。
+   （.dw-body 是抽屉正文，dw.css 里写死了 overflow-y:auto。）
+   把这一条放在 scr.css 而不是改 dw.css：滚动条长什么样只有这一个源，
+   哪天飞鹊重新导出组件库，dw.css 被覆盖也不会把它冲掉。 */
+.dw-body{scrollbar-width:thin;scrollbar-color:rgba(136,136,136,.5) transparent;}
+.dw-body::-webkit-scrollbar{width:6px;height:6px;}
+.dw-body::-webkit-scrollbar-track{background:transparent;}
+.dw-body::-webkit-scrollbar-thumb{background:rgba(136,136,136,0.5);border-radius:40px;}
+.dw-body::-webkit-scrollbar-thumb:hover{background:#888;}

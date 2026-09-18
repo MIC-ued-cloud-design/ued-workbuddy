@@ -213,8 +213,15 @@ function check(html, packDir) {
       { name: '输入框',   n: (html.match(/<input\b[^>]*type\s*=\s*"(?:text|search|email|tel|url|password|date|time)"/gi) || []).length
                              + (html.match(/<input\b(?![^>]*\btype\s*=)[^>]*>/gi) || []).length,
         c: clsCount(/class\s*=\s*"[^"]*\binp(?:-body|-lg|-sm)?\b/g), brick: '.inp（docs/css/inp.css）' },
-      { name: '数字输入框', n: (html.match(/<input\b[^>]*type\s*=\s*"number"/gi) || []).length,
-        c: clsCount(/class\s*=\s*"[^"]*\binp-num\b/g), brick: '.inp-num（docs/css/inpn.css）' },
+      /* 🔴 `type=number` ≠ 「必须用 .inp-num」。飞鹊的 .inp-num 是**带加减号的步进器**，
+         适合份数、件数这种小数量；而「自定义金额 ____ 元」这种带单位后缀的金额字段，
+         正确的砖是 .inp ＋ .inp-tab-post（20,000 元也不该配一对上下箭头）。
+         所以已经穿着 .inp 的 number 输入框不算裸奔 —— 2026-09-18 在 PPC 那页实测：
+         门要求把预算字段换成步进器，换了反而是错的。
+         **门判错方向时，改门，别照着门把对的改坏**（这类错最贵：它带着一套理由）。 */
+      { name: '数字输入框', n: [...html.matchAll(/<input\b[^>]*type\s*=\s*"number"[^>]*>/gi)]
+          .filter(m => { const i = html.indexOf(m[0]); return !/class\s*=\s*"[^"]*\binp(?:-body)?\b[^"]*"[^>]*>(?:(?!<\/div>)[\s\S]){0,200}$/.test(html.slice(Math.max(0, i - 300), i)); }).length,
+        c: clsCount(/class\s*=\s*"[^"]*\binp-num\b/g), brick: '.inp-num（docs/css/inpn.css）；如果是带单位后缀的金额/数量，用 .inp ＋ .inp-tab-post 才对，别套步进器' },
       { name: '勾选框',   n: (html.match(/<input\b[^>]*type\s*=\s*"checkbox"/gi) || []).length,
         c: clsCount(/class\s*=\s*"[^"]*\b(?:cb|sw)\b/g), brick: '.cb / .sw（docs/css/cb.css、sw.css）' },
       { name: '单选',     n: (html.match(/<input\b[^>]*type\s*=\s*"radio"/gi) || []).length,
@@ -239,8 +246,14 @@ function check(html, packDir) {
      🔴 判据要准，别把产品自己的筛选栏误判成演示栏：只认「类名像 demobar」
      或「明写了 Demo 控制台」这两种，都是作者自己声明过「这是演示用的」。 */
   if (!isClone) {
-    const hit = html.match(/<[^>]*class\s*=\s*["'][^"']*demo-?bar[^"']*["'][^>]*>/i)
-             || html.match(/Demo\s*控制台/i) || html.match(/Demo\s*控制条/i);
+    /* 🔴 先剥 HTML 注释：一句「这里原来有一条 demo 控制台，已删除」是**说明**，不是控制台。
+       不剥的话，越是老老实实写清楚为什么删的人，越会被这道门判成硬伤。 */
+    /* 🔴 HTML 注释和 CSS 注释都要剥。
+       实测：bar 早删了，只剩 <style> 里一句「页面里没有任何 demo 控制条」的注释，门照报硬伤 ——
+       越是老老实实写清楚为什么删的人，越会被判。 */
+    const noCmt = html.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    const hit = noCmt.match(/<[^>]*class\s*=\s*["'][^"']*demo-?bar[^"']*["'][^>]*>/i)
+             || noCmt.match(/Demo\s*控制台/i) || noCmt.match(/Demo\s*控制条/i);
     if (hit) issues.push({ rule: 'demobar-in-page', level: 'bad',
       msg: '页面里做了 demo 控制条。状态不要在页面里切——写成根节点上的 state-* 类（<body class="state-empty">，CSS 里 body.state-empty .list{display:none}），切换交给流程控制台那个独立窗口。这样交付给前端的 HTML 里一行演示代码都没有，而那些 state-* 类正好是他要用的真实状态类',
       detail: [String(hit[0]).slice(0, 80)] });
@@ -250,6 +263,61 @@ function check(html, packDir) {
      吉吉 2026-09-18 报「UW 不认识和不会使用飞鹊的缺省图」，追下来模型其实用对了 .empty 那套类，
      是**包里没带图**（DESIGN.md 当时写着「留空占位块」）。图已经带上了，这条门防它再回去。
      🔴 只判「看得出是空态、但插图位是空的」，不判「你该不该有空态」—— 后者机器判不了。 */
+  /* 缺省图的插图位不许有底色。飞鹊缺省图是透明的，底下垫一块灰就多出一个方块。
+     🔴 这条不是审美：`empty.css` 里那句 background 是「包里还没带图、先放占位块」时代的，
+     图带进来之后没人回去拆 —— 占位块一旦活过了它要占的那个位，就变成了错误本身。
+     （吉吉 2026-09-18 截图指出。判据只看 .empty-img 这一条选择器上有没有 background 色值，
+     背景图 url(...) 不算 —— 那是有人在用自己的插图。） */
+  if (!isClone) {
+    const bg = [];
+    for (const m of css.matchAll(/\.empty-img\b[^{]*\{([^}]*)\}/g)) {
+      const body = m[1];
+      if (!/background(-color)?\s*:/.test(body)) continue;
+      if (/background(-image)?\s*:\s*[^;]*url\(/.test(body)) continue;      // 自己放的插图，不管
+      const v = (body.match(/background(-color)?\s*:\s*([^;]+)/) || [])[2] || '';
+      if (/^\s*(none|transparent|0\s*0)\s*$/i.test(v)) continue;            // 明确写了透明，正是我们要的
+      bg.push(v.trim());
+    }
+    if (bg.length) issues.push({ rule: 'empty-img-bg', level: 'bad',
+      msg: `缺省图的插图位加了底色（${bg.slice(0, 2).join(' / ')}）。飞鹊缺省图是透明的，加底色会在图后面露出一个灰方块。把 .empty-img 的 background 去掉，尺寸用 packs/feique/docs/css/empty.css 里的 296×280`,
+      detail: bg });
+  }
+
+  /* 自己做的滚动容器要用飞鹊滚动条。
+     🔴 级别给 warn 不给 bad：`overflow:auto` 的容器在运行时到底会不会真的滚，静态看不出来
+     （内容没超出就不出滚动条）。门宁可说轻一点也不能错报——错报一次人就不信它了。
+     飞鹊组件自带的滚动区（.dw-body）已经在 scr.css 里处理过，不算在内。 */
+  if (!isClone) {
+    /* 🔴 判据是「这一页给滚动条上过样式没有」，不是「有没有挂 use-scr 这个类」。
+       第一版我按类名放行，结果 .dw-body（飞鹊抽屉正文，自带 overflow-y:auto）被整个跳过，
+       而这一页恰恰是把 dw.css 内联进来、却没把 scr.css 内联进来 —— 屏幕上就是系统滚动条，
+       门却一声不吭。**放行条件写成「属于某个已知的好类名」，等于假设它一定带着那套样式。** */
+    const scrollers = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^}]*overflow(-[xy])?\s*:\s*(auto|scroll)[^}]*)\}/g)) {
+      const sel = m[1].trim().split('\n').pop().trim();
+      if (/::-webkit-scrollbar|^html\b|^body\b|^\*$/.test(sel)) continue;
+      scrollers.push(sel.slice(0, 40));
+    }
+    /* 🔴 判据要落到「这一个容器会不会真的拿到飞鹊滚动条」，不能只问「这一页上过滚动条样式没有」。
+       实测第二版就栽在这儿：页面把 scr.css 整段内联了（`.use-scr::-webkit-scrollbar` 都在），
+       但**没有任何元素挂 use-scr 这个类** —— 样式在、没人用，屏幕上还是系统滚动条，门却说没问题。
+       「样式存在」离「样式生效」差着一个类名，判据不许在这一步偷懒。 */
+    const scrClasses = new Set();
+    for (const m of css.matchAll(/\.([A-Za-z0-9_-]+)\s*::-webkit-scrollbar/g)) scrClasses.add(m[1]);
+    const classLists = [...html.matchAll(/class\s*=\s*["']([^"']*)["']/g)].map(m => m[1].split(/\s+/).filter(Boolean));
+    const naked = scrollers.filter(sel => {
+      const cls = (sel.match(/\.([A-Za-z0-9_-]+)\s*$/) || [])[1];
+      if (!cls) return false;                                   // 复杂选择器判不了，放过（宁可漏报不错报）
+      if (scrClasses.has(cls)) return false;                    // 它自己那条选择器就带着滚动条样式
+      const usedOn = classLists.filter(l => l.includes(cls));
+      if (!usedOn.length) return false;                         // 类定义了但页面上没用，不算问题
+      return !usedOn.every(l => l.some(c => scrClasses.has(c)));
+    });
+    if (naked.length) issues.push({ rule: 'scrollbar', level: 'warn',
+      msg: `${naked.length} 处会滚动的容器用的还是系统滚动条（${naked.slice(0, 2).join(' / ')}）。飞鹊滚动条在 packs/feique/docs/css/scr.css —— 整段 cat 进 <style> 之后，还要在**那个会滚的元素**上加 use-scr 类才生效（样式内联了没人挂类 = 白内联）。飞鹊组件自带的滚动区（.dw-body 等）scr.css 里已经直接写死了`,
+      detail: naked });
+  }
+
   if (!isClone && /class="[^"]*\bempty-img\b/.test(html)) {
     const blocks = [...html.matchAll(/<div[^>]*class="[^"]*\bempty-img\b[^"]*"[^>]*>([\s\S]{0,400}?)<\/div>/gi)];
     const bare = blocks.filter(m => {

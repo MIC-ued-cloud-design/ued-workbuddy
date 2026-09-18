@@ -339,47 +339,187 @@ function stateBtns(p, viewKey) {
   }).join('') + '</div>';
 }
 
-function renderMap(d) {
-  /* 🔴 门槛从「至少两页」改成「至少两屏」：PPC 那种一个 html 带三个抽屉的页面，
-     按页数算是 1，直接被判成「没有流程可画」——而它恰恰是流程最需要画出来的那一类
-     （吉吉原话：主要在抽屉跳转）。屏＝页面 + 它声明的视图。 */
-  const screens = d.pages.reduce((a, p) => a + 1 + (p.views || []).length, 0);
-  if (screens < 2) { $('#mapWrap').innerHTML = '<p class="empty">只有一屏，没有流程可画。<br>页面之间用真的 <code>&lt;a href&gt;</code> 连起来，<br>同一页里的抽屉用 <code>/* @视图 key 名字 · 怎么进来 · 入口选择器 *&#47;</code> 声明，这里就有图了。</p>'; return; }
+/* ── 流程图：编号卡片 ＋ 真缩略图 ＋ 正交折线 ──────────────────────────
+   吉吉 2026-09-18 给了张 wireflow 海报：「我希望流程是这样的展示，这样人类看的很清楚」。
+
+   🔴 这里推翻了我自己之前写在这个文件里的判据（「不画 SVG 连线：15 个节点、每个 3～5 条出边，
+   连线在 460 宽的窗口里必然叠成一团」）。那条判据没错，错在它把「窄窗口 + 纯文字节点」
+   当成了唯一前提 —— 海报之所以读得清，靠的是**缩略图认屏 + 宽画布 + 折线走通道**这三件事一起。
+   所以进流程图也像铺开那样把窗口撑宽，节点换成带编号的真缩略图，线走行间通道。
+
+   ⚠️ 诚实的边界：海报是人手摆的位置。自动布局到十几个节点时，走线不会有人摆的好看。
+   现在这个量级（一页带三个抽屉）很干净，真到一百屏要重新想布局，不是把通道数调大就行。 */
+
+/* 一屏＝一张卡。页面本身是一屏，它的每个抽屉/浮层各是一屏。
+   顺序＝按离入口的步数分层，视图紧跟在它所属的页面后面 —— 编号就是这个顺序，
+   人报「第 7 屏」时两个人看的是同一张。 */
+function screensOf(d) {
+  const out = [];
+  /* 🔴 layers() 把「跳不到的孤儿」放在数组第 0 位（它用的是 depth+1 当下标，孤儿 depth=-1）。
+     直接按数组顺序编号的话，孤儿会拿到 1 号、入口变成 2 号 —— 而编号在这个视图里
+     就是「第几屏」这个称呼本身，入口不是 1 号，整套号就没法用了。
+     所以先走入口那一串（下标 1 往后），孤儿挪到最后，编号也就落在最大的几号上，
+     跟它「不在主流程里」这件事正好对上。 */
   const ls = layers(d);
-  let h = '';
-  ls.forEach((group, i) => {
-    if (!group || !group.length) return;
-    h += `<div class="map-lab">${i === 0 ? '跳不到的（孤儿）' : i === 1 ? '入口' : '第 ' + (i - 1) + ' 步'}</div>`;
-    for (const p of group) {
-      const broken = p.links.filter(l => !l.ok).length;
-      const vs = p.views || [];
-      h += `<div><button class="node ${p.rel === S.at.rel ? 'at' : ''}" data-rel="${esc(p.rel)}" data-state="default">
-        <span class="t">${esc(p.title)}</span>
-        <span class="m">${esc(p.rel)} · ${statesIn(p, '').length} 态${vs.length ? ` · ${vs.length} 个浮层` : ''}${broken ? ` · <span class="bad">${broken} 断</span>` : ''}</span></button>`;
-      h += stateBtns(p, '');
-      /* 视图（抽屉 / 浮层）作为这一页的子节点缩进挂着。
-         它不另起一层：它跟页面是同一屏上的覆盖关系，不是走了一步。
-         把它画成下一层会让「步数」这个刻度失真——第 3 步到底是跳了三次页，还是开了三次抽屉？ */
-      for (const v of vs) {
-        h += `<div class="vnode-wrap"><button class="node vnode ${p.rel === S.at.rel && (S.at.state || '').indexOf(v.key) === 0 ? 'at' : ''}"
-          data-rel="${esc(p.rel)}" data-state="${esc(statesIn(p, v.key).length ? statesIn(p, v.key)[0].key : v.key)}">
-          <span class="t">${esc(v.name)}</span>
-          <span class="m">${esc(v.how || '同页浮层')}${v.sel ? ' · <code>' + esc(v.sel) + '</code>' : ''}</span></button>`;
-        h += stateBtns(p, v.key);
-        h += '</div>';
+  for (const group of [...ls.slice(1), ls[0]]) {
+    for (const p of (group || [])) {
+      const main = statesIn(p, '');
+      out.push({ kind: 'page', rel: p.rel, view: '', title: p.title, sub: p.rel,
+        state: main.length ? main[0].key : 'default', page: p });
+      for (const v of (p.views || [])) {
+        const sts = statesIn(p, v.key);
+        out.push({ kind: 'view', rel: p.rel, view: v.key, title: v.name, sub: v.how || '同页浮层',
+          state: sts.length ? sts[0].key : v.key, page: p, sel: v.sel });
       }
-      if (p.links.length) {
-        h += '<ul class="edges">';
-        for (const l of p.links) {
-          const to = d.pages.find(x => x.rel === l.to);
-          h += `<li class="${l.ok ? '' : 'broken'}">${esc(l.text || l.sel)} <span class="w">→ ${esc(to ? to.title : l.to)}${l.ok ? '' : '（没有这一页）'}</span></li>`;
-        }
-        h += '</ul>';
-      }
-      h += '</div>';
+    }
+  }
+  return out.map((sc, i) => ({ ...sc, n: i + 1, id: sc.rel + '|' + sc.view }));
+}
+
+/* 边有两种来源，都是真值、都不是人手连的：
+     页 → 页   从 <a href> 扫出来
+     页 → 抽屉 从 @视图 声明的入口选择器来
+   断链不画线（画了就得画到一个不存在的节点上），改成挂在源卡片上报红。 */
+function edgesOf(d, screens) {
+  const has = new Set(screens.map(s => s.id));
+  const out = [];
+  for (const sc of screens) {
+    if (sc.kind !== 'page') continue;
+    for (const l of sc.page.links) {
+      if (!l.ok) continue;
+      const to = l.to + '|';
+      if (has.has(to)) out.push({ from: sc.id, to, label: (l.text || l.sel || '').slice(0, 8) });
+    }
+    for (const v of (sc.page.views || [])) {
+      const to = sc.rel + '|' + v.key;
+      if (has.has(to)) out.push({ from: sc.id, to, label: v.name.replace(/（.*）$/, '').slice(0, 8) });
+    }
+  }
+  return out;
+}
+
+/* 正交折线 + 圆角。点列是「拐点」，r 是圆角半径。
+   直接用 stroke-linejoin:round 圆不出这个半径（那只圆描边端头的接缝），得自己拐弯。 */
+function elbow(pts, r) {
+  if (pts.length < 2) return '';
+  let dstr = `M${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+    const d1 = Math.hypot(b.x - a.x, b.y - a.y), d2 = Math.hypot(c.x - b.x, c.y - b.y);
+    const rr = Math.max(0, Math.min(r, d1 / 2, d2 / 2));
+    const p1 = { x: b.x + (a.x - b.x) / (d1 || 1) * rr, y: b.y + (a.y - b.y) / (d1 || 1) * rr };
+    const p2 = { x: b.x + (c.x - b.x) / (d2 || 1) * rr, y: b.y + (c.y - b.y) / (d2 || 1) * rr };
+    dstr += ` L${p1.x} ${p1.y} Q${b.x} ${b.y} ${p2.x} ${p2.y}`;
+  }
+  const e = pts[pts.length - 1];
+  return dstr + ` L${e.x} ${e.y}`;
+}
+
+function renderMap(d) {
+  const screens = screensOf(d);
+  if (screens.length < 2) {
+    $('#mapWrap').innerHTML = '<p class="empty">只有一屏，没有流程可画。<br>页面之间用真的 <code>&lt;a href&gt;</code> 连起来，<br>同一页里的抽屉用 <code>/* @视图 key 名字 · 怎么进来 · 入口选择器 *&#47;</code> 声明，这里就有图了。</p>';
+    return;
+  }
+  const k = 0.18, W = 1240, H = 900;                     // 流程图只要「认得出是哪一屏」，比铺开小一档
+  const cw = Math.round(W * k), chh = Math.round(H * k);
+  const reached = new Set([d.entry]);
+  for (const p of d.pages) for (const l of p.links) if (l.ok) reached.add(l.to);
+
+  $('#mapWrap').innerHTML =
+    `<svg class="mconn" aria-hidden="true"></svg><div class="mcards">` +
+    screens.map(sc => {
+      const at = sc.rel === S.at.rel && (S.at.state || 'default') === sc.state;
+      const orphan = sc.kind === 'page' && d.pages.length > 1 && !reached.has(sc.rel);
+      const broken = sc.kind === 'page' ? sc.page.links.filter(l => !l.ok) : [];
+      return `<div class="mcard ${at ? 'at' : ''} ${sc.kind === 'view' ? 'v' : ''}" data-id="${esc(sc.id)}" style="width:${cw}px">
+        <div class="mcard-hd"><span class="num">${sc.n}</span><span class="t" title="${esc(sc.sub)}">${esc(sc.title)}</span></div>
+        <div class="mcard-shot" data-rel="${esc(sc.rel)}" data-state="${esc(sc.state)}" style="height:${chh}px" title="点一下在主窗口里看这一屏">
+          <iframe data-mcell="${esc(sc.rel)}|${esc(sc.state)}" style="width:${W}px;height:${H}px;transform:scale(${k})" sandbox="allow-same-origin" scrolling="no"></iframe>
+          <div class="tile-hit"></div>
+        </div>
+        ${orphan ? '<div class="mtag warn">没人跳得到</div>' : ''}
+        ${broken.length ? `<div class="mtag bad" title="${esc(broken.map(l => (l.text || l.sel) + ' → ' + l.to).join('\n'))}">${broken.length} 条断链</div>` : ''}
+        ${stateBtns(sc.page, sc.view)}
+      </div>`;
+    }).join('') + '</div>';
+
+  /* 缩略图：跟铺开共用同一份 html 缓存和同一套换态算法（两处各写一套，迟早对不上） */
+  wallHtml([...new Set(screens.map(s => s.rel))]).then(() => {
+    for (const fr of $('#mapWrap').querySelectorAll('iframe[data-mcell]')) {
+      const [rel, st] = fr.dataset.mcell.split('|');
+      const src = S.wall.html.get(rel);
+      if (src) fr.srcdoc = bodyWithState(src, st, S.on);
     }
   });
-  $('#mapWrap').innerHTML = h;
+
+  drawConn(d, screens, edgesOf(d, screens));
+}
+
+/* 连线单独一步：卡片尺寸是写死的，布局立刻就稳，不用等缩略图装完再量。
+   🔴 但必须等这一帧的 layout 出来 —— innerHTML 之后直接 getBoundingClientRect 拿到的是旧位置。 */
+function drawConn(d, screens, edges) {
+  requestAnimationFrame(() => {
+    const wrap = $('#mapWrap'), svg = wrap.querySelector('svg.mconn');
+    if (!svg) return;
+    const wb = wrap.getBoundingClientRect(), sx = wrap.scrollLeft, sy = wrap.scrollTop;
+    const R = el => { const r = el.getBoundingClientRect(); return { x: r.left - wb.left + sx, y: r.top - wb.top + sy, w: r.width, h: r.height }; };
+    const box = {};
+    for (const el of wrap.querySelectorAll('.mcard')) {
+      const shot = el.querySelector('.mcard-shot');
+      box[el.dataset.id] = { card: R(el), shot: R(shot) };
+    }
+
+    /* 每一行的底边（卡片高度不齐——状态按钮多的那张更高），通道就在它下面。
+       按行取最大值，不按单张卡取：否则同一条通道在不同卡下面高度不一样，线会是阶梯状的。 */
+    const rows = new Map();
+    for (const id in box) {
+      const k = Math.round(box[id].card.y / 12);
+      rows.set(k, Math.max(rows.get(k) || 0, box[id].card.y + box[id].card.h));
+    }
+
+    const used = new Map();
+    let out = '', maxY = 0;
+    for (const e of edges) {
+      const a = box[e.from], b = box[e.to];
+      if (!a || !b) continue;
+      /* 🔴 一律走通道，不走直线。
+         直线只在「目标就在右边紧邻」时才不穿帮 —— 而一个页面开三个抽屉时，
+         1→4 那条直线会**横穿 2 号和 3 号卡片**（实测长这样）。判断「中间有没有别的卡」
+         要做相交检测，做对了也只省下一点点长度；统一走通道反而更像一张流程图，
+         而且通道上永远有地方放标签（标签压在标题上是上一版最难看的一处）。 */
+      const ay = a.shot.y + a.shot.h / 2, by = b.shot.y + b.shot.h / 2;
+      const rowKey = Math.round(a.card.y / 12);
+      const ch = used.get(rowKey) || 0; used.set(rowKey, ch + 1);
+      const gut = (rows.get(rowKey) || (a.card.y + a.card.h)) + 14 + ch * 11;
+      const outX = a.shot.x + a.shot.w + 16 + ch * 10;   /* 拉开一点，免得同源的几条线挤成一根 */
+      const inX = b.shot.x - 16;
+      const pts = [{ x: a.shot.x + a.shot.w, y: ay }, { x: outX, y: ay },
+                   { x: outX, y: gut }, { x: inX, y: gut }, { x: inX, y: by }, { x: b.shot.x, y: by }];
+      /* 标签放在横向那一段的中间；这一段太短时（目标就在隔壁）中间是根竖线，
+         压上去两边都看不清 —— 改成贴着目标那头右对齐。 */
+      const runW = inX - outX;
+      const labX = runW > 52 ? (outX + inX) / 2 : inX - 6;
+      const labAnchor = runW > 52 ? 'middle' : 'end';
+      maxY = Math.max(maxY, gut);
+      out += `<path d="${elbow(pts, 8)}" class="mline"><title>${esc(e.label || '')}</title></path>`
+        + `<circle cx="${pts[0].x}" cy="${pts[0].y}" r="3" class="mdot"/>`
+        + `<circle cx="${pts[pts.length - 1].x}" cy="${pts[pts.length - 1].y}" r="3" class="mdot"/>`
+        /* 标签落在通道那一段上：那儿是空的，压不到任何卡片和标题 */
+        + (e.label ? `<text x="${labX}" y="${gut - 5}" class="mlab" text-anchor="${labAnchor}">${esc(e.label)}</text>` : '');
+    }
+    /* 🔴 通道画在卡片下面，而 scrollHeight 只算到卡片底 —— 不腾地方的话，
+       横着走的那一段整段被裁掉，屏幕上只剩几根从卡片垂下来的短竖线，
+       看着像「线画歪了」，其实是画布不够高（实测：画布 263，通道在 265/276/287）。
+       所以先算出通道要到哪儿，再把 wrap 的下内边距撑开，最后才定画布尺寸。
+       `overflow:visible` 指望不上：外层 <svg> 的裁剪由 width/height 决定。 */
+    const need = Math.ceil(maxY + 18);
+    wrap.style.paddingBottom = Math.max(12, need - (wrap.scrollHeight - 12)) + 'px';
+    svg.setAttribute('width', Math.max(wrap.scrollWidth, 1));
+    svg.setAttribute('height', Math.max(wrap.scrollHeight, need));
+    svg.dataset.need = String(need);        // 给门用：画布必须装得下所有走线
+    svg.innerHTML = out;
+  });
 }
 
 /* ── 剧本 ─────────────────────────────── */
@@ -473,8 +613,11 @@ function renderPlayer() {
 $('#tabs').addEventListener('click', async e => {
   const b = e.target.closest('button[data-v]'); if (!b) return;
   const was = S.view; S.view = b.dataset.v;
-  if (S.view === 'wall') await wallResize(true);
-  else if (was === 'wall') await wallResize(false);
+  /* 铺开和流程都要宽画布：流程图的卡片一行摆不下三张就失去「一眼看全貌」的意义了。
+     其余三个视图是列表型的，窄窗口反而更好用 —— 所以进这两个撑宽、离开还原。 */
+  const wide = v => v === 'wall' || v === 'map';
+  if (wide(S.view) && !wide(was)) await wallResize(true);
+  else if (!wide(S.view) && wide(was)) await wallResize(false);
   render();
 });
 $('#wallMode').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (b) { S.wall.mode = b.dataset.m; render(); } });

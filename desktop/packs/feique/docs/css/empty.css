@@ -3,8 +3,13 @@
 /* 容器 */
 .empty { display:flex; flex-direction:column; align-items:center; gap:16px; padding:24px; font-family:'Roboto',sans-serif; }
 
-/* 插图区域（雪碧图裁切或占位） */
-.empty-img { width:256px; height:256px; background:#F5F7FA; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+/* 插图区域。
+   🔴 这里原来有 background:#F5F7FA + border-radius:8px —— 那是「包里还没有真图、
+   先放个占位块」时代留下的。真缺省图是**透明**的，底色一加，屏幕上就多出一个灰方块
+   （吉吉 2026-09-18 截图指出）。图有了之后占位块就该拆掉，不是留着当底。
+   🔴 尺寸按 sprites 的原始像素 296×280 给，不再钉 256×256：
+   296 的图塞进 256 的框会被重采样，缩略图上一眼就糊 —— 这是个还原精度问题，不只是好不好看。 */
+.empty-img { width:296px; height:280px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
 .empty-img-custom { width:276px; height:242px; }
 .empty-img img { max-width:100%; max-height:100%; object-fit:contain; }
 

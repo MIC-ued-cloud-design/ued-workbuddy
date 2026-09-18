@@ -72,9 +72,31 @@ table.grid tr:hover td.pg{background:#FAFAFC}
 td.pg button.at .t{color:var(--accent);font-weight:600}
 
 /* ── 流程图 ────────────────────────────── */
-.map-wrap{overflow:auto;padding-bottom:4px}
-.map-layer{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-.map-lab{font-size:10px;color:var(--ink-4);margin:8px 0 4px;text-transform:none}
+.map-wrap{overflow:auto;padding:4px 2px 12px;position:relative}
+/* 连线画在卡片底下那一层：盖在上面会挡住缩略图，也会把点击吃掉 */
+svg.mconn{position:absolute;left:0;top:0;pointer-events:none;z-index:0;overflow:visible}
+.mline{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round}
+.mdot{fill:var(--accent)}
+.mlab{font-size:10px;fill:var(--ink-3);font-family:inherit;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round}
+
+.mcards{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:26px 34px;align-items:flex-start}
+.mcard{display:flex;flex-direction:column;gap:7px}
+.mcard-hd{display:flex;align-items:center;gap:7px;min-width:0}
+/* 编号徽标：跟海报一样是实心圆。它不是装饰，是「第几屏」这个称呼的载体 */
+.mcard-hd .num{flex:0 0 auto;width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;line-height:1}
+.mcard-hd .t{font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-.012em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcard-shot{position:relative;overflow:hidden;background:var(--white);border:1px solid var(--line-2);
+  border-radius:9px;cursor:pointer;box-shadow:var(--sh-1);transition:border-color .12s,box-shadow .12s}
+.mcard-shot iframe{border:0;transform-origin:0 0;pointer-events:none}
+.mcard-shot:hover{border-color:var(--accent-line)}
+.mcard.at .mcard-shot{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-fill)}
+/* 抽屉/浮层的卡用虚线框区分：它跟页面不是同一类东西（一个是一份文件，一个是盖在上面的一层） */
+.mcard.v .mcard-shot{border-style:dashed}
+.mtag{font-size:10px;line-height:1.4;padding:1px 6px;border-radius:var(--r-pill);align-self:flex-start}
+.mtag.warn{background:#FFF6E5;color:#8A5A00}
+.mtag.bad{background:#FFEDEC;color:var(--bad)}
 .node{border:1px solid var(--line);border-radius:10px;background:var(--white);padding:7px 10px;min-width:200px;max-width:100%;text-align:left;box-shadow:var(--sh-1)}
 .node:hover{border-color:var(--accent-line);background:var(--accent-fill)}
 .node.at{border-color:var(--accent);background:var(--accent-fill)}
@@ -130,16 +152,29 @@ td.pg button.at .t{color:var(--accent);font-weight:600}
 .seg button{padding:5px 10px;font-size:12px;color:var(--ink-2);background:var(--white)}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.on{background:var(--accent-fill);color:var(--accent);font-weight:600}
+/* 🔴 原来 .sel 一条样式都没有，走的是浏览器原生 select —— 同一条工具栏上
+   左边是圆角胶囊按钮、中间杵一个系统方框，风格对不上（吉吉 2026-09-18 指出）。
+   自己画箭头：appearance:none 会把原生箭头一起去掉。 */
+.sel{appearance:none;-webkit-appearance:none;max-width:420px;padding:5px 28px 5px 11px;
+  border:1px solid var(--line);border-radius:var(--ctl-r);background:var(--white);
+  font:inherit;font-size:12px;color:var(--ink);line-height:1.4;cursor:pointer;
+  text-overflow:ellipsis;white-space:nowrap;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M11.35 6.85 8 10.21 4.65 6.85l.7-.7L8 8.79l2.65-2.64z' fill='%236E6E73'/></svg>");
+  background-repeat:no-repeat;background-position:right 7px center}
+.sel:hover{background-color:var(--soft-2)}
+.sel:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-fill)}
 .zoom{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
 .zoom input{width:110px}
 /* 一组一块（一个视图＝一组），组之间留白比组内大 —— 分组要一眼看得出来，
    否则十一张卡连成一片，人还得自己数哪几张是同一个抽屉的。 */
 .wall{display:block}
-.wgrp{margin-bottom:26px}
+.wgrp{margin-bottom:34px}   /* 组间留白也是层级的一部分：字号拉开了，间距没拉开还是糊的 */
 .wgrp:last-of-type{margin-bottom:8px}
-.wall-sec{display:flex;align-items:baseline;gap:8px;padding:0 2px 9px}
-.wall-sec .t{font-size:12px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
-.wall-sec .c{font-size:10px;color:var(--ink-4)}
+.wall-sec{display:flex;align-items:baseline;gap:9px;padding:0 2px 12px}
+/* 组标题＝这一屏叫什么。它统辖底下一排卡片，字号必须明显压过卡片标题，
+   否则人得靠位置去猜谁管谁。17 / 13 / 11 三级，每级都同时动字号、字重和颜色。 */
+.wall-sec .t{font-size:17px;font-weight:600;color:var(--ink);letter-spacing:-.022em;line-height:1.25}
+.wall-sec .c{font-size:11px;font-weight:400;color:var(--ink-4);letter-spacing:0}
 .wtiles{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
 
 .tile{flex:0 0 auto;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:var(--white);
@@ -155,11 +190,11 @@ td.pg button.at .t{color:var(--accent);font-weight:600}
    两块白贴在一起，状态名看着就像长在页面里（吉吉 2026-09-18：「状态名称和图混在一起了」）。
    灰底 + 上面那条实线，一眼分得清「这是标签，不是页面的一部分」。 */
 .tile-cap{padding:8px 10px 9px;background:var(--soft);min-width:0}
-.tile-cap .n{font-size:12px;font-weight:600;color:var(--ink);line-height:1.4;
+.tile-cap .n{font-size:13px;font-weight:600;color:var(--ink);line-height:1.35;letter-spacing:-.012em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 说明最多两行，超了省略。之前跟名字挤在同一行，长一点就把名字挤没了 —— 
    而名字是这张卡唯一必须看清的东西。 */
-.tile-cap .w{margin-top:3px;font-size:10.5px;color:var(--ink-3);line-height:1.5;
+.tile-cap .w{margin-top:3px;font-size:11px;color:var(--ink-3);line-height:1.5;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.1em}
 
 .wall-note{font-size:11px;color:var(--ink-3);padding:10px 2px 0;line-height:1.7}
@@ -182,20 +217,17 @@ table.grid thead th.vg:first-of-type{border-left:0}
    不然人得挨个回源码查是哪一种，这张表就不省事了。 */
 .cell.na{color:var(--ink-4);opacity:.45;font-size:11px}
 
-/* ── 铺开：分段小标题 ──────────────────
-   同一个抽屉的几个态挨在一起才比得出差别；混着铺的话眼睛先要花力气分清这是哪一屏。 */
-.wall-sec{flex:0 0 100%;font-size:11px;font-weight:600;color:var(--ink-2);padding:6px 2px 0;margin-top:4px}
-.wall-sec:first-child{margin-top:0}
+/* （原来这里还有一条 .wall-sec，是改版面之前那套扁平 flex 布局留下的。
+    它排在新规则后面，把新的整条盖掉了 —— 组标题实际渲染成 11px/ink-2，
+    比卡片标题还小还淡，层级整个是反的。2026-09-18 吉吉指出后删除。
+    🔴 教训：改版面时新写一套选择器，要回头搜同名的旧规则，光在新位置写不算改完。） */
 
-/* ── 流程图：视图子节点 ＋ 节点自带的状态按钮 ──────────────────
-   吉吉 2026-09-18：「这个按钮可以按照线性图来构造」。
-   节点回答「哪一屏」，底下那排按钮回答「这一屏的哪个样子」，点哪个进哪个。 */
-.vnode-wrap{margin:4px 0 0 14px;padding-left:10px;border-left:1px dashed var(--line)}
-.node.vnode{min-width:180px;border-style:dashed;background:#FCFCFD}
-.node.vnode .t{font-weight:600;color:var(--ink-2)}
-.node.vnode code{font-family:var(--mono);font-size:9px}
+/* ── 流程图：编号卡片 ＋ 真缩略图 ＋ 正交折线 ──────────────────
+   对标的是 wireflow 海报：一屏一张卡、左上角编号、卡下面挂它自己的状态按钮，
+   卡之间用走通道的折线连。编号是「第几屏」的共同称呼——两个人报同一个号看的是同一张。 */
 .nstates{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 0 4px}
 .nst{padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--white);font-size:11px;color:var(--ink-2)}
 .nst:hover{border-color:var(--accent-line);background:var(--accent-fill);color:var(--accent)}
 .nst.at{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-.vnode-wrap .nstates{margin-left:2px}
+/* 流程图里状态按钮直接挂在卡片下面，不再缩进（原来 .vnode-wrap 那套已经删掉） */
+.mcard .nstates{margin:1px 0 0 0}

@@ -1,6 +1,6 @@
 {
   "name": "uw-desktop",
-  "version": "0.1.52",
+  "version": "0.1.53",
   "description": "UED WorkBuddy 桌面版：给产品、设计、前端共用的 AI 工作台，用同事自己的 Claude Code 当引擎，飞鹊设计系统随应用携带，产物一键发给前端。",
   "main": "main/main.js",
   "scripts": {
