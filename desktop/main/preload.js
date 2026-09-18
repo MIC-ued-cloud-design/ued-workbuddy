@@ -1,5 +1,5 @@
 'use strict';
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const call = (ch) => (...a) => ipcRenderer.invoke(ch, ...a);
 
@@ -14,6 +14,27 @@ contextBridge.exposeInMainWorld('uw', {
   listFiles: call('files:list'),
   readFile: call('files:read'),
   checkFile: call('files:check'),
+  editApply: call('edit:apply'),
+  editUndo: call('edit:undo'),
+  editRedo: call('edit:redo'),
+  editComponents: call('edit:components'),
+  kbIndex: call('kb:index'),
+  kbRead: call('kb:read'),
+  kbAdd: call('kb:add'),
+  kbRemove: call('kb:remove'),
+  kbFeique: call('kb:feique'),
+  iconIdentify: call('kb:iconIdentify'),
+  iconSvg: call('kb:iconSvg'),
+  checkUpdate: call('update:check'),
+  downloadUpdate: call('update:download'),
+  installUpdate: call('update:install'),
+  cancelUpdate: call('update:cancel'),
+  onUpdateProgress: (fn) => { const h = (_e, p) => fn(p); ipcRenderer.on('update:progress', h); return () => ipcRenderer.removeListener('update:progress', h); },
+  importFiles: call('files:import'),
+  importBlob: call('files:importBlob'),
+  putImage: call('image:put'),
+  /* 拖进来的 File 对象拿真实路径（File.path 在 Electron 32 起废了，只能走 webUtils） */
+  pathForFile: (f) => { try { return webUtils.getPathForFile(f); } catch (e) { return ''; } },
   send: call('run:send'),
   record: call('run:record'),
   interrupt: call('run:interrupt'),
@@ -26,7 +47,22 @@ contextBridge.exposeInMainWorld('uw', {
   copy: call('clipboard:write'),
   pickDir: call('dialog:pickDir'),
   pickAny: call('dialog:pickAny'),
+  pickImage: call('dialog:pickImage'),
   openTerminal: call('shell:terminal'),
+  /* 多页面流程控制台（第二个窗口） */
+  flowScan: call('flow:scan'),
+  flowWalk: call('flow:walk'),
+  flowHtml: call('flow:html'),
+  flowResize: call('flow:resize'),
+  flowOpen: call('flow:open'),
+  flowClose: call('flow:close'),
+  flowIsOpen: call('flow:isOpen'),
+  flowGoto: call('flow:goto'),
+  flowAt: call('flow:at'),
+  onFlowProject: (fn) => { const h = (_e, p) => fn(p); ipcRenderer.on('flow:project', h); return () => ipcRenderer.removeListener('flow:project', h); },
+  onFlowGoto: (fn) => { const h = (_e, p) => fn(p); ipcRenderer.on('flow:goto', h); return () => ipcRenderer.removeListener('flow:goto', h); },
+  onFlowAt: (fn) => { const h = (_e, p) => fn(p); ipcRenderer.on('flow:at', h); return () => ipcRenderer.removeListener('flow:at', h); },
+  onFlowClosed: (fn) => { const h = (_e, p) => fn(p); ipcRenderer.on('flow:closed', h); return () => ipcRenderer.removeListener('flow:closed', h); },
   readFigma: call('figma:read'),
   openFigma: call('figma:open'),
   onRunEvent: (fn) => { const h = (_e, p) => fn(p); ipcRenderer.on('run:event', h); return () => ipcRenderer.removeListener('run:event', h); },

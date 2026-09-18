@@ -41,7 +41,11 @@ function lib(packDir) {
       if (ds.length) brand.push({ file: f, marks: ds });
     }
   } catch (e) { /* 包里没有 brand/ 就不查这条，不因此把整个体检搞崩 */ }
-  _lib = { classes, colors, offW, brand, prefixes: ['btn', 'inp', 'alert', 'tag', 'bdg', 'sel', 'pg', 'msg', 'tip', 'cb', 'rd', 'sw', 'skel', 'spin'] };
+  /* 随包字体的真实覆盖区间（build 时从 woff2 的 cmap 导出，不是手列的）。
+     超出这个范围的字符会单独回落到下一档字体，跟旁边的 Roboto 不是一套。 */
+  let cov = null;
+  try { cov = JSON.parse(fs.readFileSync(path.join(packDir, 'fonts', 'coverage.json'), 'utf8')); } catch (e) {}
+  _lib = { classes, colors, offW, brand, cov, prefixes: ['btn', 'inp', 'alert', 'tag', 'bdg', 'sel', 'pg', 'msg', 'tip', 'cb', 'rd', 'sw', 'skel', 'spin'] };
   return _lib;
 }
 /* 从某个开标签起，按 div/section 深度找到它的闭合，返回内部 HTML */
@@ -58,9 +62,28 @@ function blockAfter(html, start) {
 function check(html, packDir) {
   const L = lib(packDir);
   const issues = [];
+  /* 克隆线上的页面要豁免「该用飞鹊砖」那几条：它的类名本来就是线上的，
+     99% 自造是正常的，判它等于要求它别还原。判据跟 feique-font.js 的 isClone 同一套。 */
+  const isClone = /<base\b[^>]*\bhref\s*=\s*["']https?:/i.test(html)
+    || (html.match(/@font-face[^}]*font-family\s*:\s*["']?Roboto/gi) || []).length >= 4;
   const css = ((html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || []).map(s => s.replace(/<\/?style[^>]*>/gi, '')).join('\n') + ' ' + (html.match(/style="[^"]*"/g) || []).join(' ')).replace(/\/\*[\s\S]*?\*\//g, '');
 
+  /* 克隆页的「值层」规则（字体 / 字重 / 色值 / 类名 / 尺寸覆写）一律豁免 ——
+     它的每一个值都该跟线上一样，判它等于要求它别还原。2026-09-17 实测：1:1 还原 VO 那页
+     被判 213 个野色 + 8 个非法字重 + 3 个自造类，全部来自线上本身。
+     🔴 豁免是声明式的：豁免了哪几条写在这条 info 里，摆在体检面板上，不是悄悄跳过。
+     内容层规则（价格写法 / 手画品牌标）照判 —— 那两条克隆页也该对。 */
+  if (isClone) issues.push({ rule: 'clone', level: 'info',
+    msg: '这是克隆线上的页面（有 <base href> 或自带线上的 Roboto @font-face）。字体、字重、色值、类名、组件尺寸、裸控件、手搓占比、字符覆盖这 8 条已豁免——它的值本来就该跟线上一样。价格写法和手画品牌标两条照判' });
+
+  /* 页面用到的全部类名 + var(--x) 解包：克隆豁免块内外都要用，所以提到这儿 */
+  const used = new Set(); for (const m of html.matchAll(/class="([^"]*)"/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
+
+  const vars = {}; for (const m of css.matchAll(/(--[a-zA-Z0-9_-]+)\s*:\s*([^;}]+)/g)) vars[m[1]] = m[2].trim();
+  const unvar = s2 => s2.replace(/var\((--[a-zA-Z0-9_-]+)(?:\s*,\s*[^)]*)?\)/g, (_, k) => vars[k] != null ? unvar(vars[k]) : _);
+
   /* 1 字体：只认 Roboto 首选 */
+  if (!isClone) {
   const fams = [...css.matchAll(/font-family\s*:\s*([^;}]+)/g)].map(m => m[1].trim()).filter(f => !/^(inherit|initial|unset)$/.test(f) && !/^var\(/.test(f));
   const badFam = [...new Set(fams.filter(f => !/^['"]?Roboto/i.test(f) && !/monospace/i.test(f)))];
   if (badFam.length) issues.push({ rule: 'font', level: 'bad', msg: `字体不是 Roboto 首选：${badFam.slice(0, 3).join(' / ')}` });
@@ -87,13 +110,10 @@ function check(html, packDir) {
   if (badC.length) issues.push({ rule: 'color', level: 'warn', msg: `${badC.length}个色值不在飞鹊表内：${badC.slice(0, 6).join(' ')}${badC.length > 6 ? ' …' : ''}`, detail: badC });
 
   /* 4 自造组件：用了飞鹊的命名前缀、飞鹊却没有这个类（.btn-neutral 这种） */
-  const used = new Set(); for (const m of html.matchAll(/class="([^"]*)"/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
   const fake = [...used].filter(c => L.prefixes.some(p => c === p || c.startsWith(p + '-')) && !L.classes.has(c));
   if (fake.length) issues.push({ rule: 'fake-class', level: 'bad', msg: `用了飞鹊命名、飞鹊里却没有的类：${fake.slice(0, 6).join(' ')}${fake.length > 6 ? ' …' : ''}。要么用真类名，要么别借飞鹊的前缀`, detail: fake });
 
   /* 5 覆写了飞鹊的尺寸档（先把 var(--x) 解开再比，变量最终等于飞鹊值就不算错） */
-  const vars = {}; for (const m of css.matchAll(/(--[a-zA-Z0-9_-]+)\s*:\s*([^;}]+)/g)) vars[m[1]] = m[2].trim();
-  const unvar = s => s.replace(/var\((--[a-zA-Z0-9_-]+)(?:\s*,\s*[^)]*)?\)/g, (_, k) => vars[k] != null ? unvar(vars[k]) : _);
   const sizeKeys = { 'btn-lg': ['height:40px', 'border-radius:8px', 'font-size:16px'], 'btn-md': ['height:32px', 'border-radius:6px'], 'btn-sm': ['height:24px', 'border-radius:4px'], 'btn-primary': ['background:#E64545'], 'btn-secondary': ['border-color:#222'] };
   for (const [k, need] of Object.entries(sizeKeys)) {
     const m = css.match(new RegExp('(?:^|[\\s,}])\\.' + k + '\\s*\\{([^}]*)\\}'));
@@ -103,6 +123,7 @@ function check(html, packDir) {
     if (miss.length) issues.push({ rule: 'override', level: 'bad', msg: `.${k}的规格跟飞鹊不一致（飞鹊是 ${need.join('，')}），组件规则要原样从 docs/飞鹊Web组件库.css 复制` });
   }
 
+  }
   /* 6 实心红落点：全页只该有一个主 CTA */
   const redClasses = new Set();
   for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
@@ -166,7 +187,136 @@ function check(html, packDir) {
            `要用 brand/ 里的真 SVG：${mine.map(x => x.file).join(' / ')}（清单见 brand/INDEX.md）` });
   }
 
+
+  /* 11 字重焊死：只写 font-family:Roboto 不够。装了多个静态 Roboto 的机器上 font-weight:400
+     会被 Chrome 匹配成 Roboto-Black(900)，中文却回落 PingFang-Regular(400)，中西文差 5 个字重档。
+     应用会在预览与交付两个时点自动注入（main/feique-font.js），这条是兜底——它报红就说明注入没跑成。 */
+  if (!isClone && /font-family[^;}"']*Roboto/i.test(html)) {
+    const pinned = html.includes('UW-FEIQUE-FONT')
+      || [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)]
+           .filter(m => /font-family\s*:\s*["']?Roboto/i.test(m[1]))
+           .some(m => /font-weight\s*:\s*(400|normal)\b/.test(m[1]));
+    if (!pinned) issues.push({ rule: 'font-pin', level: 'bad',
+      msg: '页面用了 Roboto，却没有把 400/700 焊死的 @font-face。只写 font-family 的话，装了多个静态 Roboto 的机器上 400 会被匹配成 Roboto-Black(900)、中文回落 PingFang-Regular(400)，中西文差 5 个字重档。应用本该自动注入这段，报到这条说明注入没生效，去看 main/feique-font.js' });
+  }
+
+  /* 12 裸控件：原生控件没穿飞鹊的衣服。砖表 28 类里这几样都有现成实现，手搓一套是最常见的「自己画组件」。
+     判法按族计数而不是解析嵌套：原生控件数 > 对应飞鹊容器类数，差的那些就是裸的。
+     <button> 例外，它的类写在自己身上，可以逐个精确判。 */
+  if (!isClone) {
+    const clsCount = re => (html.match(re) || []).length;
+    const naked = [];
+    const btns = [...html.matchAll(/<button\b[^>]*>/g)];
+    const nakedBtn = btns.filter(m => !/class\s*=\s*"[^"]*\bbtn\b/.test(m[0])).length;
+    if (nakedBtn) naked.push(`${nakedBtn}/${btns.length} 个 <button> 没有用 .btn（砖在 docs/css/btn.css）`);
+    const fam = [
+      { name: '输入框',   n: (html.match(/<input\b[^>]*type\s*=\s*"(?:text|search|email|tel|url|password|date|time)"/gi) || []).length
+                             + (html.match(/<input\b(?![^>]*\btype\s*=)[^>]*>/gi) || []).length,
+        c: clsCount(/class\s*=\s*"[^"]*\binp(?:-body|-lg|-sm)?\b/g), brick: '.inp（docs/css/inp.css）' },
+      { name: '数字输入框', n: (html.match(/<input\b[^>]*type\s*=\s*"number"/gi) || []).length,
+        c: clsCount(/class\s*=\s*"[^"]*\binp-num\b/g), brick: '.inp-num（docs/css/inpn.css）' },
+      { name: '勾选框',   n: (html.match(/<input\b[^>]*type\s*=\s*"checkbox"/gi) || []).length,
+        c: clsCount(/class\s*=\s*"[^"]*\b(?:cb|sw)\b/g), brick: '.cb / .sw（docs/css/cb.css、sw.css）' },
+      { name: '单选',     n: (html.match(/<input\b[^>]*type\s*=\s*"radio"/gi) || []).length,
+        c: clsCount(/class\s*=\s*"[^"]*\b(?:rd|ss)\b/g), brick: '.rd / .ss（docs/css/rd.css、ss.css）' },
+      { name: '下拉',     n: (html.match(/<select\b/gi) || []).length,
+        c: clsCount(/class\s*=\s*"[^"]*\bsel\b/g), brick: '.sel（docs/css/sel.css）' },
+      { name: '文本域',   n: (html.match(/<textarea\b/gi) || []).length,
+        c: clsCount(/class\s*=\s*"[^"]*\bta\b/g), brick: '.ta（docs/css/ta.css）' },
+    ];
+    for (const f of fam) if (f.n > f.c) naked.push(`${f.n - f.c} 个${f.name}没有用 ${f.brick}`);
+    if (naked.length) issues.push({ rule: 'naked-ctrl', level: 'bad',
+      msg: `原生控件手搓、没穿飞鹊的衣服：${naked.join('；')}。这些砖表里都有现成的，整段 cat 进 <style>、类名保持飞鹊的，别自己写一套`, detail: naked });
+  }
+
+  /* 12.4 demo 控制条做进了页面里 —— 硬伤。
+     吉吉 2026-09-18 焊死：「我希望做需求的时候，demo 控制台不要做在页面里，而是放在独立控制台里」。
+     两条理由，第二条更硬：
+       ① 页面里挂一条工具栏，评审和给外部看的时候没有沉浸感；
+       ② **那段东西会跟着交付给前端** —— 他还得自己判断哪些是产品、哪些是演示脚手架。
+     正确做法：状态写成根节点上的 `state-*` 类（`<body class="state-empty">`），
+     切换归流程控制台管（预览栏「流程」那个窗口），页面里一行演示代码都不留。
+     🔴 判据要准，别把产品自己的筛选栏误判成演示栏：只认「类名像 demobar」
+     或「明写了 Demo 控制台」这两种，都是作者自己声明过「这是演示用的」。 */
+  if (!isClone) {
+    const hit = html.match(/<[^>]*class\s*=\s*["'][^"']*demo-?bar[^"']*["'][^>]*>/i)
+             || html.match(/Demo\s*控制台/i) || html.match(/Demo\s*控制条/i);
+    if (hit) issues.push({ rule: 'demobar-in-page', level: 'bad',
+      msg: '页面里做了 demo 控制条。状态不要在页面里切——写成根节点上的 state-* 类（<body class="state-empty">，CSS 里 body.state-empty .list{display:none}），切换交给流程控制台那个独立窗口。这样交付给前端的 HTML 里一行演示代码都没有，而那些 state-* 类正好是他要用的真实状态类',
+      detail: [String(hit[0]).slice(0, 80)] });
+  }
+
+  /* 12.5 空态留了空占位块：飞鹊 31 张业务缺省图都做好了，自己画一个灰方块是白费力气还不对版。
+     吉吉 2026-09-18 报「UW 不认识和不会使用飞鹊的缺省图」，追下来模型其实用对了 .empty 那套类，
+     是**包里没带图**（DESIGN.md 当时写着「留空占位块」）。图已经带上了，这条门防它再回去。
+     🔴 只判「看得出是空态、但插图位是空的」，不判「你该不该有空态」—— 后者机器判不了。 */
+  if (!isClone && /class="[^"]*\bempty-img\b/.test(html)) {
+    const blocks = [...html.matchAll(/<div[^>]*class="[^"]*\bempty-img\b[^"]*"[^>]*>([\s\S]{0,400}?)<\/div>/gi)];
+    const bare = blocks.filter(m => {
+      const inner = m[1];
+      if (/data-feique-empty/i.test(inner)) return false;          // 写了名字，src 由主进程填
+      if (/<img\b[^>]*\bsrc\s*=/i.test(inner)) return false;        // 自己放了真图
+      if (/<svg\b/i.test(inner)) return false;                      // 用了图标（不理想但不是空的）
+      if (/background(-image)?\s*:\s*url/i.test(m[0])) return false; // 内联背景图
+      return true;
+    });
+    if (bare.length) issues.push({ rule: 'empty-img', level: 'bad',
+      msg: `${bare.length} 处空态的插图位是空的（就是个灰方块）。飞鹊有 31 张现成的业务缺省图，写 <img data-feique-empty="图名" alt="">，src 会自动填上。挑哪张看 packs/feique/sprites/INDEX.md —— 🔴 供应商侧用 -supplier 那套蓝的，买家侧用 -buyer 那套红的`,
+      detail: [`${bare.length} 处 .empty-img 里没有图`] });
+  }
+
+  /* 12.6 空态整个手搓：连 .empty 那套类都没用。
+     判据要窄，宁可漏报不错报——「居中的一句话 + 一个按钮」在正常页面里太常见了。
+     只在页面里出现「空/没有/暂无/no data」这类词、且完全没有 .empty 类时才提醒一句。 */
+  if (!isClone && !/class="[^"]*\bempty(-|")/.test(html)) {
+    const hint = html.match(/(暂无|没有找到|没找到|一条都没有|空空如也|还没有|no\s+(data|result|record))/i);
+    if (hint) issues.push({ rule: 'empty-handmade', level: 'warn',
+      msg: `页面里有「${hint[1]}」这样的空态文案，但没用飞鹊的 .empty 那套（docs/css/empty.css）。空态的壳和插图飞鹊都有现成的，别自己搭`, detail: [hint[1]] });
+  }
+
+  /* 13 手搓占比：不判错，只把事实摆出来。
+     「该不该手写」机器判不了（新功能的业务块本来就得设计），但占比高到什么程度是人能看见的。
+     2026-09-17 扫工作区 9 个项目：自造类占比 55%～99%，其中一张 41/45 个按钮手搓、体检却全绿。 */
+  if (!isClone) {
+    const all = new Set(); for (const m of html.matchAll(/class="([^"]*)"/g)) m[1].split(/\s+/).forEach(c => c && all.add(c));
+    if (all.size) {
+      const mineN = [...all].filter(c => !L.classes.has(c)).length;
+      /* 自己写的 CSS 字节：选择器里一个飞鹊类都不沾的那些规则块加起来 */
+      let ownBytes = 0;
+      for (const m of css.matchAll(/([^{}]+)\{[^{}]*\}/g)) {
+        const cls = [...m[1].matchAll(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g)].map(x => x[1]);
+        if (cls.length && !cls.some(c => L.classes.has(c))) ownBytes += m[0].length;
+      }
+      issues.push({ rule: 'handmade', level: 'info',
+        msg: `手搓占比：自造类 ${mineN}/${all.size}（${Math.round(mineN / all.size * 100)}%），自己写的 CSS 约 ${Math.round(ownBytes / 1024)}KB，用到飞鹊砖 ${all.size - mineN} 种。新功能的业务块本来就要设计，但通用控件、页头页脚、产品卡这类不该在这个数里` });
+    }
+  }
+
+  /* 14 字符超出随包字体的覆盖：那个字符会单独掉到下一档字体，跟旁边的 Roboto 不是一套。
+     覆盖区间是 build 时从 woff2 的 cmap 导出的真值（fonts/coverage.json），不是手列的。
+     随包字体＝线上正在用的那两份，所以这个缺口线上也有，不是我们引入的。 */
+  if (!isClone && L.cov) {
+    const inCov = (cp, w) => (L.cov[w] || []).some(r => cp >= r[0] && cp <= r[1]);
+    const plain = html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '')
+                      .replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ');
+    const out = new Set();
+    for (const ch of plain) {
+      const cp = ch.codePointAt(0);
+      /* 只报「换得掉」的：拉丁扩展 + 标点符号 + 箭头 + 几何形 + 带圈数字。
+         俄语/希腊语/阿拉伯语这些是真实内容（多语言切换菜单），报出来也改不了＝纯噪音。
+         2026-09-17 第一版就是这么把 Русский язык 报成 28 个「缺口」的。 */
+      const symbolish = (cp >= 0x0100 && cp <= 0x024F) || (cp >= 0x2000 && cp <= 0x2BFF);
+      if (!symbolish) continue;
+      if (!inCov(cp, '400')) out.add(ch);
+    }
+    if (out.size) issues.push({ rule: 'glyph-range', level: 'warn',
+      msg: `${out.size}个字符不在随包 Roboto 的覆盖内（${[...out].slice(0, 8).join(' ')}），它们会单独回落到系统字体、跟旁边的西文不是一套。换成覆盖内的写法（比如 → 写成 -> 或用飞鹊图标），或接受这点不一致（线上也一样）` });
+  }
+
   const badN = issues.filter(i => i.level === 'bad').length;
-  return { issues, ok: badN === 0, n: issues.length, badN, fqUsed: fqUsed.length };
+  /* info 是「摆事实」不是「不合规」：不进 n、不进自动修复文案，但照样显示在面板上。
+     混进去的话 pill 上的数字会虚高，模型还会拿着「手搓占比 55%」当一条要修的问题去改。 */
+  const infoN = issues.filter(i => i.level === 'info').length;
+  return { issues, ok: badN === 0, n: issues.length - infoN, badN, infoN, fqUsed: fqUsed.length };
 }
 module.exports = { check };

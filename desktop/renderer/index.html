@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' uwproj:; style-src 'self' 'unsafe-inline'; img-src 'self' data: uwproj:; frame-src uwproj:; script-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' uwproj:; style-src 'self' 'unsafe-inline'; img-src 'self' data: uwproj:; frame-src uwproj: about:; script-src 'self'">
 <title>UED WorkBuddy</title>
 <link rel="stylesheet" href="app.css">
 </head>
@@ -15,6 +15,8 @@
   </div>
   <nav class="sb-nav">
     <button class="nav on" data-nav="home"><i class="ic ic-home"></i>首页</button>
+    <button class="nav" data-nav="libs"><i class="ic ic-file"></i>资料库<span id="navLibsN" class="nav-n"></span></button>
+    <button class="nav" data-nav="skills"><i class="ic ic-medal"></i>技能与规范<span id="navSkillsN" class="nav-n"></span></button>
     <div class="sb-sec">项目</div>
     <div id="projList" class="proj-list"></div>
   </nav>
@@ -25,6 +27,22 @@
 </aside>
 
 <main id="main">
+  <!-- 有新版本时右上角浮一张小卡（macOS 系统更新那种）。不签名做不了静默更新，这张卡就是「同事那边跟着更新」的全部入口 -->
+  <div id="updBar" class="upd-card" hidden>
+    <div class="upd-ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <div class="upd-body">
+      <div id="updText" class="upd-t">有新版本</div>
+      <div id="updSub" class="upd-s"></div>
+      <div id="updNotes" class="upd-n"></div>
+      <div class="upd-prog" id="updProg" hidden><i></i></div>
+      <div class="upd-actions">
+        <!-- updPage 只在下载失败时露出来：网络带不动 231MB 时，至少让人能自己去下（2026-09-17 同事真机卡死那次加的） -->
+        <button id="updPage" class="link-btn" hidden>打开下载页</button>
+        <button id="updLater" class="link-btn">以后再说</button>
+        <button id="updGo" class="btn sm pri">更新</button>
+      </div>
+    </div>
+  </div>
   <!-- 首页 -->
   <section id="viewHome" class="view">
     <div class="home-wrap">
@@ -53,10 +71,17 @@
     </div>
   </section>
 
+  <!-- 资料库 / 技能与规范：照网页版 UW 的两块搬过来，翻的是随包那 496 份知识库与飞鹊包 -->
+  <section id="viewKb" class="view kb" hidden>
+    <aside id="kbSide" class="kb-side"></aside>
+    <main id="kbMain" class="kb-main"></main>
+  </section>
+
   <!-- 工作区 -->
   <section id="viewWork" class="view" hidden>
     <header class="wk-head">
       <button id="btnBack" class="icon-btn" title="回首页">←</button>
+      <button id="chatHandle" class="icon-btn chat-fold" title="收起对话（⇧⌘\）" aria-label="收起对话"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1.5" y="3" width="15" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 3v12" stroke="currentColor" stroke-width="1.5"/><rect class="pane" x="1.5" y="3" width="5" height="12" rx="3" fill="currentColor" opacity=".18"/></svg><i class="dot"></i></button>
       <div class="wk-title">
         <div id="wkName" class="wk-name">项目</div>
         <div id="wkChips" class="chips"></div>
@@ -74,17 +99,22 @@
       </div>
     </header>
     <div class="wk-body">
-      <section class="chat">
+      <section class="chat" id="chatSec">
         <div id="chatLog" class="chat-log"></div>
         <div id="chatStatus" class="chat-status" hidden>
           <span class="spin"></span><span id="statusText">执行中</span>
           <button id="btnStop" class="btn sm">停止</button>
         </div>
+        <!-- 附件条：拖进来 / 粘贴 / 选的文件，先摆在这儿，随下一条消息发出去 -->
+        <div id="attachRow" class="attach-row" hidden></div>
         <div class="composer">
+          <button id="btnAttach" class="round-btn" title="附上文件或文件夹（也可以直接拖进来、或 ⌘V粘贴截图）"><img src="../packs/feique/icons/attachment.svg" alt=""></button>
           <textarea id="composer" rows="1" placeholder="接着说：改哪里、加什么状态、换个方向…"></textarea>
           <button id="btnSend" class="btn pri">发送</button>
         </div>
-        <div class="composer-hint">Enter发送 · Shift + Enter换行</div>
+        <div class="composer-hint">Enter发送 · Shift + Enter换行 · 图片和文件可以直接拖进来或 ⌘V粘贴</div>
+        <!-- 拖着文件经过对话区时盖一层，说清放下会怎样 -->
+        <div id="dropMask" class="drop-mask" hidden><div class="drop-card"><b>放到这里</b><span>会拷进项目的「附件」目录，随下一条消息发给Claude</span></div></div>
       </section>
       <section class="stage">
         <div class="stage-bar">
@@ -97,11 +127,10 @@
           <div id="previewTools" class="stage-tools">
             <select id="previewFile" class="sel"></select>
             <div class="menu-wrap"><button id="fqPill" class="fq-pill" hidden title="飞鹊体检：字体 / 字重 / 色值 / 组件是不是飞鹊的"></button><div id="fqMenu" class="menu fq-menu" hidden></div></div>
-            <div class="seg sm" id="widthSeg">
-              <button data-w="auto" class="on">自适应</button>
-              <button data-w="1240">1240</button>
-              <button data-w="375">375</button>
-            </div>
+            <button id="btnToFigma" class="btn sm" hidden title="把这一页回写进你指定的Figma page">回写Figma</button>
+            <button id="btnFlow" class="btn sm" title="流程控制台：另开一个窗口，管这个需求的所有页面和状态（页面窗口保持干净，控制台不压在页面上）">流程</button>
+            <select id="widthSel" class="sel w-sel" title="按飞鹊响应式规范的断点看页面"></select>
+            <button id="btnGuide" class="icon-btn gd on" title="内容区参考线：按飞鹊规范画出这个断点的内容区宽度" aria-label="内容区参考线"></button>
             <div class="zoombox" id="zoomBox">
               <button id="btnZoomOut" class="icon-btn" title="缩小（⌥滚轮 / ⌘−）" aria-label="缩小"></button>
               <button id="btnZoomLvl" class="zoom-lvl" title="点一下回到100%">100%</button>
@@ -109,6 +138,7 @@
             </div>
             <button id="btnRefresh" class="icon-btn" title="刷新">↻</button>
             <button id="btnOpenExt" class="icon-btn" title="用浏览器打开">↗</button>
+            <button id="btnEdit" class="btn sm edit-toggle" title="像Figma那样直接改这页：点选、改字、改样式、换顺序，改动直接写进文件">编辑</button>
           </div>
           <div id="codeTools" class="stage-tools" hidden>
             <select id="codeFile" class="sel"></select>
@@ -116,6 +146,29 @@
           <div id="designTools" class="stage-tools" hidden>
             <button id="btnOpenFigma" class="btn sm">在Figma里打开</button>
           </div>
+        </div>
+        <!-- 编辑态工具栏（像 Figma 顶部那条）：只在点了「编辑」之后出现 -->
+        <div id="editBar" class="edit-bar" hidden>
+          <button id="ebComps" class="eb-b eb-comps" title="打开飞鹊组件栏，拖组件到页面上替换或插入">飞鹊组件</button>
+          <div class="eb-g">
+            <button id="ebParent" class="eb-b" title="选上一层（⇧Enter）"><img src="../packs/feique/icons/arrow-up.svg" alt="">上一层</button>
+            <button id="ebText" class="eb-b" title="改这段文字（Enter或双击）"><img src="../packs/feique/icons/text-style.svg" alt="">改字</button>
+          </div>
+          <div class="eb-g">
+            <button id="ebUp" class="eb-b" title="往前挪一位（⌘↑）">前移</button>
+            <button id="ebDown" class="eb-b" title="往后挪一位（⌘↓）">后移</button>
+            <button id="ebDup" class="eb-b" title="复制一份（⌘D）"><img src="../packs/feique/icons/copy.svg" alt="">复制</button>
+            <button id="ebDel" class="eb-b danger" title="删掉（⌫）"><img src="../packs/feique/icons/delete.svg" alt="">删除</button>
+          </div>
+          <div class="eb-g">
+            <button id="ebUndo" class="eb-b" title="撤销（⌘Z）">撤销</button>
+            <button id="ebRedo" class="eb-b" title="重做（⇧⌘Z）">重做</button>
+          </div>
+          <div class="eb-g">
+            <button id="ebGap" class="eb-b on" title="鼠标划到哪一块，就把它跟四周的间距标出来">间距</button>
+          </div>
+          <span id="ebHint" class="eb-hint">点选元素 · 双击改字 · 按住拖动换顺序 · 拉右下角改尺寸 · 改动直接写进文件</span>
+          <button id="ebDone" class="btn sm pri">完成</button>
         </div>
         <!-- 干活时右边不能是死的：这条只在跑的时候出现，说清此刻在做哪一步 -->
         <div id="stageAct" class="stage-act" hidden>
@@ -146,7 +199,11 @@
               <ol id="liveList" class="live-list"></ol>
             </div>
           </div>
-          <div id="frameWrap" class="frame-wrap" hidden><div id="fitBox" class="fit-box"><iframe id="preview" sandbox="allow-scripts allow-same-origin allow-forms"></iframe></div></div>
+          <div id="frameWrap" class="frame-wrap" hidden><div id="fitBox" class="fit-box"><iframe id="preview" class="pv on" sandbox="allow-scripts allow-same-origin allow-forms"></iframe><iframe id="preview2" class="pv" sandbox="allow-scripts allow-same-origin allow-forms"></iframe><div id="guides" class="guides" hidden><i class="gl"></i><i class="gr"></i><b></b></div></div><div id="selBox" class="sel-out" hidden><span class="lab"></span><i class="h nw"></i><i class="h ne"></i><i class="h sw"></i><i class="h e" data-dir="e"></i><i class="h s" data-dir="s"></i><i class="h se" data-dir="se"></i></div></div>
+          <!-- 编辑态左侧组件栏（像 Figma 的资产面板）：飞鹊页面片段与控件，拖到页面上替换/插入 -->
+          <aside id="compPanel" class="cp" hidden></aside>
+          <!-- 编辑态右侧属性面板（像 Figma 右边那栏）：内容由 renderPanel() 按选中元素生成 -->
+          <aside id="editPanel" class="ep" hidden></aside>
         </div>
         <!-- 做 Figma 稿时，真预览是 Figma 窗口本身；这里放的是「这次动了什么」，给回看和交付用 -->
         <div id="stageDesign" class="stage-pane" hidden>
@@ -186,12 +243,25 @@
   </div>
 </div>
 
+<!-- 回写 Figma -->
+<div id="modalToFigma" class="mask" hidden>
+  <div class="modal">
+    <div class="modal-h"><div class="modal-t">回写Figma</div><div class="modal-d">把当前预览的这一页写进你指定的Figma page。用飞鹊真组件实例，不是画一堆长得像的矩形；写成新的一版，原来的东西不动。</div></div>
+    <div class="modal-b">
+      <label class="f"><span>Figma链接</span><input id="tfUrl" placeholder="在Figma里选中要写进去的那个page，复制链接粘进来" spellcheck="false"><small class="muted" id="tfHint">链接里要带node-id —— 那才说得清写进哪一页。在Figma左侧点中那个page，右键「Copy link to page」。</small></label>
+      <label class="f"><span>按多宽写</span><div class="f-row"><select id="tfWidth" class="sel"></select><span class="muted">画布宽度按这个断点来</span></div></label>
+    </div>
+    <div class="modal-f"><button class="btn" data-close="modalToFigma">取消</button><button id="tfGo" class="btn pri">开始回写</button></div>
+  </div>
+</div>
+
 <!-- 设置 -->
 <div id="modalSettings" class="mask" hidden>
   <div class="modal">
     <div class="modal-h"><div class="modal-t">设置</div><div class="modal-d">引擎就是你电脑里的Claude Code。UED WorkBuddy不另接模型、不存密钥。</div></div>
     <div class="modal-b">
       <div class="f"><span>引擎</span><div id="engineBox" class="nbox"></div></div>
+      <div class="f"><span>版本</span><div class="f-row"><span id="setVersion" class="muted"></span><button id="btnCheckUpdate" class="btn sm">检查更新</button><span id="setUpdateNote" class="muted"></span></div></div>
       <div class="f"><span>Claude要动手时</span>
         <div class="radios" id="permRadios">
           <label><input type="radio" name="perm" value="default"><b>每一步都问我</b><small>改文件、跑命令都先弹卡确认</small></label>
@@ -238,6 +308,22 @@
 </div>
 <!-- 项目右键菜单（自绘，跟整套 Apple 风一致；不用 Electron 原生菜单是为了样式与键盘行为可控） -->
 <div id="ctxMenu" class="ctx" hidden></div>
+
+<!-- 添加资料 / 技能 -->
+<div id="modalKbAdd" class="mask" hidden>
+  <div class="modal">
+    <div class="modal-h"><div id="kaTitle" class="modal-t">添加资料</div><div id="kaDesc" class="modal-d"></div></div>
+    <div class="modal-b">
+      <label class="f"><span>名称</span><input id="kaName" placeholder="比如：询盘频控规则2026-09"></label>
+      <div class="f"><span>来源</span><div class="seg sm" id="kaMode"><button data-mode="file" class="on">选一个文件</button><button data-mode="url">网页链接</button><button data-mode="text">粘贴文字</button></div></div>
+      <div class="f" id="kaFileRow"><span></span><div class="f-row"><button id="kaPick" class="btn sm">选择文件…</button><span id="kaPath" class="muted"></span></div></div>
+      <label class="f" id="kaUrlRow" hidden><span>网址</span><input id="kaUrl" placeholder="https://内网地址/规范页" spellcheck="false"><small class="muted">内网的也行（走这台电脑的网络和登录态）。抓的是正文文字，出处会记在文件开头。名称留空就用网页标题。</small></label>
+      <label class="f" id="kaTextRow" hidden><span>内容</span><textarea id="kaText" rows="8" placeholder="把规则、结论、注意事项贴进来。Markdown也行。"></textarea></label>
+      <label class="f"><span>一句说明</span><input id="kaSummary" placeholder="选填。列表里显示在名字后面；空着就取正文第一句"></label>
+    </div>
+    <div class="modal-f"><button class="btn" data-close>取消</button><button id="kaSave" class="btn pri">添加</button></div>
+  </div>
+</div>
 
 <!-- 删除项目确认 -->
 <div id="modalDelete" class="mask" hidden>

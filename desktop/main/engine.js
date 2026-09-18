@@ -19,12 +19,25 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const { loginEnv, whichAll } = require('./shellenv');
+const { loginEnv, whichAll, isWin } = require('./shellenv');
 
 /* ── 找同事电脑上的 Claude Code ────────────────────────────
    优先 FCF 启动器（公司代理 + 上报），其次常见安装位置。 */
 function candidates() {
   const h = os.homedir();
+  if (isWin()) {
+    /* Windows：原生安装器（install.ps1）装到 ~\.local\bin\claude.exe；npm -g 装的是 %APPDATA%\npm\claude.cmd。
+       PATH 上的用 whichAll 带扩展名找（PATHEXT），FCF 有 Windows 版的话也装 ~\.fcf\bin。 */
+    const e = process.env;
+    const list = [
+      path.join(h, '.fcf', 'bin', 'claude.cmd'), path.join(h, '.fcf', 'bin', 'claude.exe'),
+      ...whichAll('claude'),
+      path.join(h, '.local', 'bin', 'claude.exe'),
+      ...(e.APPDATA ? [path.join(e.APPDATA, 'npm', 'claude.cmd')] : []),
+      ...(e.LOCALAPPDATA ? [path.join(e.LOCALAPPDATA, 'Programs', 'claude', 'claude.exe')] : []),
+    ];
+    return [...new Set(list)];
+  }
   const list = [
     path.join(h, '.fcf/bin/claude'),          // 公司启动器优先：代理与上报跟终端一致
     ...whichAll('claude'),                    // 登录 shell 真实 PATH 上的（覆盖 nvm/volta/fnm/brew 等所有装法）
@@ -40,17 +53,40 @@ function candidates() {
   return [...new Set(list)];
 }
 
+/* ── Windows 上 .cmd / .bat 不能直接 spawn ──────────────────────
+   Node ≥ 18.20 / 20.12 起，spawn 一个 .cmd 而不带 shell:true 会直接抛 EINVAL（CVE-2024-27980 的修法）；
+   而带 shell:true 又要经 cmd.exe 转一手参数 —— 我们的 --append-system-prompt 是几千字带引号带换行的中文，
+   经 cmd.exe 必被切坏。所以不走 shell：把 npm 的 .cmd 垫片拆开，直接用 node.exe 跑它包着的那个 cli.js。
+   npm 垫片长这样：`"%_prog%"  "%dp0%\node_modules\@anthropic-ai\claude-code\cli.js" %*`，
+   node 优先用垫片旁边的 node.exe（npm 垫片自己也是这个顺序），没有就用 PATH 上的。 */
+function resolveLauncher(p) {
+  if (!isWin() || !/\.(cmd|bat)$/i.test(p)) return { file: p, pre: [] };
+  let txt = '';
+  try { txt = fs.readFileSync(p, 'utf8'); } catch (e) { return { file: p, pre: [], unresolved: '读不了这个 .cmd' }; }
+  const m = /"%(?:~)?dp0%?\\([^"]+?\.(?:js|mjs|cjs))"/i.exec(txt) || /"%dp0%[\\/]([^"]+?\.(?:js|mjs|cjs))"/i.exec(txt);
+  if (!m) return { file: p, pre: [], unresolved: '.cmd 里没找到它包着的 js 文件' };
+  const dir = path.dirname(p);
+  const js = path.join(dir, ...m[1].split(/[\\/]+/).filter(Boolean));   // 垫片里写的是反斜杠，按段拆开再拼，真 Windows / 假装的 Mac 都对
+  if (!fs.existsSync(js)) return { file: p, pre: [], unresolved: `.cmd 指向的 ${js} 不存在` };
+  const local = path.join(dir, 'node.exe');
+  const node = fs.existsSync(local) ? local : whichAll('node')[0];
+  if (!node) return { file: p, pre: [], unresolved: '找不到 node.exe（.cmd 垫片要靠它跑）' };
+  return { file: node, pre: [js], via: 'node+cli.js' };
+}
+
 function detectClaude(preferred) {
   const { env, info } = loginEnv();
   const tried = [];
   const paths = preferred ? [preferred, ...candidates()] : candidates();
   for (const p of paths) {
     if (!p || !fs.existsSync(p)) { tried.push({ path: p, why: '文件不存在' }); continue; }
-    const r = spawnSync(p, ['--version'], { encoding: 'utf8', timeout: 20000, env });
+    const L = resolveLauncher(p);
+    if (L.unresolved) { tried.push({ path: p, why: L.unresolved }); continue; }
+    const r = spawnSync(L.file, [...L.pre, '--version'], { encoding: 'utf8', timeout: 20000, env, windowsHide: true });
     const out = String((r.stdout || '') + (r.stderr || ''));
     const m = out.match(/(\d+\.\d+\.\d+)[^\n]*/);
     if (r.status === 0 && m) {
-      return { ok: true, path: p, version: m[0].trim(), viaFcf: p.includes('/.fcf/'), tried, shellEnv: info };
+      return { ok: true, path: p, version: m[0].trim(), viaFcf: /[\\/]\.fcf[\\/]/.test(p), launcher: L.via || 'direct', tried, shellEnv: info };
     }
     tried.push({ path: p, why: (out.trim().split('\n')[0] || `退出码${r.status}`).slice(0, 160) });
   }
@@ -103,7 +139,8 @@ class ClaudeSession {
     delete env.CLAUDECODE;        // 别让 Claude 以为自己嵌在另一个 Claude 里
     delete env.CLAUDE_CODE_ENTRYPOINT;
     const argv = this.args();   // 🔴 只算一次：args() 有副作用（新会话时会生成 --session-id），调两次会造出两个 UUID
-    this.proc = spawn(this.claudePath, argv, { cwd: this.projectDir, stdio: ['pipe', 'pipe', 'pipe'], env });
+    const L = resolveLauncher(this.claudePath);   // Windows 的 .cmd 垫片拆成 node.exe + cli.js，Mac 上原样
+    this.proc = spawn(L.file, [...L.pre, ...argv], { cwd: this.projectDir, stdio: ['pipe', 'pipe', 'pipe'], env, windowsHide: true });
     this.startedAt = Date.now();
     this.emit({ t: 'spawn', pid: this.proc.pid, args: argv });
     // 握手：告诉 Claude 这个 host 会答权限请求
@@ -131,7 +168,17 @@ class ClaudeSession {
 
   send(text) {
     if (!this.proc) this.start();
-    if (this.busy) return { ok: false, message: '上一条还在跑，先等它结束或点停止。' };
+    /* 它在跑的时候也能说话（跟终端一样）。2026-09-17 实测：stream-json 模式下 turn 进行中写进来的 user 消息，
+       Claude Code 自己会注入当前 turn——正在跑的工具一回来它就看到了（sleep 12 中途补一句，同一轮里就答了）。
+       所以这里不排队、不拦，照写；只是不另开一轮（busy 不动、不发 turn_start），界面上把这句标成「补充」。
+       🔴 这条消息不会在输出流里回显（只有 tool_result 回显），对话区要靠 renderer 自己画。 */
+    if (this.busy) {
+      this.lastInterjectAt = Date.now();
+      const ok = this.write({ type: 'user', message: { role: 'user', content: text } });
+      if (!ok) return { ok: false, message: 'Claude进程不在了，再发一次会重新拉起。' };
+      this.emit({ t: 'interject' });
+      return { ok: true, interjected: true };
+    }
     this.busy = true;
     this.turnStartedAt = Date.now();
     this.emit({ t: 'turn_start' });
@@ -184,7 +231,10 @@ class ClaudeSession {
     if (this.busy) return;
     this.busy = true;
     this.turnStartedAt = Date.now();
-    this.emit({ t: 'turn_start', resumed: true, reason });
+    /* 刚补的那句正好落在上一轮 result 之后、它才开始处理：这也是「自己又动起来」，但原因不是后台任务，
+       界面上别说成「后台任务有结果回来了」。20 秒内有过补充就归到补充头上。 */
+    const byInterject = !!(this.lastInterjectAt && Date.now() - this.lastInterjectAt < 20000);
+    this.emit({ t: 'turn_start', resumed: true, interjected: byInterject, reason: byInterject ? 'interject' : reason });
   }
 
   handle(m) {
@@ -257,13 +307,17 @@ class ClaudeSession {
         }
         break;
       }
-      case 'result':
+      case 'result': {
         this.busy = false;
-        this.emit({ t: 'result', ok: m.subtype === 'success', subtype: m.subtype, turns: m.num_turns, durationMs: m.duration_ms,
-          costUsd: m.total_cost_usd, sessionId: m.session_id, error: m.subtype === 'success' ? null : (m.result || m.error || m.subtype),
-          why: m.subtype === 'success' ? null : ((this.lastNotice && this.lastNotice.text) || (this.lastErr || []).join('').trim().split('\n').filter(Boolean).slice(-2).join(' ').slice(0, 300) || null),
+        /* 🔴 subtype=success 不等于真成功：没登录时 Claude Code 回的是 subtype=success + is_error=true + result="Not logged in · Please run /login"
+           （2026-09-17 隔离实例里撞到）。以前只看 subtype，界面画出一个空白的「完成」，用户什么都看不到。is_error 也算失败，正文要透出来。 */
+        const ok = m.subtype === 'success' && !m.is_error;
+        this.emit({ t: 'result', ok, subtype: m.subtype, turns: m.num_turns, durationMs: m.duration_ms,
+          costUsd: m.total_cost_usd, sessionId: m.session_id, error: ok ? null : (m.result || m.error || m.subtype),
+          why: ok ? null : ((this.lastNotice && this.lastNotice.text) || (this.lastErr || []).join('').trim().split('\n').filter(Boolean).slice(-2).join(' ').slice(0, 300) || null),
           usage: m.usage ? { in: m.usage.input_tokens, cacheRead: m.usage.cache_read_input_tokens, out: m.usage.output_tokens } : null });
         break;
+      }
       default:
         break;
     }
@@ -272,4 +326,4 @@ class ClaudeSession {
   emit(ev) { try { this.onEvent && this.onEvent(ev); } catch (e) {} }
 }
 
-module.exports = { detectClaude, ClaudeSession, loginEnv };
+module.exports = { detectClaude, ClaudeSession, loginEnv, candidates, resolveLauncher };

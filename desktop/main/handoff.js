@@ -11,7 +11,12 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync, spawnSync } = require('child_process');
-const { loginEnv } = require('./shellenv');   // GUI启动只有最小PATH：git的凭据助手、公司代理变量都得从登录shell拿
+const { loginEnv } = require('./shellenv');
+const feiqueFont = require('./feique-font');
+const feiqueEmpty = require('./feique-empty');
+const flow = require('./flow');
+const flowDoc = require('./flow-doc');
+const flowWalk = require('./flow-walk');   // GUI启动只有最小PATH：git的凭据助手、公司代理变量都得从登录shell拿
 
 const SKIP = new Set(['.uw', '.git', 'node_modules', '_交付', '.DS_Store']);
 
@@ -57,7 +62,7 @@ function mrUrl(remote, branch, base = 'main') {
 /**
  * @returns {{dest, zip, files, note, branch, commit, remote, mrUrl, warnings, message}}
  */
-function buildHandoff({ projectDir, projectName, workspaceDir, repoDir, frontendName, author }) {
+function buildHandoff({ projectDir, projectName, workspaceDir, repoDir, frontendName, author, packDir }) {
   const warnings = [];
   const files = walk(projectDir);
   if (!files.length) throw new Error('项目目录里还没有产物，先让Claude把稿子做出来。');
@@ -74,20 +79,59 @@ function buildHandoff({ projectDir, projectName, workspaceDir, repoDir, frontend
     fs.copyFileSync(path.join(projectDir, f.rel), to);
   }
   const html = files.filter(f => /\.html?$/i.test(f.rel)).map(f => f.rel);
+  /* 交付前把 Roboto 400/700 焊死（幂等，克隆页不碰）。预览过的页面在 files:check 那步就焊过了，
+     这里管的是「做完没点开预览就直接交付」的那些——前端拿到手的每一张都得是对的。
+     改的是 dest 里的副本，不动用户的项目目录。 */
+  for (const rel of html) {
+    const r = packDir ? feiqueFont.ensureFile(path.join(dest, rel), packDir) : { changed: false };
+    if (r.changed) warnings.push(`${rel} 的 Roboto 字重原本没焊死（400 会被匹配成 Black），交付副本里已自动补上 @font-face。`);
+    /* 缺省图：没点开过预览就直接交付的页面，图还是空的，这儿补上 */
+    const e = packDir ? feiqueEmpty.ensureFile(path.join(dest, rel), packDir) : { changed: false, missing: [] };
+    if (e.missing && e.missing.length) warnings.push(`${rel} 里的缺省图名字对不上：${e.missing.join('、')}。包里有哪些看 packs/feique/sprites/INDEX.md。`);
+  }
   const entry = html.includes('index.html') ? 'index.html' : (html[0] || null);
+
+  /* 交互流程说明：页面清单 / 跳转矩阵 / 状态清单 / 字段规则全部从代码扫出来，再合上人写的意图。
+     🔴 扫的是**交付副本**不是项目目录——交付的就是这一份，说明必须描述的是它，不是它的上一版。
+     多页面时前端最痛的是「这个按钮跳哪」，在稿子里翻连线翻不出来，给张表比给张图管用。 */
+  let flowInfo = null;
+  try {
+    const fd = flow.scan(dest);
+    flowInfo = flowDoc.writeInto(dest, fd, projectName);
+    if (fd.n.bad) warnings.push(`流程检查有 ${fd.n.bad} 条硬伤（断链 / 说明对不上页面之类），已原样写进「交互流程说明.md」第五节——藏起来的话前端会当成设计本身照着实现。`);
+    if (fd.n.pages > 1 && !fd.scripts.length) warnings.push('多页面但没有剧本，前端和评审的人只能自己猜从哪进、按什么顺序看。项目根加一个「剧本.md」写一条主线就行。');
+    /* 独立走查包：对方没装 UW 也能自己点着走一遍。页面内联进去（file:// 下 iframe 跨文档访问是禁的，
+       不内联就换不了状态类），所以这一份会比较大，只在真的多页面时才出。 */
+    if (fd.n.pages > 1) {
+      const w = flowWalk.writeInto(dest, fd, projectName);
+      if (w.bytes > 12 * 1024 * 1024) warnings.push(`走查包 ${Math.round(w.bytes / 1048576)}MB，偏大（页面是整份内联进去的）。发之前先自己打开点一下。`);
+    }
+  } catch (e) { warnings.push('交互流程说明没生成成：' + e.message); }
+
   const manifest = {
     project: projectName, id, createdAt: new Date().toISOString(), by: author || os.userInfo().username,
     entry, files: files.map(f => ({ path: f.rel, bytes: f.size })),
     designSystem: '飞鹊（MIC）· 见 交付说明.md的token对照',
     note: hasNote ? '交付说明.md' : null,
+    flow: flowInfo ? { doc: flowInfo.md, data: flowInfo.json, walk: fs.existsSync(path.join(dest, flowWalk.WALK_FILE)) ? flowWalk.WALK_FILE : null, 读法: '要精确解析读 flow.json，要看为什么读 交互流程说明.md，想自己点着走一遍双击 _走查.html' } : null,
     tool: 'UED WorkBuddy桌面版',
   };
   fs.writeFileSync(path.join(dest, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
-  // zip（macOS 自带 ditto，保留中文文件名）
+  // zip：macOS 用自带的 ditto（保留中文文件名）；Windows 10+ 自带 bsdtar（tar.exe -a 按 .zip 后缀出 zip，文件名走 UTF-8），
+  // 没有 tar 再退到 PowerShell 的 Compress-Archive（它对非 ASCII 文件名的编码取决于系统代码页，所以排后面）。
   const zip = dest + '.zip';
-  try { execFileSync('/usr/bin/ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', dest, zip]); }
-  catch (e) { warnings.push('zip没打成：' + e.message); }
+  try {
+    if (process.platform === 'win32') {
+      try { execFileSync('tar.exe', ['-a', '-c', '-f', zip, '-C', path.dirname(dest), path.basename(dest)], { windowsHide: true }); }
+      catch (e1) {
+        execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+          `Compress-Archive -LiteralPath '${dest.replace(/'/g, "''")}' -DestinationPath '${zip.replace(/'/g, "''")}' -Force`], { windowsHide: true });
+      }
+    } else {
+      execFileSync('/usr/bin/ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', dest, zip]);
+    }
+  } catch (e) { warnings.push('zip没打成：' + e.message); }
 
   // git 分支
   let branch = null, commit = null, remote = null, mr = null;

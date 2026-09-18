@@ -24,7 +24,7 @@ function evalBlock(name, start, endMark, args, includeEnd = true) {
 /* 🔴 边界别用 '\n}' —— 函数体里有嵌套的 }（那个 knowledgeDir() 三元），会提前截断，
    于是门求值的是「半截 systemPrompt」还报绿。2026-09-15 靠对字节数才发现。
    用「下一个顶层 function 定义」当终点才对。 */
-evalBlock('systemPrompt', 'function systemPrompt(', '\nfunction ', { PACK_DIR: '/x', knowledgeDir: () => null, restoreToolsDir: () => null }, false);
+evalBlock('systemPrompt', 'function systemPrompt(', '\nfunction ', { PACK_DIR: '/x', knowledgeDir: () => null, restoreToolsDir: () => null, kb: { readUserIndex: () => [{ id: 't' }], userDir: () => '/x/kb' } }, false);
 evalBlock('工作区约定', 'const txt = [GUIDE_MARK', "].join('\\n')", { GUIDE_MARK: '<!--m-->', PACK_DIR: '/x', kb: null });
 
 /* 顺带数一遍：提示词数组里每条模板字符串的反引号必须首尾各一个 */

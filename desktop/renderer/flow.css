@@ -1,0 +1,201 @@
+/* 流程控制台（第二个窗口）。跟主窗口同一套 token，窄窗口专用版面。
+   克制：白底近黑字 + 蓝点缀，没有装饰性色块，状态只用一个点表示。 */
+:root{
+  --canvas:#F5F5F7; --white:#fff; --soft:#F5F5F7; --soft-2:#E8E8ED;
+  --glass:rgba(255,255,255,.72); --glass-line:rgba(0,0,0,.06);
+  --ink:#1D1D1F; --ink-2:#6E6E73; --ink-3:#86868B; --ink-4:#AEAEB2;
+  --line:#D2D2D7; --line-2:#E8E8ED;
+  --accent:#0071E3; --accent-fill:#EAF3FF; --accent-line:#A8CDF5;
+  --ok:#34C759; --busy:#FF9F0A; --bad:#FF3B30;
+  --ctl-r:8px; --box-r:12px; --r-pill:999px;
+  --sh-1:0 1px 2px rgba(0,0,0,.03),0 4px 16px rgba(0,0,0,.05);
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:13px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;
+  color:var(--ink);background:var(--canvas);display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;background:none;border:0;padding:0;font:inherit;color:inherit}
+[hidden]{display:none!important}
+.drag{position:fixed;top:0;left:0;right:0;height:38px;-webkit-app-region:drag;z-index:5;pointer-events:none}
+
+.btn{padding:5px 11px;border-radius:var(--ctl-r);border:1px solid var(--line);background:var(--white);font-size:12px;white-space:nowrap}
+.btn:hover{background:var(--soft-2)}
+.btn.sm{padding:3px 8px;font-size:11px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#0077ED}
+.btn.on{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+
+.hd{padding:44px 16px 10px;display:flex;align-items:flex-end;gap:10px;justify-content:space-between;
+  background:var(--glass);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--glass-line)}
+.hd-name{font-size:15px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+.hd-sub{font-size:11px;color:var(--ink-3);margin-top:2px}
+.hd-act{display:flex;gap:6px;flex:0 0 auto}
+
+.tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line-2);background:var(--white)}
+.tabs button{padding:6px 10px 8px;font-size:12px;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+.tabs b{font-weight:600;font-size:11px;color:var(--bad)}
+.tabs b:empty{display:none}
+
+.body{flex:1;min-height:0;overflow:auto;background:var(--white)}
+.view{padding:12px}
+.tip{font-size:11px;color:var(--ink-3);margin:10px 2px 0;line-height:1.7}
+.tip i{font-style:normal;display:inline-block;vertical-align:middle}
+.tip i.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin:0 3px}
+.tip i.gap{width:5px;height:5px;border-radius:50%;background:var(--line);margin:0 4px}
+.tip i.na{width:9px;height:9px;margin:0 3px;color:var(--ink-4);font-size:11px;line-height:9px;text-align:center}
+.tip i.na::after{content:'·'}
+.empty{padding:28px 12px;text-align:center;color:var(--ink-3);font-size:12px;line-height:1.9}
+.empty code{font-family:var(--mono);font-size:11px;background:var(--soft);padding:1px 5px;border-radius:4px}
+
+/* ── 对照表 ────────────────────────────── */
+.grid-wrap{overflow:auto}
+table.grid{border-collapse:separate;border-spacing:0;font-size:12px;width:max-content;min-width:100%}
+table.grid th,table.grid td{border-bottom:1px solid var(--line-2);padding:0}
+table.grid thead th{position:sticky;top:0;background:var(--white);z-index:2;font-weight:600;font-size:11px;color:var(--ink-2);
+  padding:4px 6px 8px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line)}
+table.grid thead th.pg{text-align:left;position:sticky;left:0;z-index:3;padding-left:2px}
+table.grid td.pg{position:sticky;left:0;background:var(--white);z-index:1;max-width:150px}
+table.grid td.pg button{display:block;width:100%;text-align:left;padding:7px 8px 7px 2px;line-height:1.35}
+table.grid td.pg .t{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.grid td.pg .r{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.grid tr:hover td{background:#FAFAFC}
+table.grid tr:hover td.pg{background:#FAFAFC}
+.cell{width:100%;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-4)}
+.cell.has{color:var(--accent)}
+.cell.has:hover{background:var(--accent-fill);border-radius:6px}
+.cell.at{background:var(--accent);color:#fff;border-radius:6px}
+.cell.gap{color:transparent}
+.cell.gap::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--line)}
+td.pg button.at .t{color:var(--accent);font-weight:600}
+
+/* ── 流程图 ────────────────────────────── */
+.map-wrap{overflow:auto;padding-bottom:4px}
+.map-layer{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.map-lab{font-size:10px;color:var(--ink-4);margin:8px 0 4px;text-transform:none}
+.node{border:1px solid var(--line);border-radius:10px;background:var(--white);padding:7px 10px;min-width:200px;max-width:100%;text-align:left;box-shadow:var(--sh-1)}
+.node:hover{border-color:var(--accent-line);background:var(--accent-fill)}
+.node.at{border-color:var(--accent);background:var(--accent-fill)}
+.node .t{display:block;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node .m{display:block;font-size:10px;color:var(--ink-3);margin-top:2px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node .bad{color:var(--bad)}
+.edges{margin:2px 0 0 4px;padding:0;list-style:none}
+.edges li{font-size:11px;color:var(--ink-2);padding:2px 0 2px 12px;position:relative;line-height:1.5}
+.edges li::before{content:'→';position:absolute;left:0;color:var(--ink-4)}
+.edges li.broken{color:var(--bad)}
+.edges li.broken::before{content:'⇢'}
+.edges .w{color:var(--ink-4)}
+
+/* ── 剧本 ────────────────────────────── */
+.sc{border:1px solid var(--line-2);border-radius:var(--box-r);margin-bottom:10px;overflow:hidden}
+.sc-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;background:var(--soft);border-bottom:1px solid var(--line-2)}
+.sc-h .n{font-size:12px;font-weight:600}
+.sc-steps{list-style:none;margin:0;padding:4px 0}
+.sc-steps li{display:flex;gap:8px;align-items:baseline;padding:5px 10px;font-size:12px}
+.sc-steps li:hover{background:#FAFAFC}
+.sc-steps .i{font-family:var(--mono);font-size:10px;color:var(--ink-4);flex:0 0 16px}
+.sc-steps .p{font-family:var(--mono);font-size:10px;color:var(--ink-3);white-space:nowrap}
+.sc-steps .note{color:var(--ink-2);flex:1;min-width:0}
+.sc-steps li.at{background:var(--accent-fill)}
+
+/* ── 检查 ────────────────────────────── */
+.iss{border:1px solid var(--line-2);border-radius:10px;padding:9px 10px;margin-bottom:7px;background:var(--white)}
+.iss.bad{border-left:3px solid var(--bad)}
+.iss.warn{border-left:3px solid var(--busy)}
+.iss .p{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-bottom:2px}
+.iss .t{font-size:12px;line-height:1.5}
+.iss .f{font-size:11px;color:var(--ink-3);margin-top:3px}
+.gate-sum{font-size:12px;color:var(--ink-2);padding:2px 2px 10px;line-height:1.7}
+.gate-sum b{font-weight:600}
+.gate-sum .r{color:var(--bad)}
+.gate-sum .y{color:var(--busy)}
+.gate-sum .g{color:var(--ok)}
+
+/* ── 展示模式 ────────────────────────────── */
+.player{position:fixed;inset:0;background:var(--white);display:flex;flex-direction:column;justify-content:center;gap:14px;padding:44px 20px 20px;z-index:10}
+.pl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:absolute;top:44px;left:20px;right:20px}
+.pl-name{font-size:13px;font-weight:600}
+.pl-note{font-size:16px;line-height:1.6;text-align:center;color:var(--ink);min-height:3em;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.pl-bar{display:flex;align-items:center;justify-content:center;gap:10px}
+.pl-at{font-size:11px;color:var(--ink-3);font-family:var(--mono);min-width:48px;text-align:center}
+
+/* ── 铺开：状态并排 ──────────────────────────
+   对照表回答「有没有」，这里回答「长什么样」。两个都要——
+   圆点告诉你这一格做了，但做成什么样只有看见才知道。 */
+.wall-bar{display:flex;align-items:center;gap:10px;padding:0 0 10px;flex-wrap:wrap}
+.wall-bar .sp{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--ctl-r);overflow:hidden}
+.seg button{padding:5px 10px;font-size:12px;color:var(--ink-2);background:var(--white)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent-fill);color:var(--accent);font-weight:600}
+.zoom{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
+.zoom input{width:110px}
+/* 一组一块（一个视图＝一组），组之间留白比组内大 —— 分组要一眼看得出来，
+   否则十一张卡连成一片，人还得自己数哪几张是同一个抽屉的。 */
+.wall{display:block}
+.wgrp{margin-bottom:26px}
+.wgrp:last-of-type{margin-bottom:8px}
+.wall-sec{display:flex;align-items:baseline;gap:8px;padding:0 2px 9px}
+.wall-sec .t{font-size:12px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.wall-sec .c{font-size:10px;color:var(--ink-4)}
+.wtiles{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+
+.tile{flex:0 0 auto;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:var(--white);
+  box-shadow:var(--sh-1);cursor:pointer;position:relative;transition:border-color .12s,box-shadow .12s}
+.tile:hover{border-color:var(--accent-line)}
+.tile.at{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-fill)}
+.tile-shot{position:relative;overflow:hidden;background:#fff;border-bottom:1px solid var(--line-2)}
+.tile-shot iframe{border:0;transform-origin:0 0;pointer-events:none}
+/* 盖一层透明的，让点击落在整张卡上而不是 iframe 里 */
+.tile-hit{position:absolute;inset:0}
+
+/* 🔴 标题区给灰底。之前跟缩略图一样是白的，而页面本身底部也常常是白的 ——
+   两块白贴在一起，状态名看着就像长在页面里（吉吉 2026-09-18：「状态名称和图混在一起了」）。
+   灰底 + 上面那条实线，一眼分得清「这是标签，不是页面的一部分」。 */
+.tile-cap{padding:8px 10px 9px;background:var(--soft);min-width:0}
+.tile-cap .n{font-size:12px;font-weight:600;color:var(--ink);line-height:1.4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 说明最多两行，超了省略。之前跟名字挤在同一行，长一点就把名字挤没了 —— 
+   而名字是这张卡唯一必须看清的东西。 */
+.tile-cap .w{margin-top:3px;font-size:10.5px;color:var(--ink-3);line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.1em}
+
+.wall-note{font-size:11px;color:var(--ink-3);padding:10px 2px 0;line-height:1.7}
+
+/* ── 叠加开关（跟状态正交的那一维）──────────────────
+   做成一条独立的横条、不混进 tabs，也不混进对照表的列：
+   它跟「现在在哪个态」是两件事，摆在一起人会以为 OSS 是第四个场景。 */
+.ons{display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--soft);border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+.ons-lab{font-size:10px;color:var(--ink-4);letter-spacing:.02em}
+.onb{padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--white);font-size:11px;color:var(--ink-2)}
+.onb:hover{border-color:var(--accent-line)}
+.onb.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* ── 对照表：视图分组表头 ──────────────────
+   上层列头是视图（页面本身 / 各个抽屉浮层），下层才是那个视图里的状态。 */
+table.grid thead th.vg{border-left:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+  font-weight:600;color:var(--ink);background:var(--soft);padding:4px 8px;white-space:nowrap;text-align:center;z-index:2}
+table.grid thead th.vg:first-of-type{border-left:0}
+/* 「这一页没有这个视图」——不是漏，是不适用。跟空格子必须长得不一样，
+   不然人得挨个回源码查是哪一种，这张表就不省事了。 */
+.cell.na{color:var(--ink-4);opacity:.45;font-size:11px}
+
+/* ── 铺开：分段小标题 ──────────────────
+   同一个抽屉的几个态挨在一起才比得出差别；混着铺的话眼睛先要花力气分清这是哪一屏。 */
+.wall-sec{flex:0 0 100%;font-size:11px;font-weight:600;color:var(--ink-2);padding:6px 2px 0;margin-top:4px}
+.wall-sec:first-child{margin-top:0}
+
+/* ── 流程图：视图子节点 ＋ 节点自带的状态按钮 ──────────────────
+   吉吉 2026-09-18：「这个按钮可以按照线性图来构造」。
+   节点回答「哪一屏」，底下那排按钮回答「这一屏的哪个样子」，点哪个进哪个。 */
+.vnode-wrap{margin:4px 0 0 14px;padding-left:10px;border-left:1px dashed var(--line)}
+.node.vnode{min-width:180px;border-style:dashed;background:#FCFCFD}
+.node.vnode .t{font-weight:600;color:var(--ink-2)}
+.node.vnode code{font-family:var(--mono);font-size:9px}
+.nstates{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 0 4px}
+.nst{padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--white);font-size:11px;color:var(--ink-2)}
+.nst:hover{border-color:var(--accent-line);background:var(--accent-fill);color:var(--accent)}
+.nst.at{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.vnode-wrap .nstates{margin-left:2px}

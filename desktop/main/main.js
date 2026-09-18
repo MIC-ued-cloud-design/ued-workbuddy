@@ -12,9 +12,18 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const { spawn } = require('child_process');
 const { detectClaude, ClaudeSession } = require('./engine');
-const { loginEnv } = require('./shellenv');
+const { loginEnv, whichAll } = require('./shellenv');
 const { buildHandoff } = require('./handoff');
 const { check: feiqueCheck } = require('./feique-check');
+const feiqueEmpty = require('./feique-empty');
+const feiqueFont = require('./feique-font');
+const htmlmap = require('./htmlmap');
+const flow = require('./flow');
+const flowWalk = require('./flow-walk');
+const components = require('./components');
+const updater = require('./updater');
+const iconHeal = require('./icon-heal');
+const kb = require('./kb');
 
 const ROOT = path.join(__dirname, '..');
 /* 打包后代码住在 app.asar 里：应用自己读得到，但拉起的 Claude 是外部进程，读不到 asar。
@@ -61,7 +70,7 @@ function writeDiagnostics() {
     fs.writeFileSync(path.join(path.dirname(SETTINGS_FILE), 'diagnostics.json'), JSON.stringify({
       at: new Date().toISOString(),
       app: app.getVersion(), electron: process.versions.electron, platform: process.platform, arch: process.arch,
-      launchedFrom: /^\/usr\/bin:\/bin:\/usr\/sbin:\/sbin\/?$/.test(String(process.env.PATH || '')) ? 'GUI（访达/程序坞，PATH是最小集）' : '终端或已继承完整PATH',
+      launchedFrom: process.platform === 'win32' ? 'Windows（进程环境即完整环境，不分GUI/终端）' : /^\/usr\/bin:\/bin:\/usr\/sbin:\/sbin\/?$/.test(String(process.env.PATH || '')) ? 'GUI（访达/程序坞，PATH是最小集）' : '终端或已继承完整PATH',
       processPath: process.env.PATH || '',
       shellEnv: info,
       engine: engine ? { ok: engine.ok, path: engine.path || null, version: engine.version || null, viaFcf: !!engine.viaFcf, message: engine.message || null, tried: engine.tried || [] } : null,
@@ -159,7 +168,7 @@ function ensureWorkspaceGuide() {
       '- `web-components.json` / `mobile-components.json` —— 组件清册。按钮、输入框、卡片、**页头页脚、LOGO、认证标**都在里面，每条带 Figma 的 key 和节点号、尺寸、颜色规则。',
       '- `brand/INDEX.md` —— **品牌与认证标识 18 个**：MIC LOGO、STS 担保交易、Audited 认证、Leading Factory 标杆工厂、钻石/金牌会员、供应商星级、评分条。🔴 这些标里的字**是矢量图形不是文字**，一律内联真 SVG，**一个都不许自己画或用文字拼**。',
       '- `icons/INDEX.md` —— **295 个 UI 图标的检索索引**。🔴 按用途查这份，别靠文件名猜：要「Chat Now」的图标时搜 chat 只会命中 wechat（微信），真正的聊天图标叫 `tm.svg`（TM = Trade Manager）。索引里还列了 7 个文件名拼错的（`maill-send` 双 l、`ind-apprel` 少 a…），搜正确拼写一个都搜不到。', '',
-      '**要放一个现成元素时的顺序：brand/INDEX.md（品牌认证标）→ icons/INDEX.md（UI 图标）→ 组件清册（页头页脚、产品卡这类）。**',
+      '**要放一个现成元素时的顺序：brand/INDEX.md（品牌认证标）→ icons/INDEX.md（UI图标）→ 组件清册（页头页脚、产品卡这类）。**',
       '🔴 品牌红 `#DA291C` 只属于 LOGO，界面主色是 `#E64545`，两个别混。',
       '🔴 品牌标识、页头、页脚、导航是MIC既有的东西，属于照抄范围，不是设计空间。三处都找不到就留灰色占位块并写明「待补真资产」——**不许自己画一个看着差不多的**。', '',
       ...(kb ? ['## 部门知识库', '', `路径 \`${kb.dir}\`（${kb.from}）。先读里面的 \`${kb.index}\`（一份索引，一行一个指针），按索引挑相关的几份读。`,
@@ -185,8 +194,11 @@ let _rt;
 function restoreToolsDir() {
   if (_rt !== undefined) return _rt;
   _rt = null;
+  /* 这套还原工具是 bash + 本机 Chrome 的脚本（reach.sh / live-clone.js 起独立 Chrome），Windows 上跑不起来。
+     不给路径，提示词里那条【还原线上页面】就不出现，Claude 会按【先拿参照物】那条走 chrome-devtools 的 MCP。 */
+  if (process.platform === 'win32') return _rt;
   const local = path.join(os.homedir(), '.claude', 'skills', 'mic-fullstack', 'scripts');
-  if (fs.existsSync(path.join(local, 'online-reach', 'geom-check.js'))) return (_rt = { dir: local, from: '本机 skill' });
+  if (fs.existsSync(path.join(local, 'online-reach', 'geom-check.js'))) return (_rt = { dir: local, from: '本机skill' });
   const packed = path.join(process.resourcesPath || '', 'restore-tools');
   if (fs.existsSync(path.join(packed, 'online-reach', 'geom-check.js'))) _rt = { dir: packed, from: '随应用携带' };
   return _rt;
@@ -254,14 +266,15 @@ function recordFigma(id, name, input) {
 /* ── 引擎会话 ── */
 function systemPrompt(meta) {
   return [
-    '你在「UED WorkBuddy桌面版」（UED WorkBuddy）里工作。这是一个给产品、设计、前端共用的工作台，用户在界面上看到的是你的回答、你每一步用了什么工具、以及当前目录里文件的实时预览。',
+    '你在「UED WorkBuddy桌面版」（UED WorkBuddy）里工作。这是一个给产品、设计同事共用的工作台，用户在界面上看到的是你的回答、你每一步用了什么工具、以及当前目录里文件的实时预览。',
     `当前项目「${meta.name}」的文件夹就是你的工作目录；写到这里的HTML会自动出现在右侧预览，所以产物一律落文件，不要只在回答里贴代码。`,
     `飞鹊设计系统（MIC前台）随应用携带，路径${PACK_DIR}：做任何MIC界面先读DESIGN.md。`,
     /* ↓ 2026-09-10 加：上一版只写了「图标只用icons/里的SVG」，结果模型把「找现成资源」这件事
        框死在icons目录里——它13次打开飞鹊包，每次都只在icons/ grep图标名，从没想过去清册里查LOGO，
        最后照印象手画了一个品牌LOGO。清册里其实早就有 mic-logo 这条（连品牌红#DA291C都写了）。
        所以这里把查找顺序写死，并且点名「不是图标的那些东西」在哪。 */
-    ...(knowledgeDir() ? [`【有部门知识库，别凭记忆答】路径${knowledgeDir().dir}（${knowledgeDir().from}），先读里面的${knowledgeDir().index} —— 那是一份索引，一行一个指针；按索引挑相关的几份读，别整个目录乱翻、也别用grep满硬盘找。做任何MIC业务相关的活（搜索/询盘/交易订单/TM/RFQ/商机融合/会员/运营）之前先走这一步。里面有业务知识、方法论判据、各专项做法三类。🔴🔴 **「各专项做法」那一类就是 17 个子 skill 的全文**，在该目录的 skill/ 子目录下（skill/figma-to-html-feique.md ／ skill/MIC-交互.md ／ skill/MIC-验收.md …），跟终端里那套同源、逐字节相同。**要读子 skill 一律从这儿读。**🔴 别去 cat ~/.claude/skills/mic-fullstack/…… —— 那个路径只在装了 skill 的机器上存在，同事机器上是空的，而 cat 一个不存在的文件不会报错、只会返回空，你会以为「读过了」然后凭印象裸做。`] : []),
+    ...(knowledgeDir() ? [`【有部门知识库，别凭记忆答】路径${knowledgeDir().dir}（${knowledgeDir().from}），先读里面的${knowledgeDir().index} —— 那是一份索引，一行一个指针；按索引挑相关的几份读，别整个目录乱翻、也别用grep满硬盘找。做任何MIC业务相关的活（搜索/询盘/交易订单/TM/RFQ/商机融合/会员/运营）之前先走这一步。里面有业务知识、方法论判据、各专项做法三类。🔴🔴 **「各专项做法」那一类就是17个子skill的全文**，在该目录的skill/ 子目录下（skill/figma-to-html-feique.md／skill/MIC-交互.md／skill/MIC-验收.md …），跟终端里那套同源、逐字节相同。**要读子skill一律从这儿读。**🔴 别去cat ~/.claude/skills/mic-fullstack/…… —— 那个路径只在装了skill的机器上存在，同事机器上是空的，而cat一个不存在的文件不会报错、只会返回空，你会以为「读过了」然后凭印象裸做。`] : []),
+    ...(kb.readUserIndex().length ? [`【用户自己添加的资料与技能】在${kb.userDir()}/（index.json里每份有标题与一句说明；docs/ 是资料、skills/ 是他自己写的做法规范）。这些是他特意加进来的，涉及相关业务或做法时先读对应那份，优先级高于随包知识库里的同类内容。`] : []),
     `【要放一个现成元素时，按这个顺序找，别跳到"自己画"】① **品牌与认证标识**看 ${PACK_DIR}/brand/INDEX.md（18 个：MIC LOGO、STS 担保交易、Audited 认证、Leading Factory、钻石/金牌会员、供应商星级、评分条）——🔴 这些标里的字**是矢量图形不是文字节点**，拿彩色文字拼出来足够像、以至于没人会再去核对，一律 cat 真 SVG 整段内联。🔴🔴 **同名不等于同一个**（2026-09-16 实测）：brand/mic-logo.svg 是 240×46、品牌红 #DA291C；而搜索结果页页头里那个 LOGO 是 218×42、界面红 #E64545 —— 两个都叫 mic-logo，字节数只差 12，拿错了尺寸和颜色全错、而且肉眼看不出来。**页面里的元素一律从它所在的那个节点导**（download_assets 传那个页头节点的 id），brand/ 只用于「页面上本来没有、要单独摆一个标识」的场合。🔴 品牌红 #DA291C ≠ 界面主色 #E64545，别混。② **UI 图标**查 ${PACK_DIR}/icons/INDEX.md（295 个的检索索引，按用途找）——🔴 别靠文件名猜：要 Chat Now 的图标时搜 chat 只命中 wechat（微信），真正的聊天图标是 tm.svg（TM＝Trade Manager）；另有 7 个文件名拼错的也在索引里点了名。③ **页头页脚、产品卡、筛选侧栏、表单、弹层、日期选择**这类业务组件：先读 ${PACK_DIR}/COMPONENT-USAGE.md（**组件用法清册**，从 Figma 组件库逐页读出来的真值：每个组件的 key／节点号／尺寸／**全部 variant 维度**／设计师写的说明，比如 MIC Footer Search 有 1440/1366/1280/1024 四个断点、date picker 是 status×size×state×range 共 108 个组合、popover 有 12 个方位）。🔴 **props／variant 是机器读的永远准；description 是人写的会过时**，两者打架以 props 为准。🔴 组件库页名里的 ✅ 和 🤖 都是「已做完」，❌ 是「不需要做」，不是没做。清册里没有的再查 ${PACK_DIR}/web-components.json（移动端 mobile-components.json）。🔴🔴 **figma 的工具是延迟加载的，一开始不在你的工具表里，直接调会失败** —— 必须先跑一次 ToolSearch("select:mcp__plugin_figma_figma__get_metadata,mcp__plugin_figma_figma__download_assets") 把它们捞出来。2026-09-15 实测：模型读懂了「用 download_assets 导出真资产」，却因为手边没这个工具，一次没试就直接跳到「留占位」那条兜底了。**取资产四步**：① ToolSearch 捞工具 ② get_metadata(fileKey, nodeId) 看结构（业务组件多是 component set，挑你要的那个子节点 id。🔴🔴 **variant 维度不止 breakpoint，而且组件名会骗人**（2026-09-16 实测）：header-home 听着像只有首页页头，实际是 pageType(home/**search-result**) × breakpoint(1024/1280/1366/1440/1920) 共 10 个 variant —— 做搜索结果页要挑 「pageType=search-result,breakpoint=1440」（1440×**142**），挑成 home 档（1440×123）就少了一整行 Related Searches，差的那 19px 不量是发现不了的。**先 get_metadata 把 variant 全列出来再挑，别按组件名猜库里有没有** —— 那次就是因为名字叫 header-home，直接判定「库里只有首页页头」，转头自己拿 .inp+.btn 拼了一个。）③ download_assets(fileKey, 子节点id, defaultFormat 传 svg) 拿到 URL ④ 立刻 curl -sL -o 文件 "URL"（URL 短命），再跑 python3 ${PACK_DIR}/tools/clean-figma-svg.py <文件> 清掉 Figma 画布杂质（组件集的紫色虚线框、画布底色，不清会在页面上多一块灰底加紫框）。🔴 **「留灰色占位块」是导不到时的兜底，不是第一选择；没试过就留占位＝没做。**`,
 
     /* ↓ 2026-09-16 加：治「做 MIC 已有页面还原不到 1:1」。
@@ -271,11 +284,11 @@ function systemPrompt(meta) {
        2026-09-15 实测那次：它读到了 FilterItem/FilterSidebar 的存在，却一次 ToolSearch 都没捞、
        一次 download_assets 都没调，页头和搜索框从头到尾没取过一个像素值。
        所以这里把「这次到底是还原活还是设计活」提成开工第一问，并写明判错的代价不对称。 */
-    '【开工先分流·这一步决定后面所有做法，不许跳】动手写网页之前先答一句，写在回答第一行：这次要做的页面，MIC线上有没有同类页？判断标准是「线上有没有这个页」，不是「我想不想做得像」。\n· **有**（搜索结果／询盘／产详／列表／店铺／登录注册／结算／消息…）＝ 这是**还原活，不是设计活**。页头、搜索框、筛选侧栏、产品卡、页脚这些**一个像素都不许自己定**：按下面【还原线上页面】那四步取真值 → 每个元素打 data-node-id → 跑 geom-check 到全绿 exit 0 才算完。还原活的第一步**不是读砖表拼装，是取真值建 manifest**；砖表只管通用控件（按钮／输入框／勾选／分页），业务组件一律按真节点导。\n  🔴 **此时场景卡里「先快速出一版」「打开线上看一眼当参照」「截图没明显错位就交」这类话一律作废** —— 那几句是给从零设计写的，照着做就会得到「看着像、每个值都不对」。\n· **没有**（线上没有同类页的新页面）＝ 设计活，照场景卡的做法走，按DESIGN.md的规范值自由发挥。\n🔴 **判错的代价不对称**：把还原活当设计活做，结果是每个值都不对，而且**没有任何门会报红**（门要先有manifest才有基准，没建就等于没有尺子）；反过来把设计活当还原活做，最多多花几分钟取真值。**拿不准就当还原活。**',
-    `【开工第一步·先看砖表】做任何网页产物，第一件事是读${PACK_DIR}/docs/css/INDEX.md——飞鹊28类组件的网页实现清单（按钮/分页/输入框/数字输入框/文本域/下拉/级联/单选/按钮式单选/勾选框/开关/上传/步骤条/抽屉/列表/Tabs/面包屑/气泡/全局提示/加载/骨架屏/空状态/徽标/标签/提示条/滚动条/投影）。看这一页要用哪几个，就用一条 cat ${PACK_DIR}/docs/css/{_reset,btn,inp,…}.css 把它们读出来（一律带上_reset.css，28个全部加起来也才73KB），**把读到的内容原样贴进index.html的<style>**。🔴 **别把cat重定向到文件**（写成 > xxx.css 那样）——重定向了你就一个字节也没看见，只能凭印象重写，那等于没取；2026-09-15实测就是这么把btn-lg的圆角8px写成6px、padding 16px写成24px、还自己编了两个hover色的。🔴 贴进去之后**不许改里面的任何值**（高度/圆角/padding/字号/hover色都是定死的），门会拿飞鹊真值逐条比对，改了就报红。这一步不做，写出来的按钮和表单就都不是飞鹊的——2026-09-10两次实测都是这么翻车的。`,
-    `【砖表里有的照抄，没有的不许手画】砖表里有的组件：类名保持飞鹊的、规则原样复制进单文件。🔴 不许自己另写一套.btn/.inp/.alert，不许借飞鹊前缀发明.btn-neutral这种飞鹊没有的变体。组件的高度、圆角、描边、字号一律以css/里的为准，DESIGN.md只管颜色和排版口径。🔴 **整块业务组件（产品卡、页头页脚、筛选侧栏这类）先看 docs/blocks/** —— 里面是 HTML+CSS 一起给的成品片段，cat 出来把 <style> 和结构原样贴进页面、只换文案图片、填掉标了 SLOT 的认证标，**里面的值一个都别改**（跟砖表同一个规矩）。2026-09-15 实测同一个产品卡：自己照截图拼＝按钮跑到右上角、认证标尺寸全错；cat 片段＝逐坐标对得上真值。**能 cat 到的就绝不自己拼。**blocks/ 里还没有的才走下面这条：🔴 blocks/ 里还没有的那些（ProductCard八个变体、MIC Footer页脚、FilterSidebar筛选侧栏、Supplier Ad、TM Bar、vo-header/nav/sider、mic-logo）＝只有Figma没有CSS实现，它们恰恰是MIC真实页面的主力：清单在INDEX.md末尾那张表，带Figma key和节点号，用figma的download_assets按key导出真资产；导不到就画灰色占位块并在交付说明里写明「待补真资产」，手画一个看着差不多的比留空更糟。`,
+    '【开工先分流·这一步决定后面所有做法，不许跳】动手写网页之前先答一句，写在回答第一行：这次要做的页面，MIC线上有没有同类页？判断标准是「线上有没有这个页」，不是「我想不想做得像」。\n· **有**（搜索结果／询盘／产详／列表／店铺／登录注册／结算／消息…）＝ 这是**还原活，不是设计活**。页头、搜索框、筛选侧栏、产品卡、页脚这些**一个像素都不许自己定**：按下面【还原线上页面】那四步取真值 → 每个元素打data-node-id → 跑geom-check到全绿exit 0才算完。还原活的第一步**不是读砖表拼装，是取真值建manifest**；砖表只管通用控件（按钮／输入框／勾选／分页），业务组件一律按真节点导。\n  🔴 **此时场景卡里「先快速出一版」「打开线上看一眼当参照」「截图没明显错位就交」这类话一律作废** —— 那几句是给从零设计写的，照着做就会得到「看着像、每个值都不对」。\n· **没有**（线上没有同类页的新页面）＝ 设计活，照场景卡的做法走，按DESIGN.md的规范值自由发挥。\n🔴 **判错的代价不对称**：把还原活当设计活做，结果是每个值都不对，而且**没有任何门会报红**（门要先有manifest才有基准，没建就等于没有尺子）；反过来把设计活当还原活做，最多多花几分钟取真值。**拿不准就当还原活。**',
+    `【开工第一步·先看砖表】做任何网页产物，第一件事是读${PACK_DIR}/docs/css/INDEX.md——飞鹊28类组件的网页实现清单（按钮/分页/输入框/数字输入框/文本域/下拉/级联/单选/按钮式单选/勾选框/开关/上传/步骤条/抽屉/列表/Tabs/面包屑/气泡/全局提示/加载/骨架屏/空状态/徽标/标签/提示条/滚动条/投影）。看这一页要用哪几个，就用一条 cat ${PACK_DIR}/docs/css/{_reset,btn,inp,…}.css 把它们读出来（一律带上_reset.css，28个全部加起来也才73KB），**把读到的内容原样贴进index.html的<style>**。🔴 **别把cat重定向到文件**（写成 > xxx.css 那样）——重定向了你就一个字节也没看见，只能凭印象重写，那等于没取；2026-09-15实测就是这么把btn-lg的圆角8px写成6px、padding 16px写成24px、还自己编了两个hover色的。🔴 贴进去之后**不许改里面的任何值**（高度/圆角/padding/字号/hover色都是定死的），门会拿飞鹊真值逐条比对，改了就报红。这一步不做，写出来的按钮和表单就都不是飞鹊的——2026-09-10两次实测都是这么翻车的。🔴 **cat 了 x.css，同目录有 x.states.css 就一起 cat**（cb/rd/ss/sw/ta/inpn 六族有）：飞鹊的悬停/勾选/打开态是从 Figma variant 导出的、写作 .cb-hv/.cb-sel 这种类名，要人手动加 class 才出现；states 那层把**同样的值**接到真实的 :hover/:checked 上，页面里的控件才是能动的（值一个没变，体检照样过）。🔴 勾选框/单选/开关/按钮式选择器要真点得动，根元素里得有个原生控件：<label class="cb"><input type="checkbox" checked>…</label>，states 那层会把它藏起来；**别给这个 input 起类名**，体检会把飞鹊里没有的 cb-/rd-/sw- 类判成硬伤。`,
+    `【砖表里有的照抄，没有的不许手画】砖表里有的组件：类名保持飞鹊的、规则原样复制进单文件。🔴 不许自己另写一套.btn/.inp/.alert，不许借飞鹊前缀发明.btn-neutral这种飞鹊没有的变体。组件的高度、圆角、描边、字号一律以css/里的为准，DESIGN.md只管颜色和排版口径。🔴 **整块业务组件（产品卡、页头页脚、筛选侧栏这类）先看docs/blocks/** —— 里面是HTML+CSS一起给的成品片段，cat出来把 <style> 和结构原样贴进页面、只换文案图片、填掉标了SLOT的认证标，**里面的值一个都别改**（跟砖表同一个规矩）。2026-09-15实测同一个产品卡：自己照截图拼＝按钮跑到右上角、认证标尺寸全错；cat片段＝逐坐标对得上真值。**能cat到的就绝不自己拼。**blocks/ 里还没有的才走下面这条：🔴 blocks/ 里还没有的那些（ProductCard八个变体、MIC Footer页脚、FilterSidebar筛选侧栏、Supplier Ad、TM Bar、vo-header/nav/sider、mic-logo）＝只有Figma没有CSS实现，它们恰恰是MIC真实页面的主力：清单在INDEX.md末尾那张表，带Figma key和节点号，用figma的download_assets按key导出真资产；导不到就画灰色占位块并在交付说明里写明「待补真资产」，手画一个看着差不多的比留空更糟。`,
 
-    `【规范怎么用·不只是值】${PACK_DIR}/docs/飞鹊设计规范-使用规则.md —— tokens.json 给的是值，这份给的是「什么时候用哪个」：7 级间距各自的场景（4=图标与文字 · 8=表单项 · 12=段落和label到输入框 · 16=卡片内padding · 24=区块 · 32=section · 48=首屏到内容），**禁止非 4px 倍数（5/10/15/25）**；圆角的等大公式 **外圆角＝内圆角＋padding**（4 标签小按钮 / 6 默认按钮输入框卡片 / 12 大卡片模态框）；阴影三级是**层级语义**不是深浅档（低＝下拉面板贴背景柔和 / 中＝卡片hover浮起 / 高＝对话框模态通知抽屉显著突出），全用或全不用；字阶控制在 3-5 种保持克制。♿ **无障碍是硬要求**：对比度≥4.5:1（大文本≥3:1）· 焦点样式不许 outline:none 且无替代（MIC 焦点＝2px #0071E1 50% 圆角4px 偏移1~2px）· 点击区域≥44×44px · 图片必有 Alt（装饰图 alt 留空）· 表单 label 绑 id · 纯色彩不能作唯一信息载体 · 语义化标签不用 div 模拟按钮。交付前过那份文档第 6 节的 10 条自查。`,
+    `【规范怎么用·不只是值】${PACK_DIR}/docs/飞鹊设计规范-使用规则.md —— tokens.json给的是值，这份给的是「什么时候用哪个」：7级间距各自的场景（4=图标与文字 · 8=表单项 · 12=段落和label到输入框 · 16=卡片内padding · 24=区块 · 32=section · 48=首屏到内容），**禁止非4px倍数（5/10/15/25）**；圆角的等大公式 **外圆角＝内圆角＋padding**（4标签小按钮 / 6默认按钮输入框卡片 / 12大卡片模态框）；阴影三级是**层级语义**不是深浅档（低＝下拉面板贴背景柔和 / 中＝卡片hover浮起 / 高＝对话框模态通知抽屉显著突出），全用或全不用；字阶控制在3-5种保持克制。♿ **无障碍是硬要求**：对比度≥4.5:1（大文本≥3:1）· 焦点样式不许outline:none且无替代（MIC焦点＝2px #0071E1 50% 圆角4px偏移1~2px）· 点击区域≥44×44px · 图片必有Alt（装饰图alt留空）· 表单label绑id · 纯色彩不能作唯一信息载体 · 语义化标签不用div模拟按钮。交付前过那份文档第6节的10条自查。`,
     `【多端与响应式】页面要适配多端就读${PACK_DIR}/docs/飞鹊响应式规则-AI友好型规范.md（断点、栅格、各端差异），别自己定断点。用法铁律读${PACK_DIR}/docs/飞鹊组件使用经验和规范.md第零、一节：参考页面只学布局，实现只能用飞鹊的砖。`,
     `【价格怎么写】页面上出现价格、起订量一律按${PACK_DIR}/docs/MIC英文价格规范-AI友好型.md：US$15.20-16.60（US$ 后不空格、区间用短横）、100 Pieces (MOQ)（不写Min. Order）。`,
     '【最常犯的三个组合错误，写完自查】① 实心红按钮全页只有一个（主CTA），其它动作用 .btn-secondary（白底黑边黑字）或 .btn-link，飞鹊没有「红描边按钮」 ② Alert提示条里不放按钮，动作是 .alert-link文字链 ③ 取消 / 次操作配 .btn-secondary，不是灰按钮。应用会在预览栏上跑一遍「飞鹊体检」，不过的会摆出来。',
@@ -283,9 +296,9 @@ function systemPrompt(meta) {
     /* ↓ 这三条治「应用做出来的页面不如终端像」。实测过：应用产出的页面 token 层面是满分（色值全在表内、
        字重只有400/700、字号与圆角全合规），差的不是规范，是**没有参照物、也从不回看自己做的东西**。
        终端里那套之所以像，是因为每次都先取真页面/真设计稿当参照，做完再截图并排比对。 */
-    ...(restoreToolsDir() ? [`【还原线上页面·按这四步，别自己发明流程】做「照线上做 / 1:1 还原某个页面」这类活，工具在 ${restoreToolsDir().dir}（${restoreToolsDir().from}）：\n① **抽规格用 online-reach/responsive-spec-extract.js，别自己写 evaluate_script 刨 DOM** —— 它会二分逼出真实断点（不用猜 1279 还是 1280）、跨 375-1920 抓全 w/x/margin/padding/min-width/max-width/gap/flex 并 dump 命中的 @media 规则。随宽度变的值抓的是「函数」不是「点」，单一宽度读一次就当常量必错。\n② **写完用 online-reach/geom-check.js 逐值对位，全绿 exit 0 才算完**。「看一眼截图觉得差不多」不算验证 —— 参照物本身残缺的时候，回看只能发现你跟你自己不一致，发现不了参照缺了一块。\n③ 要把线上页面整个搬下来当离线底座，用 online-reach/live-clone.js，再跑 clone-offline-check.js 查外链/断图/JS 错。\n🔴 这套脚本要本机装了 Google Chrome（reach.sh 起的是独立 Chrome 实例，不碰用户日常浏览器）。报「Chrome/CDP 没起来」就是没装或路径不对，**这时候别自己写 evaluate_script 硬来**，改用 chrome-devtools 的 MCP，并且守住下面那三条禁令。\n④ 还原 Figma 稿则是另一套：restore-coverage/figma-restore-dump.snippet.js 贴进 use_figma 抽真值成 manifest，每个元素打 data-node-id，再跑 geom-check 按 node-id 自动对位；coverage-check.js 负责查有没有整块漏掉。`] : []),
-    `【取参照物的三条禁令 · 2026-09-15 三条全栽过】不管有没有上面那套工具，这三条都得守：\n① **禁止 outerHTML.slice(N) 这种截断取样**。那次 slice(0,3000) 把产品卡切掉了后半截，按钮那段一个字节没读到，模型就自己编了个位置放到右上角。要么整段取全，要么按子节点分段取完再拼。\n② **截图要截目标元素本身，不是整页视口**。整页截图里目标只占一小块，还会被 fixed 侧栏、广告位盖住 —— 那次列表卡的按钮区正好被右侧 Sponsored 栏挡住，模型看到的「参照」本来就没有按钮。截完自问一句：这个组件的四条边都在画面里吗。\n③ **量哪个变体就只能做哪个变体**。那次点了列表/网格切换、量完网格就没切回来，后面全部精确测量都做在网格版上，交付的却是列表版。要出 N 个变体就对 N 个变体各量一遍。`,
-    '【先拿参照物，再动手】只要这次是「还原 / 复刻 / 照着某个已有页面或设计稿做」：动手前必须先把参照物取到手——Figma稿用figma的MCP读真值，线上页面用chrome-devtools的MCP打开截图、或跑随应用带的 online-reach/reach.sh（路径见下面【还原线上页面】那条给的工具目录，不要去 ~/.claude/skills 找，同事机器上没有）。参照物拿不到就先问用户要，不要凭印象画一版当交付。就算用户没说「还原」，只要做的是MIC线上已有的页面类型（询盘、搜索、产详、发送成功页、登录注册……），也先用chrome-devtools打开线上同类页看一眼再动手——参照物先于灵感。只有明确是「从零设计、线上没有同类页」时，才按DESIGN.md的规范值自由发挥。',
+    ...(restoreToolsDir() ? [`【还原线上页面·按这四步，别自己发明流程】做「照线上做 / 1:1还原某个页面」这类活，工具在${restoreToolsDir().dir}（${restoreToolsDir().from}）：\n① **抽规格用online-reach/responsive-spec-extract.js，别自己写evaluate_script刨DOM** —— 它会二分逼出真实断点（不用猜1279还是1280）、跨375-1920抓全w/x/margin/padding/min-width/max-width/gap/flex并dump命中的 @media规则。随宽度变的值抓的是「函数」不是「点」，单一宽度读一次就当常量必错。\n② **写完用online-reach/geom-check.js逐值对位，全绿exit 0才算完**。「看一眼截图觉得差不多」不算验证 —— 参照物本身残缺的时候，回看只能发现你跟你自己不一致，发现不了参照缺了一块。\n③ 要把线上页面整个搬下来当离线底座，用online-reach/live-clone.js，再跑clone-offline-check.js查外链/断图/JS错。\n🔴 这套脚本要本机装了Google Chrome（reach.sh起的是独立Chrome实例，不碰用户日常浏览器）。报「Chrome/CDP没起来」就是没装或路径不对，**这时候别自己写evaluate_script硬来**，改用chrome-devtools的MCP，并且守住下面那三条禁令。\n④ 还原Figma稿则是另一套：restore-coverage/figma-restore-dump.snippet.js贴进use_figma抽真值成manifest，每个元素打data-node-id，再跑geom-check按node-id自动对位；coverage-check.js负责查有没有整块漏掉。`] : []),
+    `【取参照物的三条禁令 · 2026-09-15三条全栽过】不管有没有上面那套工具，这三条都得守：\n① **禁止outerHTML.slice(N) 这种截断取样**。那次slice(0,3000) 把产品卡切掉了后半截，按钮那段一个字节没读到，模型就自己编了个位置放到右上角。要么整段取全，要么按子节点分段取完再拼。\n② **截图要截目标元素本身，不是整页视口**。整页截图里目标只占一小块，还会被fixed侧栏、广告位盖住 —— 那次列表卡的按钮区正好被右侧Sponsored栏挡住，模型看到的「参照」本来就没有按钮。截完自问一句：这个组件的四条边都在画面里吗。\n③ **量哪个变体就只能做哪个变体**。那次点了列表/网格切换、量完网格就没切回来，后面全部精确测量都做在网格版上，交付的却是列表版。要出N个变体就对N个变体各量一遍。`,
+    `【先拿参照物，再动手】只要这次是「还原 / 复刻 / 照着某个已有页面或设计稿做」：动手前必须先把参照物取到手——Figma稿用figma的MCP读真值，线上页面用chrome-devtools的MCP打开截图${process.platform === 'win32' ? '（Windows 上没有随应用带的 reach.sh 那套脚本，就用 chrome-devtools）' : '、或跑随应用带的online-reach/reach.sh（路径见下面【还原线上页面】那条给的工具目录，不要去 ~/.claude/skills找，同事机器上没有）'}。参照物拿不到就先问用户要，不要凭印象画一版当交付。就算用户没说「还原」，只要做的是MIC线上已有的页面类型（询盘、搜索、产详、发送成功页、登录注册……），也先用chrome-devtools打开线上同类页看一眼再动手——参照物先于灵感。只有明确是「从零设计、线上没有同类页」时，才按DESIGN.md的规范值自由发挥。`,
     '【做完自己看一眼】页面写完不算完：用chrome-devtools的MCP把产物打开截图，自己看一遍，有参照物就并排比对，把对不上的地方改掉再交。没看过的成品不要交出去——用户在右边看到的就是你没检查过的那一版。',
     '【Figma稿怎么交】做Figma稿时产物在Figma文件里、不在项目目录，所以每做完一个节点要补两件事：①用get_screenshot拿到链接后curl存一张PNG到项目的「设计稿」目录，文件名用节点的名字 ②在回答里说清动了哪个文件的哪些节点。不做这两件，用户在应用里看不到你做了什么，交付给前端时也没有东西可指。',
     '【规范只是及格线】色值、字号、圆角对了只说明没犯错，不说明像MIC。像不像取决于版式密度、组件真实尺寸、文案口吻这些——所以更要靠参照物和回看，不要满足于「token全对」。',
@@ -327,7 +340,11 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1480, height: 940, minWidth: 1100, minHeight: 700,
     title: 'UED WorkBuddy', backgroundColor: '#F5F5F7', icon: path.join(ROOT, 'build', 'icon.png'),
-    titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 18 },
+    /* Mac：藏标题栏、红绿灯往里收；Windows：同样藏标题栏，右上角三个窗口按钮用系统 overlay 画在我们的头部上
+       （高度对齐 .drag 那 44px），菜单栏藏起来（按 Alt 才出，快捷键照常有效）。 */
+    ...(process.platform === 'win32'
+      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#F5F5F7', symbolColor: '#222222', height: 44 }, autoHideMenuBar: true }
+      : { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 18 } }),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false },
   });
   /* 预览用的是 iframe，鼠标滚轮会被 iframe 自己吞掉，外层监听不到。
@@ -379,6 +396,10 @@ const FIT_PROBE = `
   setTimeout(report, 0); setTimeout(report, 200); setTimeout(report, 800);
 })();<\/script>`;
 
+/* 「像 Figma 那样改」的编辑层：选框 / 双击改字 / 拖拽换序 / 手柄改尺寸，见 edit-probe.js。
+   同样只走协议层。它默认沉默，界面点了「编辑」才亮。 */
+const EDIT_PROBE = '\n<script>' + fs.readFileSync(path.join(__dirname, 'edit-probe.js'), 'utf8').replace(/<\/script/gi, '<\\/script') + '<\/script>';
+
 /* 项目文件走自定义协议给预览 iframe 用：uwproj://p/<项目id>/<相对路径> */
 protocol.registerSchemesAsPrivileged([{ scheme: 'uwproj', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 
@@ -410,7 +431,23 @@ app.whenReady().then(() => {
       if (/\.html?$/i.test(abs)) {
         return net.fetch(pathToFileURL(abs).toString()).then(async r => {
           const html = await r.text();
-          return new Response(html + FIT_PROBE, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+          /* 每个开标签按源码顺序编号（data-uw-i），编辑层靠它把点中的元素对回文件里那一段。
+             编号只加在这份送去预览的副本上，磁盘文件一个字不动。 */
+          let marked = html;
+          try { marked = htmlmap.mark(html); } catch (e) { /* 分词失败就不编号，页面照样能看，只是不能手改 */ }
+          /* 页面带 <base href="外站">（线上克隆下来的几乎都有）时，项目自己的图会被解析到那个外站去 —— 换进来的图
+             怎么都不显示（吉吉 2026-09-17 换 VO 头像撞的）。只把「项目里真有这个文件」的地址在这份预览副本里
+             改成绝对地址，磁盘文件一个字不动；写回源码时 fillSrcRel() 会把它换回相对路径。 */
+          try {
+            marked = htmlmap.absolutizeForPreview(marked, raw => {
+              const clean = decodeURIComponent(String(raw).split(/[?#]/)[0]);
+              const t = path.normalize(path.join(path.dirname(abs), clean));
+              if (!t.startsWith(base) || !fs.existsSync(t) || !fs.statSync(t).isFile()) return null;
+              const r2 = path.relative(base, t).split(path.sep).map(encodeURIComponent).join('/');
+              return `uwproj://p/${encodeURIComponent(id)}/${r2}`;
+            });
+          } catch (e) { /* 改写失败就照原样给，页面照样能看 */ }
+          return new Response(marked + FIT_PROBE + EDIT_PROBE, { headers: { 'content-type': 'text/html; charset=utf-8' } });
         });
       }
       return net.fetch(pathToFileURL(abs).toString());
@@ -424,6 +461,14 @@ app.whenReady().then(() => {
   ]));
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  /* Dock 图标自愈：每个版本第一次启动跑一次，把上一轮更新在 LaunchServices 里留下的坏记录清掉。
+     为什么非得在启动时做而不是只改换包脚本 —— 见 main/icon-heal.js 顶部那段。
+     延后 4 秒是让窗口先画完：这件事会重启 Dock，跟启动抢在一起没必要。 */
+  setTimeout(() => {
+    iconHeal.heal({ appPath: updater.appBundlePath(), version: app.getVersion(), packaged: app.isPackaged })
+      .then(r => { if (r.ran) console.log('[icon-heal]', r.steps.map(s => `${s.kind}:${s.ok ? 'ok' : 'fail'}`).join(' ')); })
+      .catch(() => { /* 图标不对是难看，起不来是事故 —— 这里绝不往上抛 */ });
+  }, 4000);
 });
 app.on('window-all-closed', () => { app.quit(); });
 app.on('before-quit', () => { quitting = true; });
@@ -444,8 +489,8 @@ ipcMain.handle('projects:open', (_e, id) => { const m = readMeta(id); if (!m) re
 ipcMain.handle('figma:read', (_e, id) => readFigma(id));
 ipcMain.handle('figma:open', (_e, { fileKey, nodeId }) => {
   const url = `https://www.figma.com/design/${fileKey}/x` + (nodeId ? `?node-id=${String(nodeId).replace(':', '-')}` : '');
-  /* 装了桌面版就把链接丢给它（`open -a` 比猜 figma:// 的路径形式稳），没装才用浏览器 */
-  if (fs.existsSync('/Applications/Figma.app')) { spawn('open', ['-a', 'Figma', url], { stdio: 'ignore', detached: true }).unref(); }
+  /* Mac 装了桌面版就把链接丢给它（`open -a` 比猜 figma:// 的路径形式稳），没装才用浏览器；Windows 交给默认浏览器，Figma 桌面版会接管 */
+  if (process.platform === 'darwin' && fs.existsSync('/Applications/Figma.app')) { spawn('open', ['-a', 'Figma', url], { stdio: 'ignore', detached: true }).unref(); }
   else shell.openExternal(url);
   return true;
 });
@@ -459,11 +504,289 @@ ipcMain.handle('projects:delete', async (_e, id) => {
   catch (e) { fs.rmSync(dir, { recursive: true, force: true }); return { ok: true, trashed: false }; }
 });
 ipcMain.handle('files:list', (_e, id) => listFiles(id));
-/* 飞鹊体检：对项目里某个 HTML 做静态扫描（字体 / 字重 / 色值 / 自造组件 / 红按钮数 / alert 里塞按钮） */
+
+/* ── 多页面流程：扫描 ＋ 控制台窗口 ──────────────────────────────
+   为什么控制台是**另一个窗口**而不是画在页面里：吉吉 2026-09-17 原话——
+   「那种 demo 控制台我不想做在页面里，那样没有沉浸式体验」。
+   画在页面里还有个更硬的理由：那段脚手架会跟着交付给前端，页面就不干净了。
+   做成主窗口里的一条边栏也不行——边栏会把预览挤窄，响应式断点当场失真。
+   所以：控制台自己一个窗口（扔副屏或侧边），页面那个窗口 100% 是页面。 */
+ipcMain.handle('flow:scan', (_e, { id }) => {
+  try { return { ok: true, ...flow.scanAndSave(projDir(id)) }; }
+  catch (e) { return { ok: false, error: e.message, pages: [], issues: [], n: { pages: 0, states: 0, bad: 0, warn: 0 } }; }
+});
+
+let flowWin = null, flowFor = null;
+function openFlowWindow(id) {
+  flowFor = id;
+  if (flowWin && !flowWin.isDestroyed()) { flowWin.show(); flowWin.focus(); flowWin.webContents.send('flow:project', { id, name: (readMeta(id) || {}).name || '' }); return { ok: true, reused: true }; }
+  const b = win && !win.isDestroyed() ? win.getBounds() : null;
+  flowWin = new BrowserWindow({
+    width: 460, height: 900, minWidth: 360, minHeight: 480,
+    /* 默认贴在主窗口左边：控制台在旁边、页面在中间，一眼能同时看见两样东西。
+       挤出屏幕就让系统自己摆（多显示器下 x 为负是合法的，所以只在真的放不下时才放手） */
+    ...(b && b.x - 470 > -200 ? { x: b.x - 470, y: b.y } : {}),
+    title: '流程控制台', backgroundColor: '#F5F5F7', icon: path.join(ROOT, 'build', 'icon.png'),
+    ...(process.platform === 'win32'
+      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#F5F5F7', symbolColor: '#222222', height: 44 }, autoHideMenuBar: true }
+      : { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 16 } }),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false },
+  });
+  flowWin.loadFile(path.join(ROOT, 'renderer', 'flow.html'));
+  flowWin.webContents.once('did-finish-load', () => flowWin.webContents.send('flow:project', { id: flowFor, name: (readMeta(flowFor) || {}).name || '' }));
+  flowWin.on('closed', () => { flowWin = null; if (win && !win.isDestroyed()) win.webContents.send('flow:closed', {}); });
+  return { ok: true, reused: false };
+}
+/* 导出独立走查包：对方没装 UW，双击 _走查.html 就能自己点着走一遍。
+   不必非走「发给前端」那条路——给人看稿子和交付是两件事 */
+ipcMain.handle('flow:walk', (_e, { id }) => {
+  try {
+    const dir = projDir(id);
+    const d = flow.scan(dir);
+    if (d.pages.length < 2) return { ok: false, error: '只有一页，用不着走查包；直接把那个 html 发给对方就行。' };
+    const r = flowWalk.writeInto(dir, d, (readMeta(id) || {}).name || '走查');
+    return { ok: true, ...r, path: path.join(dir, r.file), bad: d.n.bad };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+/* 铺开视图要的料：把页面正文给控制台，它在自己窗口里并排渲染。
+   跟走查包一个道理 —— 用 srcdoc 内联才同源，控制台才能在 iframe 外面换状态类。
+   只给要看的那几页，别整个项目一次性塞过去（15 页就是好几 MB） */
+ipcMain.handle('flow:html', (_e, { id, rels }) => {
+  const dir = projDir(id), out = [];
+  for (const rel of (rels || []).slice(0, 40)) {
+    try {
+      const abs = safeAbs(id, rel);
+      if (!/\.html?$/i.test(rel) || !fs.existsSync(abs)) continue;
+      out.push({ rel, html: flowWalk.prep(fs.readFileSync(abs, 'utf8'), rel) });
+    } catch (e) {}
+  }
+  return { ok: true, pages: out };
+});
+/* 铺开的时候控制台要变宽：460 宽摆不下两张缩略图。退出时还原 */
+ipcMain.handle('flow:resize', (_e, { w, h }) => {
+  if (!flowWin || flowWin.isDestroyed()) return { ok: false };
+  const b = flowWin.getBounds();
+  const d = require('electron').screen.getDisplayMatching(b).workArea;
+  const nw = Math.min(Math.max(360, w || b.width), d.width - 40);
+  const nh = Math.min(Math.max(480, h || b.height), d.height - 40);
+  /* 变宽之后别让窗口跑出屏幕外（左边贴着主窗口时最容易撞上） */
+  const nx = Math.min(b.x, d.x + d.width - nw - 20);
+  flowWin.setBounds({ x: Math.max(d.x + 10, nx), y: b.y, width: nw, height: nh });
+  return { ok: true };
+});
+ipcMain.handle('flow:open', (_e, { id }) => openFlowWindow(id));
+ipcMain.handle('flow:close', () => { if (flowWin && !flowWin.isDestroyed()) flowWin.close(); return { ok: true }; });
+ipcMain.handle('flow:isOpen', () => ({ open: !!(flowWin && !flowWin.isDestroyed()) }));
+/* 控制台点一个格子 → 主窗口切页切态。两个窗口不直接说话，一律经主进程转一道，
+   免得窗口销毁时留下悬空的引用（Electron 里 webContents 死掉之后 send 会抛） */
+ipcMain.handle('flow:goto', (_e, msg) => {
+  if (win && !win.isDestroyed()) { win.webContents.send('flow:goto', msg); win.focus(); }
+  return { ok: true };
+});
+/* 主窗口那边换了页或换了态，回头告诉控制台，让它高亮跟着走 */
+ipcMain.handle('flow:at', (_e, msg) => {
+  if (flowWin && !flowWin.isDestroyed()) flowWin.webContents.send('flow:at', msg);
+  return { ok: true };
+});
+/* 飞鹊体检：对项目里某个 HTML 做静态扫描（字体 / 字重 / 色值 / 自造组件 / 红按钮数 / alert 里塞按钮 / 裸控件 / 手搓占比） */
 ipcMain.handle('files:check', (_e, { id, rel }) => {
   const abs = path.normalize(path.join(projDir(id), rel));
   if (!abs.startsWith(projDir(id))) throw new Error('越界');
-  try { return feiqueCheck(fs.readFileSync(abs, 'utf8'), PACK_DIR); } catch (e) { return { issues: [], ok: true, n: 0, badN: 0, error: e.message }; }
+  /* 体检之前先把 Roboto 的 400/700 焊死（幂等，克隆页不碰）。
+     放在这儿是因为这是「文件已经落地、马上要给人看」的确定时点；模型不参与、也不用搬 46KB base64。
+     回写会再触发一次 files:changed → 第二次进来 has() 命中直接跳过，不会打转。 */
+  let font = { changed: false, why: '非 HTML' };
+  let empty = { changed: false, filled: [], missing: [] };
+  if (/\.html?$/i.test(rel)) {
+    font = feiqueFont.ensureFile(abs, PACK_DIR);
+    /* 缺省图跟字体同一个时点：文件已落地、马上要给人看。模型只写了张图的名字，src 在这儿填 */
+    empty = feiqueEmpty.ensureFile(abs, PACK_DIR);
+  }
+  try { return { ...feiqueCheck(fs.readFileSync(abs, 'utf8'), PACK_DIR), font, empty }; }
+  catch (e) { return { issues: [], ok: true, n: 0, badN: 0, error: e.message, font, empty }; }
+});
+/* ── 手改（像 Figma 那样改预览）：直接写文件 ──
+   每个文件一条撤销栈（内存里，重启就没）。撤销前先核对文件是不是还是我们上次写出去的样子：
+   中间要是 Claude 又改过，直接撤会连它的改动一起退掉，得让人确认（force）。 */
+const editHist = new Map();   // `${id}/${rel}` → { undo: [], redo: [], last: string|null }
+function histOf(id, rel) { const k = id + '/' + rel; if (!editHist.has(k)) editHist.set(k, { undo: [], redo: [], last: null }); return editHist.get(k); }
+function pushCap(arr, s) { arr.push(s); let bytes = 0; for (let k = arr.length - 1; k >= 0; k--) { bytes += arr[k].length; if (k < arr.length - 50 || bytes > 64 * 1024 * 1024) { arr.splice(0, k + 1); break; } } }
+function safeAbs(id, rel) { const abs = path.normalize(path.join(projDir(id), rel)); if (!abs.startsWith(projDir(id))) throw new Error('越界'); return abs; }
+/* 编辑态「组件」面板要的清册：页面片段 + 原子控件，带缩略图 HTML 与 CSS */
+ipcMain.handle('edit:components', () => { try { return { ok: true, list: components.summary(PACK_DIR) }; } catch (e) { return { ok: false, error: e.message, list: [] }; } });
+ipcMain.handle('edit:apply', (_e, { id, rel, ops }) => {
+  try {
+    const abs = safeAbs(id, rel);
+    const html = fs.readFileSync(abs, 'utf8');
+    /* 带 component 的 replace/insert：把砖解析成真 HTML。它的 CSS 等补丁做完再注（注在 head 里会让后面所有元素编号 +1，
+       op.i 是按注入前的源码数的，先注再补丁就会打错元素） */
+    const styles = [];
+    ops = (ops || []).map(op => {
+      if (!op.component) return op;
+      const c = components.byId(PACK_DIR, op.component);
+      if (!c) throw new Error('找不到组件：' + op.component);
+      if (c.reset) styles.push(['reset', c.reset]);
+      styles.push([c.styleId, c.css]);
+      return { ...op, html: components.fill(c, op.keep || {}), what: c.name };
+    });
+    const r = htmlmap.apply(html, ops);
+    if (ops.some(op => op.component && String(op.component).indexOf('block-') !== 0)) r.html = htmlmap.ensureScript(r.html, 'behaviors', components.BEHAVIORS);   // 控件要能点能动；注在文件尾，不动前面的编号
+    if (styles.length) {
+      let pos = r.select != null ? (htmlmap.range(r.html, r.select) || {}).openStart : null;
+      for (const [sid, css] of styles) {
+        const before = r.html.length;
+        const e = htmlmap.ensureStyleAt(r.html, sid, css);
+        r.html = e.html;
+        if (e.at >= 0 && pos != null && e.at <= pos) { r.select += 1; pos += r.html.length - before; }
+      }
+    }
+    const orig = fs.readFileSync(abs, 'utf8');
+    if (r.html === orig) return { ok: true, select: r.select, changes: [], noop: true };
+    const h = histOf(id, rel); pushCap(h.undo, orig); h.redo = [];
+    fs.writeFileSync(abs, r.html); h.last = r.html;
+    return { ok: true, select: r.select, changes: r.changes };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+function editStep(id, rel, dir, force) {
+  try {
+    const abs = safeAbs(id, rel), h = histOf(id, rel);
+    const from = dir === 'undo' ? h.undo : h.redo, to = dir === 'undo' ? h.redo : h.undo;
+    if (!from.length) return { ok: false, error: dir === 'undo' ? '没有可撤销的手改' : '没有可重做的' };
+    const cur = fs.readFileSync(abs, 'utf8');
+    if (h.last != null && cur !== h.last && !force) return { ok: false, conflict: true };
+    const next = from.pop(); pushCap(to, cur);
+    fs.writeFileSync(abs, next); h.last = next;
+    return { ok: true, left: from.length };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+ipcMain.handle('edit:undo', (_e, { id, rel, force }) => editStep(id, rel, 'undo', force));
+ipcMain.handle('edit:redo', (_e, { id, rel, force }) => editStep(id, rel, 'redo', force));
+/* ── 附件：拖进对话框 / 粘贴的图 / 选的文件，一律拷进项目的「附件」目录 ──
+   Claude 读的是路径，所以文件必须落在项目目录里它才读得到（也顺带进了交付包）。同名加序号，不覆盖。 */
+const IMG_RE = /\.(png|jpe?g|gif|webp|svg|bmp|heic)$/i;
+function attachDir(id) { const d = path.join(projDir(id), '附件'); fs.mkdirSync(d, { recursive: true }); return d; }
+function freeName(dir, name) {
+  name = String(name || '文件').replace(/[\/\\:*?"<>|]/g, '_').slice(0, 120) || '文件';
+  const ext = path.extname(name), base = name.slice(0, name.length - ext.length);
+  let cand = name, k = 2;
+  while (fs.existsSync(path.join(dir, cand))) cand = `${base}-${k++}${ext}`;
+  return cand;
+}
+function attachInfo(id, abs) { const rel = path.relative(projDir(id), abs); return { rel, abs, name: path.basename(abs), isImage: IMG_RE.test(abs), size: fs.statSync(abs).size }; }
+ipcMain.handle('files:import', (_e, { id, paths }) => {
+  const out = [], errors = [];
+  for (const p of paths || []) {
+    try {
+      if (!p || !fs.existsSync(p)) { errors.push(`${p}：不存在`); continue; }
+      const st = fs.statSync(p);
+      if (st.isDirectory()) { out.push({ rel: null, abs: p, name: path.basename(p), isDir: true, isImage: false, size: 0 }); continue; }   // 文件夹不拷，直接给路径
+      if (p.startsWith(projDir(id) + path.sep)) { out.push(attachInfo(id, p)); continue; }                                              // 已经在项目里就不复制
+      if (st.size > 200 * 1024 * 1024) { errors.push(`${path.basename(p)}：超过200MB，改用路径引用`); out.push({ rel: null, abs: p, name: path.basename(p), isImage: IMG_RE.test(p), size: st.size }); continue; }
+      const dir = attachDir(id), dest = path.join(dir, freeName(dir, path.basename(p)));
+      fs.copyFileSync(p, dest); out.push(attachInfo(id, dest));
+    } catch (e) { errors.push(`${path.basename(String(p))}：${e.message}`); }
+  }
+  return { ok: true, files: out, errors };
+});
+ipcMain.handle('files:importBlob', (_e, { id, name, data }) => {
+  try {
+    const dir = attachDir(id), dest = path.join(dir, freeName(dir, name || '粘贴的图.png'));
+    fs.writeFileSync(dest, Buffer.from(data));
+    return { ok: true, file: attachInfo(id, dest) };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+/* ── 换图：选中页面里一张图，换成别的 ──
+   图一律落在项目的 images/，回一个「相对当前页面文件」的路径，面板拿去直接写进 src。
+   🔴 为什么不复用上面那个「附件」目录：那是给对话用的，中文目录名写进 HTML 要转义，
+      交给前端时 ../附件/xxx.png 这种路径也不像话。images/ 打包拿走就能用。 */
+function imagesDir(id) { const d = path.join(projDir(id), 'images'); fs.mkdirSync(d, { recursive: true }); return d; }
+/* 网页资源名：空格和 # ? % 这些在 URL 里有含义的一律换成连字符。
+   带空格的文件名写进 src 加了引号确实能用，但前端拿到 images/图 片.png 这种路径，
+   构建工具和 CDN 那一环迟早出事——落盘时就清干净，比让下游去猜强。 */
+function webName(n) { return String(n || '图片').replace(/[\s#?%&+]+/g, '-').replace(/-+/g, '-'); }
+/* 这张图 images/ 里是不是已经有一份了（按内容比，不按文件名）。
+   🔴 2026-09-17 真机测出来的：拿同一张图换两个元素，第二次会拷成「xx-2.svg」，
+      项目里躺着两份一模一样的图，交付包也跟着变大。先比大小再比摘要，大小不同的连读都不用读。 */
+function sameImageIn(dir, srcPath) {
+  const crypto = require('crypto');
+  let st; try { st = fs.statSync(srcPath); } catch (e) { return null; }
+  const h = crypto.createHash('sha1').update(fs.readFileSync(srcPath)).digest('hex');
+  for (const n of fs.readdirSync(dir)) {
+    const p = path.join(dir, n);
+    try {
+      const s = fs.statSync(p);
+      if (!s.isFile() || s.size !== st.size) continue;
+      if (crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex') === h) return p;
+    } catch (e) { /* 读不了就当不是 */ }
+  }
+  return null;
+}
+function imageRel(id, pageRel, abs) {
+  const pageDir = path.dirname(path.join(projDir(id), pageRel || 'index.html'));
+  return path.relative(pageDir, abs).split(path.sep).join('/');
+}
+ipcMain.handle('image:put', (_e, { id, pageRel, srcPath, name, data }) => {
+  try {
+    const dir = imagesDir(id);
+    let dest;
+    if (srcPath) {
+      if (!fs.existsSync(srcPath)) return { ok: false, error: '这个文件找不到了' };
+      if (!IMG_RE.test(srcPath)) return { ok: false, error: '这不是图片格式，支持png/jpg/gif/webp/svg' };
+      /* 已经在项目里的、或者 images/ 里已经有内容一样的，都直接用，别再拷一份 */
+      dest = srcPath.startsWith(projDir(id) + path.sep) ? srcPath
+        : (sameImageIn(dir, srcPath)
+          || (d => (fs.copyFileSync(srcPath, d), d))(path.join(dir, freeName(dir, webName(path.basename(srcPath))))));
+    } else {
+      if (!data) return { ok: false, error: '没拿到图片内容' };
+      dest = path.join(dir, freeName(dir, webName(name || '图片.png')));
+      fs.writeFileSync(dest, Buffer.from(data));
+    }
+    return { ok: true, rel: imageRel(id, pageRel, dest), abs: dest, name: path.basename(dest),
+      projRel: path.relative(projDir(id), dest).split(path.sep).join('/') };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+/* ── 资料库 / 技能与规范：把随包的 kbdocs（496 份）和飞鹊包按索引给界面翻 ──
+   同源于终端那套知识库；界面只做「翻」，不做检索排序（那是 Claude 的活）。 */
+function kbRoot() { return app.isPackaged ? path.join(process.resourcesPath, 'kbdocs') : path.join(ROOT, 'kbdocs'); }
+ipcMain.handle('kb:index', () => { try { return { ok: true, root: kbRoot(), userDir: kb.userDir(), groups: [...kb.index(kbRoot()), ...kb.userGroups()] }; } catch (e) { return { ok: false, error: e.message, groups: [] }; } });
+ipcMain.handle('kb:add', async (_e, { kind, path: src, title, text, summary, url }) => {
+  try {
+    /* 给了网址就先抓回来，抓到的正文当 text 存；名称留空就用网页自己的标题 */
+    if (url) { const got = await kb.fetchUrl(url); text = got.text; title = String(title || '').trim() || got.title || url; }
+    return { ok: true, entry: kb.addUser(kind, { path: src, title, text, summary, url: url || null }) };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('kb:remove', (_e, rel) => { try { return { ok: kb.removeUser(rel) }; } catch (e) { return { ok: false, error: e.message }; } });
+ipcMain.handle('kb:read', (_e, rel) => {
+  try {
+    const abs = /^user\//.test(rel) ? kb.userAbs(rel) : path.normalize(path.join(kbRoot(), rel)); if (!/^user\//.test(rel) && !abs.startsWith(kbRoot())) throw new Error('越界');
+    const st = fs.statSync(abs); if (st.size > 1.5 * 1024 * 1024) return { ok: true, rel, abs, tooBig: true, size: st.size };
+    return { ok: true, rel, abs, size: st.size, text: fs.readFileSync(abs, 'utf8'), mtime: st.mtimeMs };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+/* 飞鹊包速览：图标名单 / Web 与移动端组件表 / 颜色 token，给资料库的「飞鹊组件库」「视觉规范」两页 */
+ipcMain.handle('kb:iconIdentify', (_e, ds) => { try { return { ok: true, hit: kb.identifyIcon(PACK_DIR, ds) }; } catch (e) { return { ok: false, error: e.message }; } });
+ipcMain.handle('kb:iconSvg', (_e, a) => { const name = typeof a === 'string' ? a : a.name, kind = typeof a === 'string' ? 'icon' : a.kind; try { return { ok: true, name, kind, svg: kb.iconSvg(PACK_DIR, name, kind) }; } catch (e) { return { ok: false, error: e.message }; } });
+ipcMain.handle('kb:feique', () => { try { return { ok: true, ...kb.feique(PACK_DIR), packDir: PACK_DIR }; } catch (e) { return { ok: false, error: e.message }; } });
+
+/* ── 更新：查 / 下 / 换（见 updater.js）。装之前渲染层会确认没有会话在跑；这里再兜一道 ── */
+ipcMain.handle('update:check', () => updater.check());
+ipcMain.handle('update:download', async (_e, { url, size }) => {
+  try { const file = await updater.download(url, size, p => win && win.webContents.send('update:progress', p)); return { ok: true, file }; }
+  catch (e) { return { ok: false, error: e.message }; }
+});
+/* 下载中点「取消」。已下的 .part 留着，下次点更新会接着下（见 updater.download 的续传）。 */
+ipcMain.handle('update:cancel', () => ({ ok: updater.cancelDownload() }));
+ipcMain.handle('update:install', (_e, { file, force }) => {
+  const running = [...sessions.values()].filter(s => s.busy).length;
+  if (running && !force) return { ok: false, busy: running };
+  try {
+    const r = updater.install(file, { relaunch: true });
+    quitting = true;
+    setTimeout(() => app.quit(), 300);   // 给渲染层一点时间把「正在重开」画出来
+    return r;
+  } catch (e) { return { ok: false, error: e.message }; }
 });
 ipcMain.handle('files:read', (_e, { id, rel }) => {
   const abs = path.normalize(path.join(projDir(id), rel));
@@ -475,7 +798,7 @@ ipcMain.handle('files:read', (_e, { id, rel }) => {
 ipcMain.handle('run:send', (_e, { id, text, label, display }) => {
   const s = getSession(id);
   const r = s.send(text);
-  if (r.ok) appendMessage(id, { role: 'user', text, label: label || null, display: display || null });
+  if (r.ok) appendMessage(id, { role: 'user', text, label: label || null, display: display || null, inter: !!r.interjected });   // 跑着的时候补的那句，历史里也标出来
   return r;
 });
 ipcMain.handle('run:record', (_e, { id, text }) => { appendMessage(id, { role: 'assistant', text }); return true; });
@@ -488,7 +811,7 @@ ipcMain.handle('perm:respond', (_e, { id, requestId, behavior, message, remember
 });
 ipcMain.handle('handoff:build', (_e, { id }) => {
   const m = readMeta(id); if (!m) throw new Error('项目不存在');
-  const r = buildHandoff({ projectDir: projDir(id), projectName: m.name, workspaceDir: settings.workspaceDir, repoDir: settings.handoffRepoDir, frontendName: settings.frontendName, author: os.userInfo().username });
+  const r = buildHandoff({ projectDir: projDir(id), projectName: m.name, workspaceDir: settings.workspaceDir, repoDir: settings.handoffRepoDir, frontendName: settings.frontendName, author: os.userInfo().username, packDir: PACK_DIR });
   clipboard.writeText(r.message);
   m.handoffs = (m.handoffs || []).concat([{ at: Date.now(), dest: r.dest, zip: r.zip, branch: r.branch, commit: r.commit, mrUrl: r.mrUrl }]);
   writeMeta(id, m);
@@ -500,10 +823,27 @@ ipcMain.handle('shell:external', (_e, u) => { if (/^https?:/.test(u)) shell.open
 ipcMain.handle('clipboard:write', (_e, t) => { clipboard.writeText(String(t)); return true; });
 ipcMain.handle('dialog:pickDir', async (_e, title) => { const r = await dialog.showOpenDialog(win, { title: title || '选择文件夹', properties: ['openDirectory', 'createDirectory'] }); return r.canceled ? null : r.filePaths[0]; });
 ipcMain.handle('dialog:pickAny', async (_e, title) => { const r = await dialog.showOpenDialog(win, { title: title || '选择文件或文件夹', properties: ['openFile', 'openDirectory'] }); return r.canceled ? null : r.filePaths[0]; });
+/* 换图专用：只让选图片，选不到文件夹。filters 那串跟 IMG_RE 是同一批格式，改一处要改两处 */
+ipcMain.handle('dialog:pickImage', async (_e, title) => {
+  const r = await dialog.showOpenDialog(win, { title: title || '选一张图片', properties: ['openFile'], filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'heic'] }] });
+  return r.canceled ? null : r.filePaths[0];
+});
 /* 在系统终端里接着干：同一个项目目录、同一个会话（--resume），从应用无缝切到全屏的 Claude Code */
 ipcMain.handle('shell:terminal', (_e, id) => {
   const m = readMeta(id); if (!m) return false;
   if (!engine || !engine.ok) engine = detectClaude(settings.claudePath);
+  if (process.platform === 'win32') {
+    /* 开一个新的命令行窗口，工作目录就是项目目录，里面接着跑同一个会话。有 Windows Terminal 用它，没有用 cmd。
+       路径经 cmd 转手，全部用双引号包住；/s 让 cmd 只剥最外层那对引号。 */
+    const dir = projDir(id), exe = engine.ok ? engine.path : 'claude';
+    const inner = `"${exe}"${m.sessionId ? ' --resume ' + m.sessionId : ''}`;
+    const hasWt = whichAll('wt').length > 0;
+    const line = hasWt
+      ? `wt -d "${dir}" cmd /k "${inner}"`
+      : `start "UED WorkBuddy" /D "${dir}" cmd /s /k "${inner}"`;
+    spawn(line, [], { shell: true, stdio: 'ignore', detached: true, windowsHide: true }).unref();
+    return true;
+  }
   const dir = projDir(id).replace(/"/g, '\\"');
   const cmd = `cd \\"${dir}\\" && ${engine.ok ? engine.path : 'claude'}${m.sessionId ? ' --resume ' + m.sessionId : ''}`;
   const script = `tell application "Terminal" to do script "${cmd}"\ntell application "Terminal" to activate`;

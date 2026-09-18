@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<!-- 🔴 font-src 一定要显式写上 data:。srcdoc 的 iframe **继承本文档的 CSP**，
+     而 font-src 没写就落回 default-src 'self' —— 飞鹊字体是内嵌成 data URI 的，
+     于是铺开里每张缩略图的字体全部加载失败、退回系统字体，字重和字形都不对。
+     🔴 这个洞用 getComputedStyle 查不出来：它读到的 font-family 是 'Roboto'、font-weight 是 700，
+     全对 —— 那是**请求侧**。结果侧要看 document.fonts 的 status（error / loaded）。
+     img-src 当初写了 data: 所以缺省图一直正常，就更没人会怀疑字体这一路。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; script-src 'self'">
+<title>流程控制台</title>
+<link rel="stylesheet" href="flow.css">
+</head>
+<body>
+<div class="drag"></div>
+
+<header class="hd">
+  <div class="hd-t">
+    <div class="hd-name" id="projName">流程控制台</div>
+    <div class="hd-sub" id="projSub">还没选项目</div>
+  </div>
+  <div class="hd-act">
+    <button id="btnScan" class="btn" title="重新扫一遍项目里的页面、状态、跳转和说明">重新扫描</button>
+    <button id="btnShow" class="btn" title="展示模式：主窗口只留画布，控制台只留剧本的上一步 / 下一步">展示模式</button>
+    <button id="btnWalk" class="btn" title="导出一个独立的 _走查.html：发给没装 UW 的人，他双击就能自己点着走一遍">导出走查包</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-v="grid" class="on">对照表</button>
+  <button data-v="wall">铺开</button>
+  <button data-v="map">流程</button>
+  <button data-v="script">剧本</button>
+  <button data-v="gate">检查 <b id="gateN"></b></button>
+</nav>
+
+<!-- 叠加开关：跟状态正交、可以同时开着的那一维（OSS客服视角那种）。
+     放在 tabs 底下是因为它对四个视图一起生效——放进某一个视图里，
+     换个标签它就没了，而屏幕上那一叠其实还挂着。项目里没声明就整条不显示。 -->
+<div class="ons" id="onsBar" hidden></div>
+
+<main class="body">
+  <!-- 对照表：页 × 态。这一屏同时回答「有哪些页」「每页有哪些态」「哪一格还没做」 -->
+  <section id="vGrid" class="view">
+    <div id="gridWrap" class="grid-wrap"></div>
+    <p class="tip"><i class="dot"></i>有这个态，点一下跳过去看　<i class="gap"></i>没做——空格子就是还没做的　<i class="na"></i>这一页没有这个视图（不是漏，是不适用）<br>
+      列头分两层：上层是**视图**（页面本身、以及抽屉／浮层），下层才是那个视图里的状态。</p>
+  </section>
+
+  <!-- 铺开：把状态并排渲染出来。对照表回答「有没有」，这里回答「长什么样」 -->
+  <section id="vWall" class="view" hidden>
+    <div class="wall-bar">
+      <div class="seg" id="wallMode">
+        <button data-m="states" class="on" title="这一页的主视图＋所有抽屉／浮层的每一个态">这一页的所有状态</button>
+        <button data-m="pages" title="每页一张默认态：这个需求一共有哪些屏">所有页面</button>
+        <button data-m="all" title="页 × 视图 × 态 全铺出来。交付前扫一遍用">整个需求</button>
+      </div>
+      <select id="wallPage" class="sel"></select>
+      <div class="sp"></div>
+      <label class="zoom"><span>大小</span><input id="wallZoom" type="range" min="18" max="70" value="34"></label>
+    </div>
+    <div id="wallGrid" class="wall"></div>
+  </section>
+
+  <!-- 流程：只画页面节点，状态不进来（状态是同一个节点的切面，混进来就变一团毛线） -->
+  <section id="vMap" class="view" hidden>
+    <div id="mapWrap" class="map-wrap"></div>
+    <p class="tip">按离入口的步数分层。虚线＝断链，点节点跳过去看。<br>抽屉／浮层缩进挂在它所属的页面下面——它跟页面是同一屏的覆盖关系，不算走了一步。</p>
+  </section>
+
+  <!-- 剧本：给外部展示时走的主线 -->
+  <section id="vScript" class="view" hidden>
+    <div id="scriptWrap"></div>
+  </section>
+
+  <!-- 检查：七道门的结果 -->
+  <section id="vGate" class="view" hidden>
+    <div id="gateWrap"></div>
+  </section>
+</main>
+
+<!-- 展示模式：控制台只剩这一条 -->
+<div id="player" class="player" hidden>
+  <div class="pl-top">
+    <span id="plName" class="pl-name"></span>
+    <button id="plExit" class="btn sm">退出展示</button>
+  </div>
+  <div id="plNote" class="pl-note"></div>
+  <div class="pl-bar">
+    <button id="plPrev" class="btn">← 上一步</button>
+    <span id="plAt" class="pl-at"></span>
+    <button id="plNext" class="btn primary">下一步 →</button>
+  </div>
+</div>
+
+<script src="flow.js"></script>
+</body>
+</html>

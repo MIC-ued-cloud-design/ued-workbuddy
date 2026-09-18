@@ -1,12 +1,14 @@
 {
   "name": "uw-desktop",
-  "version": "0.1.24",
+  "version": "0.1.52",
   "description": "UED WorkBuddy 桌面版：给产品、设计、前端共用的 AI 工作台，用同事自己的 Claude Code 当引擎，飞鹊设计系统随应用携带，产物一键发给前端。",
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "dist": "node build/check-main.js && electron-builder --mac"
+    "dist": "node build/check-main.js && electron-builder --mac",
+    "dist:win": "node build/check-main.js && electron-builder --win --x64",
+    "dist:all": "node build/check-main.js && electron-builder --mac --win --x64"
   },
   "license": "UNLICENSED",
   "type": "commonjs",
@@ -97,6 +99,36 @@
     "electronDownload": {
       "mirror": "https://npmmirror.com/mirrors/electron/"
     },
-    "afterPack": "build/afterPack.js"
+    "afterPack": "build/afterPack.js",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "UED-WorkBuddy-${version}-win-x64-setup.${ext}",
+      "icon": "build/icon.png",
+      "signAndEditExecutable": true,
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "UED WorkBuddy",
+      "deleteAppDataOnUninstall": false,
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ],
+      "language": "2052",
+      "artifactName": "UED-WorkBuddy-${version}-win-x64-setup.${ext}"
+    }
   }
 }

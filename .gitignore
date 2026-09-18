@@ -7,6 +7,9 @@ _verify/
 .DS_Store
 *.bak
 *.bak-*
+# 🔴 .bak2-/.bak3- 这种带序号的也要挡。原来只写了 *.bak-*，
+# 结果 main.js.bak2-203725（47KB 的旧版）差点被 git add -A 当成源码提交进去。
+*.bak[0-9]*
 
 # 场景向导本地版 —— 吉吉说先不部署。写进这里是防 `git add -A` / `commit -am` 顺手带上线
 wizard.html
