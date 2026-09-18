@@ -9,7 +9,7 @@
 |---|---|---|
 | **什么都不用装**，clone 完直接跑 | htmlmap 43 · kb-url 4 · engine 8 · flow 36 | **91** |
 | `cd desktop && npm i` | ＋ updater 29 · win 11 · flow-iso 19（`npx electron` 跑） | **59** |
-| `cd desktop/restore-tools/online-reach && npm i` | ＋ font 51 · probe 54 · scope 15 · states 12 · ui 129 · flow-ui 40 · flow-walk 13 | **314** |
+| `cd desktop/restore-tools/online-reach && npm i` | ＋ font 51 · probe 54 · scope 15 · states 12 · ui 129 · flow-ui 51 · flow-walk 13 | **325** |
 
 第三档只装 `puppeteer-core`，**不下载 Chromium** —— 它用的是本机已装的 Google Chrome
 （`/Applications/Google Chrome.app/…`）。没装 Chrome 的机器跑不了这一档。
@@ -34,8 +34,12 @@ node _verify/edit/ui.e2e.js         # 界面：真 renderer + mock 掉 uw 桥（
 ```
 
 改 `main/htmlmap.js`、`main/edit-probe.js`、`main/components.js` 或 `renderer/app.js` 的「编辑层」一节，
-🔴 **十四套一套都不许漏**（htmlmap 43 / kb-url 4 / updater 29 / engine 8 / win 11 / **font** 51 / probe 54 / scope 15 / states 12 / ui 129 / **flow** 36 / **flow-ui** 40 / **flow-walk** 13 / **flow-iso** 19 ＝ **464**）。
+🔴 **十四套一套都不许漏**（htmlmap 43 / kb-url 4 / updater 29 / engine 8 / win 11 / **font** 51 / probe 54 / scope 15 / states 12 / ui 129 / **flow** 36 / **flow-ui** 51 / **flow-walk** 13 / **flow-iso** 19 ＝ **475**）。
 改了 `main/flow.js`、`main/flow-doc.js`、`main/flow-walk.js`、`renderer/flow.*` 或 `renderer/app.js` 的「流程控制台」一节，后四套必跑。
+🔴 **`flow-ui` 里有一组「形状矩阵」**（2026-09-18 立）：六种真实会碰到的流程形状各造一份真项目，
+逐个验「认对形状 / 编号连续 / 线不穿卡 / 画布装得下 / 装得下就不滚 / 缩略图不低于可读下限」。
+**以后碰到画不好的形状，往那张表里加一行，别在 `planLayout` 里补一个 if** ——
+补 if 治的是那一个项目，加一行治的是这一类形状，而且下次改布局时它会替你挡住回归。
 🔴 **`flow-iso` 不能用 `node` 跑，要 `npx electron`**——它验的就是两个真窗口之间那条线。
 🔴 它的料是工作区里的「20260917-多页面流程示例」，那个项目被删了这套门会**跳过而不是红**（会打一行 ⚠️，别当全绿）。
 改了 `main/feique-font.js`、`main/feique-check.js` 或 `packs/feique/fonts/` 就必须跑 font 那套；

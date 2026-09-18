@@ -44,11 +44,14 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.evaluateOnNewDocument((DATA, PAGES) => {
     window.__goto = []; window.__scans = 0; window.__resize = []; window.__walk = 0; window.__walkResp = { ok: true, file: '_走查.html', bytes: 20480, pages: 4, bad: 0 };
+    /* 🔴 料放在 window 上、不闭包进 mock：底下要换一份「一个页面开三个抽屉」的项目再扫一遍，
+       验的就是**同一套代码换个形状的项目会不会换个画法**（这一版的全部意思）。 */
+    window.__D = DATA; window.__P = PAGES;
     window.uw = {
-      flowScan: async () => { window.__scans++; return DATA; },
+      flowScan: async () => { window.__scans++; return window.__D; },
       flowGoto: async (m) => { window.__goto.push(m); return { ok: true }; },
       flowWalk: async () => { window.__walk++; return window.__walkResp; },
-      flowHtml: async ({ rels }) => ({ ok: true, pages: PAGES.filter(p => rels.includes(p.rel)) }),
+      flowHtml: async ({ rels }) => ({ ok: true, pages: window.__P.filter(p => rels.includes(p.rel)) }),
       flowResize: async (m) => { window.__resize.push(m); return { ok: true }; },
       onFlowProject: (fn) => { window.__proj = fn; return () => {}; },
       onFlowAt: (fn) => { window.__at = fn; return () => {}; },
@@ -173,24 +176,79 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   ok('离开宽画布的视图（铺开/流程）才把窗口还原回原来的宽度', () => assert.ok(back && back.w < 900, JSON.stringify(back)));
 
   /* ── 流程 ────────────────────────── */
-  await page.click('#tabs button[data-v="map"]'); await wait(500);
-  const map = await page.evaluate(() => ({
-    cards: [...document.querySelectorAll('.mcard')].map(c => ({
-      n: c.querySelector('.num').textContent.trim(),
-      t: c.querySelector('.mcard-hd .t').textContent.trim(),
-      view: c.classList.contains('v'),
-      states: [...c.querySelectorAll('.nst')].length,
-      tags: [...c.querySelectorAll('.mtag')].map(x => x.textContent.trim()),
-    })),
-    lines: document.querySelectorAll('svg.mconn .mline').length,
-    svgH: +document.querySelector('svg.mconn').getAttribute('height'),
-    need: +document.querySelector('svg.mconn').dataset.need,
-    pathMaxY: Math.max(0, ...[...document.querySelectorAll('svg.mconn .mline')]
-      .flatMap(p => (p.getAttribute('d').match(/[\d.]+(?=\s|$|,)/g) || []))
-      .map(Number).filter((_, i) => i % 2 === 1)),
-    frames: document.querySelectorAll('.mcard-shot iframe').length,
-    zIndex: getComputedStyle(document.querySelector('svg.mconn')).zIndex,
-  }));
+  /* 🔴 先把窗口弄矮，验「进流程图时既撑宽也撑高」。
+     上一版只撑宽 —— 实测账：684 高的窗口里 4 屏摆成两行，每张缩略图只分到 136px，
+     比写死的 0.18 还小，正好跟吉吉说的「现在的高度太低了」反着来。 */
+  await page.setViewport({ width: 460, height: 700 });
+  await page.click('#tabs button[data-v="map"]'); await wait(300);
+  const rq = await page.evaluate(() => window.__resize.slice(-1)[0]);
+  ok('🔴 进流程图时窗口既撑宽也撑高（图是按可用高度反算的，窗口矮＝图小）', () => {
+    assert.ok(rq && rq.w >= 1100, '宽度没撑：' + JSON.stringify(rq));
+    assert.ok(rq && rq.h >= 1200, '高度没撑：' + JSON.stringify(rq) + '（主进程会钳到这块屏的 workArea）');
+  });
+  /* 🔴 mock 的 flowResize 只记账、不真改窗口 —— 但真机进流程图时窗口是会撑宽的。
+     不跟着改的话这套门永远在 460 宽的画布上量，而「撑满不滚」这条判据在窄画布下
+     本来就该是滚的：门会去量一个现实中不存在的情形，量出来的绿或红都不作数。 */
+  const wantW = await page.evaluate(() => (window.__resize.slice(-1)[0] || {}).w || 1400);
+  await page.setViewport({ width: Math.max(1200, wantW), height: 900 });
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+  await wait(700);
+
+  /* 走线有没有压在卡片上：沿着 path 采样，看采到的点落不落进任何一张卡的矩形里。
+     两头各留 10px 不算（线本来就是从卡片边上出发、到卡片边上结束的）。
+     🔴 这条比「线画出来了」值钱得多 —— 上一版线是画出来了的，问题正是它从卡片身上压过去。 */
+  const probeMap = () => page.evaluate(() => {
+    const wrap = document.getElementById('mapWrap');
+    const wb = wrap.getBoundingClientRect();
+    const R = el => { const r = el.getBoundingClientRect(); return { x: r.left - wb.left + wrap.scrollLeft, y: r.top - wb.top + wrap.scrollTop, w: r.width, h: r.height }; };
+    const cards = [...wrap.querySelectorAll('.mcard')];
+    const rects = cards.map(c => R(c));
+    let hits = 0;
+    for (const p of wrap.querySelectorAll('svg.mconn .mline')) {
+      const L = p.getTotalLength();
+      for (let d = 10; d <= L - 10; d += 4) {
+        const pt = p.getPointAtLength(d);
+        /* 内缩 3px：线贴着卡片边走不算压卡，穿进去才算 */
+        if (rects.some(r => pt.x > r.x + 3 && pt.x < r.x + r.w - 3 && pt.y > r.y + 3 && pt.y < r.y + r.h - 3)) { hits++; break; }
+      }
+    }
+    const svg = wrap.querySelector('svg.mconn');
+    return {
+      kind: wrap.dataset.kind,
+      dir: wrap.dataset.dir,
+      k: +wrap.dataset.k,
+      cols: [...wrap.querySelectorAll('.mcol')].map(c => c.querySelectorAll('.mcard').length),
+      scrolls: wrap.classList.contains('scrolls'),
+      overflowY: wrap.scrollHeight - wrap.clientHeight,
+      overflowX: wrap.scrollWidth - wrap.clientWidth,
+      fill: Math.round(wrap.querySelector('.mcards').getBoundingClientRect().height / wrap.clientHeight * 100),
+      shotH: Math.round((cards[0].querySelector('.mcard-shot') || {}).getBoundingClientRect ? cards[0].querySelector('.mcard-shot').getBoundingClientRect().height : 0),
+      crossing: hits,
+      cards: cards.map(c => ({
+        n: c.querySelector('.num').textContent.trim(),
+        t: c.querySelector('.mcard-hd .t').textContent.trim(),
+        view: c.classList.contains('v'),
+        states: [...c.querySelectorAll('.nst')].length,
+        tags: [...c.querySelectorAll('.mtag')].map(x => x.textContent.trim()),
+      })),
+      lines: wrap.querySelectorAll('svg.mconn .mline').length,
+      fwd: +svg.dataset.fwd,
+      svgH: +svg.getAttribute('height'),
+      need: +svg.dataset.need,
+      pathMaxY: Math.max(0, ...[...wrap.querySelectorAll('svg.mconn .mline')]
+        .flatMap(p => { const L = p.getTotalLength(); const ys = []; for (let d = 0; d <= L; d += 6) ys.push(p.getPointAtLength(d).y); return ys; })),
+      frames: wrap.querySelectorAll('.mcard-shot iframe').length,
+      zIndex: getComputedStyle(svg).zIndex,
+    };
+  });
+  const map = await probeMap();
+  if (process.env.DBG) console.log(JSON.stringify(await page.evaluate(() => {
+    const w = document.getElementById('mapWrap'), cs = w.querySelector('.mcards');
+    return { wrapCW: w.clientWidth, wrapSW: w.scrollWidth, cardsW: cs.getBoundingClientRect().width,
+      cols: [...w.querySelectorAll('.mcol')].map(c => Math.round(c.getBoundingClientRect().width)),
+      card0: Math.round(w.querySelector('.mcard').getBoundingClientRect().width),
+      k: w.dataset.k, pad: getComputedStyle(w).padding };
+  }), null, 1));
   ok('流程：一屏一张卡，编号从 1 连续排（编号是两个人报「第几屏」的共同称呼）', () => {
     assert.ok(map.cards.length >= 4, JSON.stringify(map.cards.map(c => c.t)));
     assert.deepStrictEqual(map.cards.map(c => +c.n), map.cards.map((_, i) => i + 1));
@@ -228,6 +286,110 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   ok('流程：每张卡都有真缩略图的位置（认屏靠图，不靠名字）', () => {
     assert.strictEqual(map.frames, map.cards.length);
   });
+  /* ── 这一版新加的四条（吉吉 2026-09-18「所有线都绕在一起」「不要滚动直接撑满」「高度太低」）── */
+  ok('🔴 这个料是分层形状（有回头边、有分叉），所以摆成按步数分的多列', () => {
+    assert.strictEqual(map.kind, 'layered', '认成了 ' + map.kind);
+    assert.ok(map.cols.length >= 3, JSON.stringify(map.cols));
+  });
+  ok('🔴 撑满：装得下就不滚（吉吉「流程图区域可以不要滚动，直接撑满就行」）', () => {
+    assert.strictEqual(map.scrolls, false, `还在滚：纵 ${map.overflowY} 横 ${map.overflowX}`);
+    assert.ok(map.overflowY <= 1 && map.overflowX <= 1, `纵 ${map.overflowY} 横 ${map.overflowX}`);
+  });
+  ok('🔴 撑满：缩略图按可用空间反算，不是写死的一档小尺寸（「现在的高度太低了」）', () => {
+    assert.ok(map.k > 0.18, '缩放 ' + map.k + ' 没比上一版写死的 0.18 大，等于没撑满');
+    assert.ok(map.shotH >= 170, '缩略图只有 ' + map.shotH + 'px 高');
+    assert.ok(map.fill >= 55, '图只占了这块地方的 ' + map.fill + '%');
+  });
+  ok('🔴 走线不从卡片身上压过去（上一版线是画出来了，问题正是它穿卡）', () => {
+    assert.strictEqual(map.crossing, 0, map.crossing + ' 条线压在卡片上');
+  });
+
+  /* ── 形状矩阵：换任何一种形状的项目，都得画得出一张适配的图 ────────────────
+     吉吉 2026-09-18：「我们要确保以后做不同项目，也要能画出适配的流线图」。
+     🔴 这件事不能靠「我觉得 planLayout 写得够通用」—— 靠自觉的东西迟早会破，
+        而且破了没人看得见（画歪一点点，人只会觉得「这图有点乱」，不会来报 bug）。
+     下面每一行是一种真会碰到的形状：造成真文件 → 真扫描 → 真渲染 → 真量。
+     每一种都要同时满足：形状认对 / 编号连续 / 线不穿卡 / 画布装得下走线 /
+     装得下就不滚 / 缩略图不低于认得出的下限。
+     🔴 以后碰到画不好的形状，往这张表里**加一行**，别在代码里补一个 if。 */
+  const mkProj = files => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'uwshape-'));
+    for (const f of files) fs.writeFileSync(path.join(dir, f.name), pg(f.title, (f.font ? FONT_CSS : '') + (f.css || ''), f.body || '', f.cls));
+    const D = { ok: true, ...flow.scan(dir) };
+    const P = D.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync(path.join(dir, p.rel), 'utf8'), p.rel) }));
+    return { D, P };
+  };
+  const view = (k, n, sel) => `/* @视图 ${k} ${n} · 点一下打开 · ${sel} */\nbody.state-${k}-open .dw{display:block}\n`;
+  const link = (t, to) => `<a class="btn" href="${to}">${t}</a>`;
+  const opener = k => `<button class="btn" data-open="${k}">开${k}</button>`;
+
+  const SHAPES = [
+    { why: 'PPC 的真形状：一个后台页开三个抽屉 —— 不是四步，是一步的三个去处',
+      kind: 'hub', dir: 'v', cols: [1, 3], allFwd: true,
+      files: [{ name: 'index.html', title: 'MIC VO后台 · 精点投', font: true, cls: 'state-running',
+        css: view('forecast', '广告预测', '.btn[data-open="forecast"]') + view('diagnose', '营销诊断', '.btn[data-open="diagnose"]') +
+             view('report', '数据分析', '.btn[data-open="report"]') + '/* @态 running 有投放中的计划 · 账户有在跑的计划 */\nbody.state-running .p{display:block}\nbody.state-never .p{display:none}\n',
+        body: opener('forecast') + opener('diagnose') + opener('report') + '<div class="p">计划</div><div class="dw">抽屉</div>' }] },
+
+    { why: '一条路走到底（搜索 → 详情 → 询盘）：横着排一行，边是相邻两张之间的短横线',
+      kind: 'chain', dir: 'h', cols: [1, 1, 1], allFwd: true,
+      files: [{ name: 'index.html', title: '搜索结果', font: true, body: link('看详情', 'a.html') },
+              { name: 'a.html', title: '产品详情', body: link('发询盘', 'b.html') },
+              { name: 'b.html', title: '询盘表单', body: '<input>' }] },
+
+    { why: '两个页面各带两个抽屉（多页多抽屉的常见形状）：按离入口的步数分列',
+      kind: 'layered', dir: 'h',
+      files: [{ name: 'index.html', title: '列表页',
+                css: view('filter', '筛选', '.btn[data-open="filter"]') + view('sort', '排序', '.btn[data-open="sort"]'),
+                body: opener('filter') + opener('sort') + link('去详情', 'a.html') + '<div class="dw">抽屉</div>' },
+              { name: 'a.html', title: '详情页',
+                css: view('spec', '规格', '.btn[data-open="spec"]') + view('ship', '物流', '.btn[data-open="ship"]'),
+                body: opener('spec') + opener('ship') + '<div class="dw">抽屉</div>' }] },
+
+    { why: '六页长链（走查一条长流程时会出现）：列多了也不许穿卡，缩到下限之前不许滚',
+      kind: 'chain', dir: 'h',
+      files: Array.from({ length: 6 }, (_, i) => ({
+        name: i ? 's' + i + '.html' : 'index.html', title: '第' + (i + 1) + '步',
+        body: i < 5 ? link('下一步', 's' + (i + 1) + '.html') : '<p>完</p>' })) },
+
+    { why: '一页开五个抽屉（抽屉多到一排排不下时，别让它挤成一团）',
+      kind: 'hub', dir: 'v', allFwd: true,
+      files: [{ name: 'index.html', title: '工作台',
+        css: [1, 2, 3, 4, 5].map(i => view('d' + i, '抽屉' + i, '.btn[data-open="d' + i + '"]')).join(''),
+        body: [1, 2, 3, 4, 5].map(i => opener('d' + i)).join('') + '<div class="dw">抽屉</div>' }] },
+
+    { why: '两个页面谁也跳不到谁（半成品常见）：没有边也得画得出，不能白屏或报错',
+      kind: 'chain', dir: 'h', noEdges: true,
+      files: [{ name: 'index.html', title: '页甲', body: '<p>甲</p>' },
+              { name: 'b.html', title: '页乙', body: '<p>乙</p>' }] },
+  ];
+
+  for (const c of SHAPES) {
+    const { D, P } = mkProj(c.files);
+    await page.evaluate((d, p) => { window.__D = d; window.__P = p; }, D, P);
+    await page.click('#btnScan'); await wait(800);
+    const m = await probeMap();
+    ok(`🔴 形状矩阵 · ${c.why}`, () => {
+      assert.strictEqual(m.kind, c.kind, `认成了 ${m.kind}（卡片：${JSON.stringify(m.cards.map(x => x.t))}）`);
+      assert.strictEqual(m.dir, c.dir, `方向是 ${m.dir}，应该是 ${c.dir}`);
+      if (c.cols) assert.deepStrictEqual(m.cols, c.cols, '分段成了 ' + JSON.stringify(m.cols));
+      /* 编号是两个人报「第几屏」的共同称呼，DOM 顺序必须跟它一致 */
+      assert.deepStrictEqual(m.cards.map(x => +x.n), m.cards.map((_, i) => i + 1), '编号乱了：' + JSON.stringify(m.cards.map(x => x.n)));
+      assert.strictEqual(m.crossing, 0, m.crossing + ' 条线压在卡片上');
+      assert.ok(m.svgH >= m.need, `画布 ${m.svgH} < 需要 ${m.need}`);
+      assert.ok(m.svgH >= Math.floor(m.pathMaxY), `画布 ${m.svgH} < 走线最低点 ${m.pathMaxY}`);
+      assert.strictEqual(m.scrolls, false, `还在滚：纵 ${m.overflowY} 横 ${m.overflowX}`);
+      assert.ok(m.k >= 0.085, '缩到 ' + m.k + '，缩略图已经认不出是哪一屏');
+      if (c.noEdges) assert.strictEqual(m.lines, 0, '没有跳转却画出了 ' + m.lines + ' 条线');
+      else assert.ok(m.lines >= 1, '一条线都没画出来');
+      /* 分叉形状的全部意思就是「一条都不往底下绕」——绕了就是吉吉说的那团毛线 */
+      if (c.allFwd) assert.strictEqual(m.fwd, m.lines, `${m.lines} 条里只有 ${m.fwd} 条走段间主干，其余绕到了底下`);
+    });
+  }
+
+  /* 换回原来那份料，后面的剧本/检查/展示模式几节验的是它 */
+  await page.evaluate((D, P) => { window.__D = D; window.__P = P; }, DATA, PAGES);
+  await page.click('#btnScan'); await wait(900);
 
   /* ── 剧本 ────────────────────────── */
   await page.click('#tabs button[data-v="script"]'); await wait(150);

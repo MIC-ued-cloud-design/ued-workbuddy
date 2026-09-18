@@ -41,7 +41,10 @@ button{cursor:pointer;background:none;border:0;padding:0;font:inherit;color:inhe
 
 .body{flex:1;min-height:0;overflow:auto;background:var(--white)}
 .view{padding:12px}
-.tip{font-size:11px;color:var(--ink-3);margin:10px 2px 0;line-height:1.7}
+.tip{font-size:11px;color:var(--ink-3);margin:10px 2px 0;line-height:1.7;flex:0 0 auto}
+/* 说明收成一行：这块地方每省一行，图就能大一截 */
+.tip-t{font-size:10px;color:var(--accent);padding:0 4px;margin-left:2px}
+.tip-more{display:block;margin-top:4px}
 .tip i{font-style:normal;display:inline-block;vertical-align:middle}
 .tip i.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin:0 3px}
 .tip i.gap{width:5px;height:5px;border-radius:50%;background:var(--line);margin:0 4px}
@@ -72,15 +75,27 @@ table.grid tr:hover td.pg{background:#FAFAFC}
 td.pg button.at .t{color:var(--accent);font-weight:600}
 
 /* ── 流程图 ────────────────────────────── */
-.map-wrap{overflow:auto;padding:4px 2px 12px;position:relative}
+/* 🔴 撑满不滚：流程图这一屏整块交给图，说明那两行压在最底下。
+   吉吉 2026-09-18「流程图区域可以不要滚动，直接撑满就行，让用户看的更清楚」。
+   .scrolls 是 JS 量完之后才挂的——缩到下限还装不下（屏数太多）时才把滚动放回来。 */
+#vMap{display:flex;flex-direction:column;height:100%;box-sizing:border-box;min-height:0}
+.map-wrap{flex:1;min-height:0;overflow:hidden;padding:4px 2px 10px;position:relative;display:flex}
+.map-wrap.scrolls{overflow:auto}
 /* 连线画在卡片底下那一层：盖在上面会挡住缩略图，也会把点击吃掉 */
 svg.mconn{position:absolute;left:0;top:0;pointer-events:none;z-index:0;overflow:visible}
 .mline{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round}
 .mdot{fill:var(--accent)}
 .mlab{font-size:10px;fill:var(--ink-3);font-family:inherit;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round}
 
-.mcards{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:26px 34px;align-items:flex-start}
-.mcard{display:flex;flex-direction:column;gap:7px}
+/* 列＝离入口的第几步（中枢分叉时第二列就是「这一步的几个去处」）。
+   列内竖排、整体居中，是为了让列与列之间留出干净的空隙给主干走线。 */
+.mcards{position:relative;z-index:1;flex:1;display:flex;align-items:center;justify-content:center;min-width:0}   /* 🔴 gap 由 flow.js 写进 style——fitK 要拿它算缩放，值只能有一处 */
+.mcol{display:flex;flex-direction:column;justify-content:center;flex:0 0 auto}
+/* 纵向：段与段上下叠（中枢在上、几个去处横排在下）。
+   往哪个方向长由 planLayout 按「空间哪一维富余」定，不是固定的 —— 判据写在那儿。 */
+.mcards.dir-v{flex-direction:column}
+.mcards.dir-v .mcol{flex-direction:row;align-items:flex-start}
+.mcard{display:flex;flex-direction:column;gap:6px}
 .mcard-hd{display:flex;align-items:center;gap:7px;min-width:0}
 /* 编号徽标：跟海报一样是实心圆。它不是装饰，是「第几屏」这个称呼的载体 */
 .mcard-hd .num{flex:0 0 auto;width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;

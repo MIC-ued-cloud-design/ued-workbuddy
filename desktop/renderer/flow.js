@@ -16,7 +16,10 @@ const S = { id: null, data: null, view: 'grid', at: { rel: '', state: '', on: []
   /* on = 当前开着的叠加开关（OSS客服视角那种）。它跟主状态正交，所以单独存一份，
      而不是拼进 at.state —— 拼进去的话每个格子都要写成「出结果+oss」，对照表会直接翻倍。 */
   on: new Set(),
-  wall: { mode: 'states', rel: '', zoom: 26, html: new Map(), narrow: null } };
+  wall: { mode: 'states', rel: '', zoom: 26, html: new Map(), narrow: null },
+  /* 流程图上一次算出来的布局（形状 + 边 + 每屏在第几列 + 底部带子多高）。
+     存着是为了窗口变大小时只重解缩放、不重建 DOM。 */
+  map: null };
 
 /* 这个项目一共声明了哪些叠加开关（按 key 去重，跨页合并） */
 function allOverlays(d) {
@@ -190,10 +193,18 @@ async function wallHtml(rels) {
 async function wallResize(on) {
   if (!uw.flowResize) return;
   if (on) {
-    if (S.wall.narrow == null) S.wall.narrow = window.outerWidth;
-    if (window.outerWidth < 900) await uw.flowResize({ w: 1180 });
+    if (S.wall.narrow == null) S.wall.narrow = { w: window.outerWidth, h: window.outerHeight };
+    const want = {};
+    if (window.outerWidth < 900) want.w = 1180;
+    /* 🔴 高度也要撑，不只撑宽。流程图的缩略图是按**可用高度**反算大小的，
+       窗口矮＝图小 —— 吉吉「现在的高度太低了」说的就是这个。
+       实测账：684 高的窗口里，4 屏摆成两行，每张只分到 136px，比上一版写死的 0.18 还小。
+       传个够大的值让主进程去钳这块屏的 workArea，别在渲染层猜屏幕有多高
+       （猜错的那一头是「窗口跑到屏幕外面去」，比图小难受得多）。 */
+    if (window.outerHeight < 860) want.h = 3000;
+    if (want.w || want.h) await uw.flowResize(want);
   } else if (S.wall.narrow != null) {
-    await uw.flowResize({ w: S.wall.narrow });
+    await uw.flowResize(S.wall.narrow);
     S.wall.narrow = null;
   }
 }
@@ -345,10 +356,19 @@ function stateBtns(p, viewKey) {
    🔴 这里推翻了我自己之前写在这个文件里的判据（「不画 SVG 连线：15 个节点、每个 3～5 条出边，
    连线在 460 宽的窗口里必然叠成一团」）。那条判据没错，错在它把「窄窗口 + 纯文字节点」
    当成了唯一前提 —— 海报之所以读得清，靠的是**缩略图认屏 + 宽画布 + 折线走通道**这三件事一起。
-   所以进流程图也像铺开那样把窗口撑宽，节点换成带编号的真缩略图，线走行间通道。
+   所以进流程图也像铺开那样把窗口撑宽，节点换成带编号的真缩略图。
 
-   ⚠️ 诚实的边界：海报是人手摆的位置。自动布局到十几个节点时，走线不会有人摆的好看。
-   现在这个量级（一页带三个抽屉）很干净，真到一百屏要重新想布局，不是把通道数调大就行。 */
+   🔴🔴 第二轮（同日 · 吉吉「这个页面现在所有线都绕在一起了」「希望你画流程的时候会根据不同项目，
+   画不同的方式」「流程图区域可以不要滚动，直接撑满」「现在的高度太低了」）：
+   线绕在一起的真因**不是画线算法，是布局**。上一版不管什么项目一律横排一行、线一律走卡片
+   底下那条通道 —— 于是 PPC 那种「一个后台页开三个抽屉」的形状，三条边全得从 1 号右边出来、
+   往下掉进 11px 间隔的窄通道、再横着穿过整排，看上去就是三根缠在一起的线。
+   改法是**先认拓扑、再决定怎么摆**（planLayout）：链状横排、中枢分叉成竖列、其余按步数分列。
+   摆对了之后，边走的是**列与列之间的空隙**，同一个源的几条共用一根主干 —— 长出来是树杈，不是毛线团。
+   底部通道只留给回头边和跨列边（「返回」那种），数量少，不会再挤。
+
+   ⚠️ 诚实的边界：海报是人手摆的位置。自动布局到几十屏时，走线不会有人摆的好看；
+   到那个量级要重新想布局（比如让人拖），不是把主干数调大就行。 */
 
 /* 一屏＝一张卡。页面本身是一屏，它的每个抽屉/浮层各是一屏。
    顺序＝按离入口的步数分层，视图紧跟在它所属的页面后面 —— 编号就是这个顺序，
@@ -398,9 +418,69 @@ function edgesOf(d, screens) {
   return out;
 }
 
+/* 先认形状，再决定怎么摆 —— 这就是「根据不同项目画不同的方式」那句话的落点。
+   🔴 三种形状的判据全部从真实拓扑算出来，不是让人在下拉框里挑一个：
+   挑错了图会更乱，而且没人知道是挑错了还是画错了。
+   返回 { kind, cols }：cols 是列，从左往右；列内从上往下。 */
+function planLayout(screens, edges) {
+  const od = new Map(), idg = new Map();
+  for (const s of screens) { od.set(s.id, 0); idg.set(s.id, 0); }
+  for (const e of edges) { od.set(e.from, (od.get(e.from) || 0) + 1); idg.set(e.to, (idg.get(e.to) || 0) + 1); }
+  const entry = screens[0];                       // screensOf 保证 1 号永远是入口
+  /* 孤儿单独占最后一列。混进正常的列里会让「第几列＝离入口第几步」这句话不成立 */
+  const orphan = screens.filter(s => s !== entry && !idg.get(s.id));
+  const orphanSet = new Set(orphan.map(s => s.id));
+  const main = screens.filter(s => !orphanSet.has(s.id));
+  const tail = orphan.length ? [orphan] : [];
+
+  /* ① 中枢分叉：所有边都从同一屏出发，且落点各自没有下游。
+       PPC 就是这个形状 —— 一个后台页开三个抽屉，它不是「四步」，是「一步，三个去处」。
+       横排成一行等于在说「走完广告预测才到营销诊断」，那是假的。 */
+  const froms = new Set(edges.map(e => e.from));
+  if (edges.length >= 2 && froms.size === 1 && edges.every(e => !od.get(e.to))) {
+    const hub = main.filter(s => s.id === edges[0].from);
+    const arms = main.filter(s => s.id !== edges[0].from);
+    /* 🔴 分叉走**纵向**（中枢一排在上，三个去处横排在下），不是「中枢在左、去处竖排在右」。
+       第一版写成左右分叉，量出来缩放 0.163 —— 比上一版写死的 0.18 还小。
+       原因：三张卡竖着摞，高度立刻变成瓶颈，而控制台窗口本来就是矮的
+       （吉吉那台约 1000×684，图区只有 ~500 高，竖排会缩到 0.108＝缩略图 97px，
+       正好跟他说的「高度太低」反着来）。横排 3 张吃的是宽度，而宽度是这个窗口富余的那一维。
+       顺带它也更像吉吉给的那张 wireflow 海报：上面一个总页，下面一排去处。
+       → 判据：**分叉往哪个方向长，看的是「空间哪一维富余」，不是「分叉看起来像往哪长」。** */
+    if (hub.length && arms.length) return { kind: 'hub', dir: 'v', cols: [hub, arms, ...tail] };
+  }
+
+  /* ② 链状：每屏最多一进一出 —— 一屏一列横着排，边就是相邻两张之间的一根短横线。
+       这种形状根本不需要往下绕通道（上一版所有形状共用那条路，链状用它纯属自找乱）。 */
+  if (main.every(s => od.get(s.id) <= 1 && idg.get(s.id) <= 1)) {
+    return { kind: 'chain', dir: 'h', cols: [...main.map(s => [s]), ...tail] };
+  }
+
+  /* ③ 兜底：按离入口的步数分列，同一步的竖着排。
+       🔴 用 BFS 的首达深度，不是「谁指向我」—— 详情页上的「返回首页」是回头边，
+       按它算的话首页会被推到最后一列，整张图的方向就反了。 */
+  const adj = new Map();
+  for (const e of edges) { if (!adj.has(e.from)) adj.set(e.from, []); adj.get(e.from).push(e.to); }
+  const dep = new Map([[entry.id, 0]]), q = [entry.id];
+  while (q.length) {
+    const cur = q.shift();
+    for (const to of (adj.get(cur) || [])) if (!dep.has(to)) { dep.set(to, dep.get(cur) + 1); q.push(to); }
+  }
+  const by = new Map();
+  for (const s of main) {
+    const c = dep.has(s.id) ? dep.get(s.id) : 0;
+    if (!by.has(c)) by.set(c, []);
+    by.get(c).push(s);
+  }
+  const cols = [...by.keys()].sort((a, b) => a - b).map(c => by.get(c));
+  return { kind: 'layered', dir: 'h', cols: [...cols, ...tail] };
+}
+
 /* 正交折线 + 圆角。点列是「拐点」，r 是圆角半径。
    直接用 stroke-linejoin:round 圆不出这个半径（那只圆描边端头的接缝），得自己拐弯。 */
 function elbow(pts, r) {
+  /* 重合点会让 Q 控制点算出 NaN（d1=0），也会白画一段 —— 先去掉 */
+  pts = pts.filter((p, i) => i === 0 || Math.abs(p.x - pts[i - 1].x) > .5 || Math.abs(p.y - pts[i - 1].y) > .5);
   if (pts.length < 2) return '';
   let dstr = `M${pts[0].x} ${pts[0].y}`;
   for (let i = 1; i < pts.length - 1; i++) {
@@ -415,34 +495,99 @@ function elbow(pts, r) {
   return dstr + ` L${e.x} ${e.y}`;
 }
 
+/* 缩略图里那张页面的尺寸（跟铺开同一套），和布局的几个常数 */
+const MAP_W = 1240, MAP_H = 900;
+const MAP_COL_GAP = 54, MAP_ROW_GAP = 18, MAP_PAD = 8;
+/* 纵向布局里排与排之间要走横干还要放标签，18 不够 —— 实测标签会贴着上一排的状态按钮 */
+const MAP_TIER_GAP = 44;
+/* 🔴 下限不是随便定的：低于这个值缩略图就只剩色块、认不出是哪一屏，
+   那时候「撑满」已经没有意义了，宁可让它滚。上限是别把两屏的项目放成两张海报。 */
+const MAP_K_MIN = 0.085, MAP_K_MAX = 0.46;
+
+/* 撑满：缩放比不再是写死的 0.18，是从「这个布局要几列几行」和「现在有多大地方」反算的。
+   吉吉 2026-09-18：「流程图区域可以不要滚动，直接撑满就行，让用户看的更清楚」＋「现在的高度太低了」。
+   🔴 卡片头和状态按钮那几行是文字，**不跟着缩放变** —— 所以要先把它们从可用高度里扣掉再解 k，
+   不扣的话列里卡片一多就会溢出（而溢出正是「要滚动」的来源）。 */
+function fitK(plan, availW, availH, chromeOf) {
+  const cols = plan.cols, n = cols.length;
+  const wide = Math.max(1, ...cols.map(c => c.length));     // 一段里最多几张
+  let kW, kH;
+  if (plan.dir === 'v') {
+    /* 纵向：一段是一排 —— 宽度看最宽那一排，高度是各排叠起来 */
+    kW = (availW - (wide - 1) * MAP_COL_GAP - MAP_PAD * 2) / (wide * MAP_W);
+    const chrome = cols.reduce((a, c) => a + Math.max(...c.map(chromeOf)), 0) + (n - 1) * MAP_TIER_GAP;
+    kH = (availH - MAP_PAD * 2 - chrome) / (n * MAP_H);
+  } else {
+    /* 横向：一段是一列 —— 宽度是各列排开，高度看最高那一列 */
+    kW = (availW - (n - 1) * MAP_COL_GAP - MAP_PAD * 2) / (n * MAP_W);
+    kH = Infinity;
+    for (const col of cols) {
+      const chrome = col.reduce((a, s) => a + chromeOf(s), 0) + (col.length - 1) * MAP_ROW_GAP;
+      kH = Math.min(kH, (availH - MAP_PAD * 2 - chrome) / (col.length * MAP_H));
+    }
+  }
+  return Math.max(MAP_K_MIN, Math.min(MAP_K_MAX, kW, kH));
+}
+
+/* 底部通道只给回头边和跨列边用，所以要留的地方按**这类边有几条**算，不是按总边数 */
+function backEdges(edges, colOf) {
+  return edges.filter(e => colOf.get(e.to) !== colOf.get(e.from) + 1);
+}
+
 function renderMap(d) {
   const screens = screensOf(d);
   if (screens.length < 2) {
     $('#mapWrap').innerHTML = '<p class="empty">只有一屏，没有流程可画。<br>页面之间用真的 <code>&lt;a href&gt;</code> 连起来，<br>同一页里的抽屉用 <code>/* @视图 key 名字 · 怎么进来 · 入口选择器 *&#47;</code> 声明，这里就有图了。</p>';
     return;
   }
-  const k = 0.18, W = 1240, H = 900;                     // 流程图只要「认得出是哪一屏」，比铺开小一档
-  const cw = Math.round(W * k), chh = Math.round(H * k);
+  const edges = edgesOf(d, screens);
+  const plan = planLayout(screens, edges);
+  const colOf = new Map();
+  plan.cols.forEach((col, ci) => col.forEach(s => colOf.set(s.id, ci)));
+
+  const wrap = $('#mapWrap');
+  /* 先把底部通道那条带子腾出来再算高度：卡片是垂直居中的，
+     不腾的话居中会把卡片摆到正中间、通道压到最后一排卡片身上。 */
+  const nBack = backEdges(edges, colOf).length;
+  const band = nBack ? 16 + nBack * 11 : 10;
+  wrap.style.paddingBottom = band + 'px';
+  const availW = Math.max(320, wrap.clientWidth);
+  const availH = Math.max(200, wrap.clientHeight - band);
+  /* 第一趟用估出来的卡片外壳高度，第二趟（fitMap）拿真量到的重算。
+     外壳高度不随缩放变，所以第二趟是精确解不是逼近 —— 只会算一次，不会来回抖。 */
+  const est = sc => 27 + (statesIn(sc.page, sc.view).length ? 25 : 0);
+  const k = fitK(plan, availW, availH, est);
+  const cw = Math.round(MAP_W * k), chh = Math.round(MAP_H * k);
+
   const reached = new Set([d.entry]);
   for (const p of d.pages) for (const l of p.links) if (l.ok) reached.add(l.to);
 
-  $('#mapWrap').innerHTML =
-    `<svg class="mconn" aria-hidden="true"></svg><div class="mcards">` +
-    screens.map(sc => {
-      const at = sc.rel === S.at.rel && (S.at.state || 'default') === sc.state;
-      const orphan = sc.kind === 'page' && d.pages.length > 1 && !reached.has(sc.rel);
-      const broken = sc.kind === 'page' ? sc.page.links.filter(l => !l.ok) : [];
-      return `<div class="mcard ${at ? 'at' : ''} ${sc.kind === 'view' ? 'v' : ''}" data-id="${esc(sc.id)}" style="width:${cw}px">
-        <div class="mcard-hd"><span class="num">${sc.n}</span><span class="t" title="${esc(sc.sub)}">${esc(sc.title)}</span></div>
-        <div class="mcard-shot" data-rel="${esc(sc.rel)}" data-state="${esc(sc.state)}" style="height:${chh}px" title="点一下在主窗口里看这一屏">
-          <iframe data-mcell="${esc(sc.rel)}|${esc(sc.state)}" style="width:${W}px;height:${H}px;transform:scale(${k})" sandbox="allow-same-origin" scrolling="no"></iframe>
-          <div class="tile-hit"></div>
-        </div>
-        ${orphan ? '<div class="mtag warn">没人跳得到</div>' : ''}
-        ${broken.length ? `<div class="mtag bad" title="${esc(broken.map(l => (l.text || l.sel) + ' → ' + l.to).join('\n'))}">${broken.length} 条断链</div>` : ''}
-        ${stateBtns(sc.page, sc.view)}
-      </div>`;
-    }).join('') + '</div>';
+  const cardHtml = sc => {
+    const at = sc.rel === S.at.rel && (S.at.state || 'default') === sc.state;
+    const orphan = sc.kind === 'page' && d.pages.length > 1 && !reached.has(sc.rel);
+    const broken = sc.kind === 'page' ? sc.page.links.filter(l => !l.ok) : [];
+    return `<div class="mcard ${at ? 'at' : ''} ${sc.kind === 'view' ? 'v' : ''}" data-id="${esc(sc.id)}" data-col="${colOf.get(sc.id)}" style="width:${cw}px">
+      <div class="mcard-hd"><span class="num">${sc.n}</span><span class="t" title="${esc(sc.sub)}">${esc(sc.title)}</span></div>
+      <div class="mcard-shot" data-rel="${esc(sc.rel)}" data-state="${esc(sc.state)}" style="height:${chh}px" title="点一下在主窗口里看这一屏">
+        <iframe data-mcell="${esc(sc.rel)}|${esc(sc.state)}" style="width:${MAP_W}px;height:${MAP_H}px;transform:scale(${k})" sandbox="allow-same-origin" scrolling="no"></iframe>
+        <div class="tile-hit"></div>
+      </div>
+      ${orphan ? '<div class="mtag warn">没人跳得到</div>' : ''}
+      ${broken.length ? `<div class="mtag bad" title="${esc(broken.map(l => (l.text || l.sel) + ' → ' + l.to).join('\n'))}">${broken.length} 条断链</div>` : ''}
+      ${stateBtns(sc.page, sc.view)}
+    </div>`;
+  };
+
+  wrap.dataset.kind = plan.kind;                 // 给门和人看：这张图是按哪种形状摆的
+  wrap.dataset.dir = plan.dir;
+  /* 🔴 间距由 JS 写进 style，CSS 里不再写第二份数值：fitK 是拿这几个数算缩放的，
+     两处各写一份迟早对不上 —— 而对不上的表现是「算出来说装得下，屏幕上却溢出一点点」，
+     肉眼几乎看不出来，只有门会红。 */
+  const outerGap = plan.dir === 'v' ? MAP_TIER_GAP : MAP_COL_GAP;
+  const innerGap = plan.dir === 'v' ? MAP_COL_GAP : MAP_ROW_GAP;
+  wrap.innerHTML = `<svg class="mconn" aria-hidden="true"></svg><div class="mcards dir-${plan.dir}" style="gap:${outerGap}px">` +
+    plan.cols.map((col, ci) => `<div class="mcol" data-col="${ci}" style="gap:${innerGap}px">${col.map(cardHtml).join('')}</div>`).join('') +
+    `</div>`;
 
   /* 缩略图：跟铺开共用同一份 html 缓存和同一套换态算法（两处各写一套，迟早对不上） */
   wallHtml([...new Set(screens.map(s => s.rel))]).then(() => {
@@ -453,73 +598,162 @@ function renderMap(d) {
     }
   });
 
-  drawConn(d, screens, edgesOf(d, screens));
+  /* 存下来给 resize 用：窗口一变，只要重解 k 就行，不用重建 DOM
+     （重建等于每张缩略图重新装一遍页面，拉窗口时会一直闪） */
+  S.map = { plan, edges, colOf, band };
+  fitMap(plan, edges, colOf, band);
 }
 
-/* 连线单独一步：卡片尺寸是写死的，布局立刻就稳，不用等缩略图装完再量。
-   🔴 但必须等这一帧的 layout 出来 —— innerHTML 之后直接 getBoundingClientRect 拿到的是旧位置。 */
-function drawConn(d, screens, edges) {
+/* 第二趟：拿真量到的外壳高度重解 k，应用到已经在屏幕上的卡片上（**不重建 DOM**——
+   重建会让每张缩略图重新装一遍页面，看起来像闪了一下）。完事才画线。 */
+function fitMap(plan, edges, colOf, band) {
   requestAnimationFrame(() => {
-    const wrap = $('#mapWrap'), svg = wrap.querySelector('svg.mconn');
-    if (!svg) return;
-    const wb = wrap.getBoundingClientRect(), sx = wrap.scrollLeft, sy = wrap.scrollTop;
-    const R = el => { const r = el.getBoundingClientRect(); return { x: r.left - wb.left + sx, y: r.top - wb.top + sy, w: r.width, h: r.height }; };
-    const box = {};
-    for (const el of wrap.querySelectorAll('.mcard')) {
+    const wrap = $('#mapWrap');
+    const cards = [...wrap.querySelectorAll('.mcard')];
+    if (!cards.length) return;
+    const chrome = new Map();
+    for (const el of cards) {
       const shot = el.querySelector('.mcard-shot');
-      box[el.dataset.id] = { card: R(el), shot: R(shot) };
+      chrome.set(el.dataset.id, Math.round(el.getBoundingClientRect().height - shot.getBoundingClientRect().height));
     }
-
-    /* 每一行的底边（卡片高度不齐——状态按钮多的那张更高），通道就在它下面。
-       按行取最大值，不按单张卡取：否则同一条通道在不同卡下面高度不一样，线会是阶梯状的。 */
-    const rows = new Map();
-    for (const id in box) {
-      const k = Math.round(box[id].card.y / 12);
-      rows.set(k, Math.max(rows.get(k) || 0, box[id].card.y + box[id].card.h));
+    const availW = Math.max(320, wrap.clientWidth);
+    const availH = Math.max(200, wrap.clientHeight - band);
+    const k = fitK(plan, availW, availH, s => chrome.get(s.id) != null ? chrome.get(s.id) : 30);
+    const cw = Math.round(MAP_W * k), chh = Math.round(MAP_H * k);
+    for (const el of cards) {
+      el.style.width = cw + 'px';
+      const shot = el.querySelector('.mcard-shot');
+      shot.style.height = chh + 'px';
+      const fr = shot.querySelector('iframe');
+      if (fr) fr.style.transform = 'scale(' + k + ')';
     }
-
-    const used = new Map();
-    let out = '', maxY = 0;
-    for (const e of edges) {
-      const a = box[e.from], b = box[e.to];
-      if (!a || !b) continue;
-      /* 🔴 一律走通道，不走直线。
-         直线只在「目标就在右边紧邻」时才不穿帮 —— 而一个页面开三个抽屉时，
-         1→4 那条直线会**横穿 2 号和 3 号卡片**（实测长这样）。判断「中间有没有别的卡」
-         要做相交检测，做对了也只省下一点点长度；统一走通道反而更像一张流程图，
-         而且通道上永远有地方放标签（标签压在标题上是上一版最难看的一处）。 */
-      const ay = a.shot.y + a.shot.h / 2, by = b.shot.y + b.shot.h / 2;
-      const rowKey = Math.round(a.card.y / 12);
-      const ch = used.get(rowKey) || 0; used.set(rowKey, ch + 1);
-      const gut = (rows.get(rowKey) || (a.card.y + a.card.h)) + 14 + ch * 11;
-      const outX = a.shot.x + a.shot.w + 16 + ch * 10;   /* 拉开一点，免得同源的几条线挤成一根 */
-      const inX = b.shot.x - 16;
-      const pts = [{ x: a.shot.x + a.shot.w, y: ay }, { x: outX, y: ay },
-                   { x: outX, y: gut }, { x: inX, y: gut }, { x: inX, y: by }, { x: b.shot.x, y: by }];
-      /* 标签放在横向那一段的中间；这一段太短时（目标就在隔壁）中间是根竖线，
-         压上去两边都看不清 —— 改成贴着目标那头右对齐。 */
-      const runW = inX - outX;
-      const labX = runW > 52 ? (outX + inX) / 2 : inX - 6;
-      const labAnchor = runW > 52 ? 'middle' : 'end';
-      maxY = Math.max(maxY, gut);
-      out += `<path d="${elbow(pts, 8)}" class="mline"><title>${esc(e.label || '')}</title></path>`
-        + `<circle cx="${pts[0].x}" cy="${pts[0].y}" r="3" class="mdot"/>`
-        + `<circle cx="${pts[pts.length - 1].x}" cy="${pts[pts.length - 1].y}" r="3" class="mdot"/>`
-        /* 标签落在通道那一段上：那儿是空的，压不到任何卡片和标题 */
-        + (e.label ? `<text x="${labX}" y="${gut - 5}" class="mlab" text-anchor="${labAnchor}">${esc(e.label)}</text>` : '');
-    }
-    /* 🔴 通道画在卡片下面，而 scrollHeight 只算到卡片底 —— 不腾地方的话，
-       横着走的那一段整段被裁掉，屏幕上只剩几根从卡片垂下来的短竖线，
-       看着像「线画歪了」，其实是画布不够高（实测：画布 263，通道在 265/276/287）。
-       所以先算出通道要到哪儿，再把 wrap 的下内边距撑开，最后才定画布尺寸。
-       `overflow:visible` 指望不上：外层 <svg> 的裁剪由 width/height 决定。 */
-    const need = Math.ceil(maxY + 18);
-    wrap.style.paddingBottom = Math.max(12, need - (wrap.scrollHeight - 12)) + 'px';
-    svg.setAttribute('width', Math.max(wrap.scrollWidth, 1));
-    svg.setAttribute('height', Math.max(wrap.scrollHeight, need));
-    svg.dataset.need = String(need);        // 给门用：画布必须装得下所有走线
-    svg.innerHTML = out;
+    wrap.dataset.k = k.toFixed(4);
+    requestAnimationFrame(() => {
+      /* 装得下就一定不滚 —— 只有缩到下限还装不下（屏数太多）才把滚动放回来。
+         这个类就是「这次到底滚没滚」的证据，门直接查它，不用去猜。 */
+      wrap.classList.toggle('scrolls',
+        wrap.scrollHeight > wrap.clientHeight + 1 || wrap.scrollWidth > wrap.clientWidth + 1);
+      drawConn(wrap, edges, colOf, plan);
+    });
   });
+}
+
+/* 连线：按布局分型走两条不同的路。
+   🔴 forward（下一列）走**列间空隙**里的一根竖直主干；同一个源的几条边共用一根，
+      于是一屏开三个抽屉长出来的是树杈。上一版所有边一律往下绕通道，才会「绕在一起」。
+   🔴 其余（回头边 / 跨列边）走底部那条带子 —— 它们本来就是少数，不值得为它们把主干让开。 */
+function drawConn(wrap, edges, colOf, plan) {
+  const svg = wrap.querySelector('svg.mconn');
+  if (!svg) return;
+  const wb = wrap.getBoundingClientRect(), sx = wrap.scrollLeft, sy = wrap.scrollTop;
+  const R = el => { const r = el.getBoundingClientRect(); return { x: r.left - wb.left + sx, y: r.top - wb.top + sy, w: r.width, h: r.height }; };
+  const box = {};
+  for (const el of wrap.querySelectorAll('.mcard')) {
+    box[el.dataset.id] = { card: R(el), shot: R(el.querySelector('.mcard-shot')), col: +el.dataset.col };
+  }
+  const vert = plan.dir === 'v';
+  /* 每一段的边界：主干要落在两段之间的空隙里，不能压在任何一张卡上。
+     横向布局量左右，纵向布局量上下 —— 两种方向共用同一套代码，只是量的轴不同。 */
+  const colEdge = [];
+  for (const id in box) {
+    const c = box[id].col, b = box[id].card;
+    const lo = vert ? b.y : b.x, hi = vert ? b.y + b.h : b.x + b.w;
+    if (!colEdge[c]) colEdge[c] = { l: lo, r: hi };
+    else { colEdge[c].l = Math.min(colEdge[c].l, lo); colEdge[c].r = Math.max(colEdge[c].r, hi); }
+  }
+  /* 同一条空隙里可能有好几个源（分层布局），各占一根主干，先排好次序免得两根重合 */
+  const trunkIdx = new Map();
+  for (const e of edges) {
+    const a = box[e.from], b = box[e.to];
+    if (!a || !b || b.col !== a.col + 1) continue;
+    const key = b.col + '@' + e.from;
+    if (!trunkIdx.has(key)) trunkIdx.set(key, []);
+  }
+  const perGap = new Map();
+  for (const key of trunkIdx.keys()) {
+    const gap = key.split('@')[0];
+    if (!perGap.has(gap)) perGap.set(gap, []);
+    perGap.get(gap).push(key);
+  }
+  for (const [, keys] of perGap) keys.forEach((key, i) => trunkIdx.set(key, { i, n: keys.length }));
+
+  /* 底部那条带子：从最低的卡片底下开始，一条边一层 */
+  let floor = 0;
+  for (const id in box) floor = Math.max(floor, box[id].card.y + box[id].card.h);
+
+  let out = '', maxY = 0, maxX = 0, lanes = 0, fwd = 0;
+  const mark = p => { maxY = Math.max(maxY, p.y); maxX = Math.max(maxX, p.x); };
+
+  for (const e of edges) {
+    const a = box[e.from], b = box[e.to];
+    if (!a || !b) continue;
+    const ay = a.shot.y + a.shot.h / 2, by = b.shot.y + b.shot.h / 2;
+    let pts, labX, labY, labAnchor;
+
+    if (b.col === a.col + 1) {
+      fwd++;
+      const t = trunkIdx.get(b.col + '@' + e.from) || { i: 0, n: 1 };
+      const gl = colEdge[a.col].r, gr = colEdge[b.col].l;
+      /* 主干排在空隙中间，几根之间留 9px；空隙本来就窄时夹紧一点，但绝不越出空隙 */
+      const span = Math.max(0, gr - gl), step = Math.min(9, span / (t.n + 1));
+      const tc = Math.round(gl + span / 2 + (t.i - (t.n - 1) / 2) * step);
+      if (vert) {
+        /* 纵向：从上一排卡片的**底边**垂下来，走排间那条横干，再降进下一排卡片的**顶边**。
+           🔴 端点接在 card 的上下边、不接 shot 的：卡片底下挂着一排状态按钮、顶上是编号和标题，
+              接 shot 就会从这两处文字身上压过去。接卡片边＝落在卡片的外轮廓上，谁都不挡。 */
+        const ax = Math.round(a.card.x + a.card.w / 2), bx = Math.round(b.card.x + b.card.w / 2);
+        pts = [{ x: ax, y: a.card.y + a.card.h }, { x: ax, y: tc }, { x: bx, y: tc }, { x: bx, y: b.card.y }];
+        /* 🔴 标签一律贴在**降进目标那一段**竖线的旁边，不放在横干上。
+           放横干上实测是这样：三条边共用一根横干，标签就全挤在同一条水平线上，
+           中间那条（ax≈bx，几乎没有横段）的标签直接被横干穿过去，还压到了中枢卡
+           底下那排状态按钮 —— 屏幕上是「营销诊断」四个字上面划了一道线。
+           贴竖线则每条边各有各的位置，天然不会撞（竖线是每条边自己的，横干是共用的）。 */
+        const drop = b.card.y - tc;
+        if (drop > 14) { labX = bx + 6; labY = tc + drop / 2 + 3; labAnchor = 'start'; }
+        else { labX = (ax + bx) / 2; labY = tc - 5; labAnchor = 'middle'; }
+      } else {
+        pts = [{ x: a.shot.x + a.shot.w, y: ay }, { x: tc, y: ay }, { x: tc, y: by }, { x: b.shot.x, y: by }];
+        /* 标签压在标题上是最难看的一处，所以只放在两段空白里：
+           横段够长就放横段中间，不够长（同一行、主干贴着目标）就贴着主干放在竖段上。 */
+        const runW = b.shot.x - tc;
+        if (runW > 46) { labX = (tc + b.shot.x) / 2; labY = by - 6; labAnchor = 'middle'; }
+        else { labX = tc + 5; labY = (ay + by) / 2; labAnchor = 'start'; }
+      }
+    } else {
+      /* 回头边 / 跨列边（详情页上的「返回」那种）：从卡片**底边**垂下来，走底部带子，
+         再从目标的底边升上去。
+         🔴 不从右边出去：最右那一列的卡再往右 14px 就出了画布，svg 只能跟着加宽，
+            于是横向多出十几个像素的滚动 —— 而这个视图刚立的规矩是「装得下就不滚」。
+            量出来是 clientWidth 1176 / scrollWidth 1191，肉眼根本看不见，只有门看得见。
+         🔴 从底边不从中心出：卡片底下还挂着一排状态按钮，走中心会从按钮身上压过去。
+         上一版是**所有**边都走这条路，那才是「线都绕在一起」的来源；现在只有少数边走。 */
+      const ch = lanes++;
+      const gut = floor + 12 + ch * 11;
+      const off = (ch % 2 ? 7 : -7);
+      const ax2 = a.shot.x + a.shot.w / 2 + off, bx2 = b.shot.x + b.shot.w / 2 + off;
+      pts = [{ x: ax2, y: a.card.y + a.card.h }, { x: ax2, y: gut },
+             { x: bx2, y: gut }, { x: bx2, y: b.card.y + b.card.h }];
+      const runW = Math.abs(bx2 - ax2);
+      labX = (ax2 + bx2) / 2; labY = gut - 5; labAnchor = runW > 52 ? 'middle' : 'start';
+    }
+
+    pts.forEach(mark); mark({ x: labX, y: labY });
+    out += `<path d="${elbow(pts, 8)}" class="mline" data-kind="${b.col === a.col + 1 ? 'fwd' : 'back'}"><title>${esc(e.label || '')}</title></path>`
+      + `<circle cx="${pts[0].x}" cy="${pts[0].y}" r="3" class="mdot"/>`
+      + `<circle cx="${pts[pts.length - 1].x}" cy="${pts[pts.length - 1].y}" r="3" class="mdot"/>`
+      + (e.label ? `<text x="${labX}" y="${labY}" class="mlab" text-anchor="${labAnchor}">${esc(e.label)}</text>` : '');
+  }
+
+  /* 🔴 画布装不下的那一段会被**静默裁掉**，屏幕上看着像「线画歪了」（2026-09-18 实测：
+     画布 263、通道在 265/276/287，三条线的横段全没了）。`overflow:visible` 指望不上，
+     外层 <svg> 的裁剪由 width/height 决定。所以先算走线要到哪儿，再定画布。 */
+  const need = Math.ceil(maxY + 12);
+  if (need > wrap.clientHeight) wrap.style.paddingBottom = (need - wrap.clientHeight + 8) + 'px';
+  svg.setAttribute('width', Math.max(wrap.scrollWidth, Math.ceil(maxX + 8), 1));
+  svg.setAttribute('height', Math.max(wrap.scrollHeight, need));
+  svg.dataset.need = String(need);        // 给门用：画布必须装得下所有走线
+  svg.dataset.fwd = String(fwd);          // 给门用：走列间主干的有几条（不是全都往下绕）
+  svg.innerHTML = out;
 }
 
 /* ── 剧本 ─────────────────────────────── */
@@ -673,6 +907,33 @@ document.querySelector('.body').addEventListener('click', e => {
   const g = e.target.closest('[data-rel]');
   if (g) goto(g.dataset.rel, g.dataset.state);
 });
+/* 说明展开/收起。收起时它只占一行，图就能多分到 37px 高 —— 这不是抠细节，
+   4 屏摆两行的时候，37px 高会变成每张缩略图大 18px。 */
+$('#mapTipT').onclick = () => {
+  const more = $('#mapTip .tip-more'), t = $('#mapTipT');
+  more.hidden = !more.hidden;
+  t.textContent = more.hidden ? '怎么读 ▾' : '收起 ▴';
+  if (S.view === 'map' && S.data && S.map) {
+    $('#mapWrap').style.paddingBottom = S.map.band + 'px';
+    fitMap(S.map.plan, S.map.edges, S.map.colOf, S.map.band);
+  }
+};
+
+/* 🔴 窗口一变大小，「撑满」就得重算 —— 不重算的话把窗口拉大，图还是原来那么小，
+   看着像卡住了。只有流程图是按窗口反算尺寸的，别的视图不用重画。
+   走 fitMap 不走 render：后者会重建 DOM，每张缩略图重装一遍页面，拉窗口时一路闪。 */
+let mapRz = null;
+window.addEventListener('resize', () => {
+  if (S.view !== 'map' || !S.data || !S.map) return;
+  clearTimeout(mapRz);
+  mapRz = setTimeout(() => {
+    const w = $('#mapWrap');
+    if (!w || !w.querySelector('.mcard')) return;
+    w.style.paddingBottom = S.map.band + 'px';
+    fitMap(S.map.plan, S.map.edges, S.map.colOf, S.map.band);
+  }, 120);
+});
+
 /* 展示的时候用方向键翻页，省得每次去点按钮 */
 window.addEventListener('keydown', e => {
   if (!S.show || !S.play) return;
