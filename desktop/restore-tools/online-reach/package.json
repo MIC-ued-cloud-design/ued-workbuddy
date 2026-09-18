@@ -1,0 +1,8 @@
+{
+  "name": "uw-online-reach",
+  "private": true,
+  "description": "起独立 Chrome 读线上页面 / 克隆页面的工具，同时也是 _verify 里八套 e2e 门的浏览器驱动。node_modules 不进仓，clone 下来先在这个目录跑一次 npm i。",
+  "dependencies": {
+    "puppeteer-core": "25.1.0"
+  }
+}
