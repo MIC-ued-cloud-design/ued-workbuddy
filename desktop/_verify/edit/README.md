@@ -36,6 +36,12 @@ node _verify/edit/ui.e2e.js         # 界面：真 renderer + mock 掉 uw 桥（
 改 `main/htmlmap.js`、`main/edit-probe.js`、`main/components.js` 或 `renderer/app.js` 的「编辑层」一节，
 🔴 **十四套一套都不许漏**（htmlmap 43 / kb-url 4 / updater 29 / engine 8 / win 11 / **font** 51 / probe 54 / scope 15 / states 12 / ui 129 / **flow** 36 / **flow-ui** 51 / **flow-walk** 13 / **flow-iso** 19 ＝ **475**）。
 改了 `main/flow.js`、`main/flow-doc.js`、`main/flow-walk.js`、`renderer/flow.*` 或 `renderer/app.js` 的「流程控制台」一节，后四套必跑。
+🧹 **发版会顺手清 dist**（`build/clean-dist.sh`，2026-09-18 加·起因是攒到了 19G）。
+🔴 它**只删「GitHub 上已经有的那些版本」的本地包** —— 没发布过的开发包，本地这一份就是最后一份，
+机器不替人做那个决定，只打印出来让人自己删。**清理和销毁最后一份，在命令行上长得一模一样**
+（那次手工清，38 个版本里就有 9 个是从没发布过的）。查不到远端列表时整个跳过，宁可多占盘。
+清理挂在 `pickLatest` 回查**之后**：清早了万一发失败，手里就什么都没有了。
+
 🔴 **`flow-ui` 里有一组「形状矩阵」**（2026-09-18 立）：六种真实会碰到的流程形状各造一份真项目，
 逐个验「认对形状 / 编号连续 / 线不穿卡 / 画布装得下 / 装得下就不滚 / 缩略图不低于可读下限」。
 **以后碰到画不好的形状，往那张表里加一行，别在 `planLayout` 里补一个 if** ——

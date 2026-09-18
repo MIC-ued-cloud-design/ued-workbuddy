@@ -86,6 +86,11 @@ for (const pf of ["darwin", ...(process.env.SKIP_WIN === "1" ? [] : ["win32"])])
 }
 process.exit(bad);
 '
+# 🔴 清旧包放在这儿，不能更早：要等 release 建好、而且两个平台的 pickLatest 都回查过，
+# 本地那些旧包才真的可以扔。清早了万一发失败，手里就什么都没有了。
+echo "▶ 清 dist 里的旧包"
+build/clean-dist.sh "$VER" "$REPO"
+
 echo "✅ 发完：https://github.com/$REPO/releases/tag/$TAG"
 echo "   永久下载页：https://github.com/$REPO/releases/latest（永远指向最新版，给同事发这个）"
 echo "   同事那边的客户端（Mac ≥0.1.26 / Windows ≥0.1.46）启动 3 秒后会看到更新条。"
