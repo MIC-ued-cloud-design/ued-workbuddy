@@ -1,0 +1,9 @@
+/* ===== sw.css 的状态接线（build/gen-feique-states.py 生成，别手改） =====
+   值全部原样搬自飞鹊，只是把「加 class 才出现」改成「鼠标/勾选自动出现」 */
+/* 点得动：sw 里塞一个原生 checkbox，藏起来但仍然接管键盘与点击 */
+.sw > input[type=checkbox]{position:absolute;opacity:0;width:0;height:0;margin:0;pointer-events:none;}
+/* 打开（原来写作 .sw-on） */
+.sw:has(> input:checked){background: #007DFA;}
+.sw:has(> input:checked) .sw-handle{transform: translateX(22px);}
+.sw-loading:has(> input:checked) .sw-handle::after{border-top-color: #007DFA;}
+.sw-sm:has(> input:checked) .sw-handle{transform: translateX(12px);}

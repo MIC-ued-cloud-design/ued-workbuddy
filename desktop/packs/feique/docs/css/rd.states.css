@@ -1,0 +1,17 @@
+/* ===== rd.css 的状态接线（build/gen-feique-states.py 生成，别手改） =====
+   值全部原样搬自飞鹊，只是把「加 class 才出现」改成「鼠标/勾选自动出现」 */
+/* 点得动：rd 里塞一个原生 radio，藏起来但仍然接管键盘与点击 */
+.rd > input[type=radio]{position:absolute;opacity:0;width:0;height:0;margin:0;pointer-events:none;}
+/* 鼠标悬停（原来写作 .rd-hv） */
+.rd:not(.rd-dis):hover .rd-circle{border-color:#222;}
+.rd-blue:not(.rd-dis):hover .rd-circle{border-color:#007DFA;}
+.rd-red:not(.rd-dis):hover .rd-circle{border-color:#E64545;}
+/* 选中（原来写作 .rd-sel） */
+.rd:has(> input:checked) .rd-circle{border-color:#222;}
+.rd:has(> input:checked) .rd-circle::after{background:#222;}
+.rd:has(> input:checked) .rd-label{color:#222;}
+.rd-blue:has(> input:checked) .rd-circle{border-color:#007DFA;}
+.rd-blue:has(> input:checked) .rd-circle::after{background:#007DFA;}
+.rd-red:has(> input:checked) .rd-circle{border-color:#E64545;}
+.rd-red:has(> input:checked) .rd-circle::after{background:#E64545;}
+.rd-dis:has(> input:checked) .rd-circle::after{background:#B3B3B3;}

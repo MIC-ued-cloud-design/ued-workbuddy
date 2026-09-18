@@ -1,0 +1,22 @@
+/* ===== cb.css 的状态接线（build/gen-feique-states.py 生成，别手改） =====
+   值全部原样搬自飞鹊，只是把「加 class 才出现」改成「鼠标/勾选自动出现」 */
+/* 点得动：cb 里塞一个原生 checkbox，藏起来但仍然接管键盘与点击 */
+.cb > input[type=checkbox]{position:absolute;opacity:0;width:0;height:0;margin:0;pointer-events:none;}
+/* 鼠标悬停（原来写作 .cb-hv） */
+.cb:not(.cb-dis):hover .cb-box{border-color:#555;}
+.cb:not(.cb-dis):hover .cb-label{color:#222;}
+.cb-blue:not(.cb-dis):hover .cb-label, .cb-red:not(.cb-dis):hover .cb-label{color:#555;}
+/* 勾上了（原来写作 .cb-sel） */
+.cb:has(> input:checked) .cb-box{background:#222;border-color:#222;}
+.cb:has(> input:checked) .cb-label{color:#222;}
+.cb:has(> input:checked) .cb-box .cb-icon-chk{display:block;}
+.cb-blue:has(> input:checked) .cb-box{background:#007DFA;border-color:#007DFA;}
+.cb-red:has(> input:checked) .cb-box{background:#E64545;border-color:#E64545;}
+.cb-dis:has(> input:checked) .cb-box{background:#b3b3b3;border-color:#b3b3b3;}
+/* 半选（原来写作 .cb-half） */
+.cb:has(> input:indeterminate) .cb-box{background:#222;border-color:#222;}
+.cb:has(> input:indeterminate) .cb-label{color:#222;}
+.cb:has(> input:indeterminate) .cb-box .cb-icon-half{display:block;}
+.cb-blue:has(> input:indeterminate) .cb-box{background:#007DFA;border-color:#007DFA;}
+.cb-red:has(> input:indeterminate) .cb-box{background:#E64545;border-color:#E64545;}
+.cb-dis:has(> input:indeterminate) .cb-box{background:#b3b3b3;border-color:#b3b3b3;}

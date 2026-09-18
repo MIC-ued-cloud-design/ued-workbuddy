@@ -1,0 +1,12 @@
+/* ===== ss.css 的状态接线（build/gen-feique-states.py 生成，别手改） =====
+   值全部原样搬自飞鹊，只是把「加 class 才出现」改成「鼠标/勾选自动出现」 */
+/* 点得动：ss 里塞一个原生 radio，藏起来但仍然接管键盘与点击 */
+.ss > input[type=radio]{position:absolute;opacity:0;width:0;height:0;margin:0;pointer-events:none;}
+/* 鼠标悬停（原来写作 .ss-hv） */
+.ss:not(.ss-dis):hover{background:#F4F4F4;border-color:#222;}
+.ss.ss-red:not(.ss-dis):hover{background:#FFF2F2;border-color:#E64545;color:#E64545;}
+.ss.ss-blue:not(.ss-dis):hover{background:#EBF5FF;border-color:#007DFA;color:#007DFA;}
+/* 选中（原来写作 .ss-sel） */
+.ss:has(> input:checked){background:#F0F1F2;border-width:2px;border-color:#222;}
+.ss.ss-red:has(> input:checked){background:#FFF2F2;border-width:2px;border-color:#E64545;color:#E64545;}
+.ss.ss-blue:has(> input:checked){background:#EBF5FF;border-width:2px;border-color:#007DFA;color:#007DFA;}

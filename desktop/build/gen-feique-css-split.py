@@ -135,7 +135,12 @@ def main():
     L.append('# 飞鹊 Web 组件 · 网页实现清单\n')
     L.append('做网页产物时的**砖表**。全部 %d 类、加起来只有 %dKB —— 挑这页要用的，'
              '`cat` 进 index.html 的 `<style>`。\n' % (len(rows), total // 1024))
-    L.append('**规矩三条**：① 一律带上 `_reset.css` ② 表里有的组件不许自己另写一套、'
+    L.append('🔴 **`<族>.states.css` 要一起带上。** 飞鹊的状态（悬停、勾选、打开）是从 Figma variant 导出来的，写作 `.cb-hv` / `.cb-sel` 这种类名，
+要人手动加 class 才出现 —— 鼠标放上去不会变、点一下也不会勾上。同目录的 `<族>.states.css` 把这些**同样的值**接到真实的
+`:hover` / `:checked` 上（cb / rd / ss / sw / ta / inpn 六族有）。规矩：**你 cat 了 `x.css`，同目录有 `x.states.css` 就一起 cat**，
+页面里的控件才是能动的。值一个没变，所以体检照样过。
+
+**规矩三条**：① 一律带上 `_reset.css` ② 表里有的组件不许自己另写一套、'
              '也不许发明飞鹊没有的变体（`.btn-neutral` 这种）③ 表里没有的见文末，'
              '那些是**没有 CSS 实现**的，只能导出真资产或留占位，手画一个看着差不多的比留空更糟。\n')
     L.append('用法示例：做一个带表单和分页的列表页 →\n')
@@ -160,7 +165,8 @@ def main():
     L.append('**Collapse 折叠面板**：权威源里只有一段注释描述它的 DOM 结构（`.clps > .clps-item > .clps-hd/.clps-bd`），'
              '没有任何一条规则。要用折叠面板得自己实现结构，或去 Figma 取。别照着那段注释写类名——那些类在页面里是空的。\n')
     L.append('\n---\n')
-    L.append('由 `build/gen-feique-css-split.py` 从 `飞鹊Web组件库.css` 切出（权威源是后者，改了它重跑本脚本）。')
+    L.append('由 `build/gen-feique-css-split.py` 从 `飞鹊Web组件库.css` 切出（权威源是后者，改了它重跑本脚本，'
+             '再跟着重跑一次 `build/gen-feique-states.py`）。')
     L.append('那份里另有 %dKB 是 335 个图标 data-URI，组件不依赖，没切进来；UI 图标用 `icons/` 下的 295 个 SVG。'
              % (skipped_icon // 1024))
     pending['INDEX.md'] = '\n'.join(L) + '\n'
@@ -168,7 +174,8 @@ def main():
     # 到这里为止一个字节都没写盘：断言全过了，才统一落地
     os.makedirs(OUT, exist_ok=True)
     for f in os.listdir(OUT):
-        if f.endswith('.css') or f == 'INDEX.md':
+        # 🔴 *.states.css 是另一层（gen-feique-states.py 生成的状态接线），不归本脚本管，别顺手删了
+        if (f.endswith('.css') and not f.endswith('.states.css')) or f == 'INDEX.md':
             os.remove(os.path.join(OUT, f))
     for fname, body in pending.items():
         open(os.path.join(OUT, fname), 'w', encoding='utf-8').write(body)
