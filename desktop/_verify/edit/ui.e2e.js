@@ -39,6 +39,8 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
       flowIsOpen: async () => ({ open: window.__flowOpen }),
       flowGoto: async (m) => { window.__flow.push(m); return { ok: true }; },
       flowAt: async (m) => { window.__flowAt.push(m); return { ok: true }; },
+      /* 控制台点节点时，主窗口可能停在首页 —— 那时候它要自己把项目打开，所以桥上得有这个 */
+      openProject: async (id) => ({ id, name: '测试项目', dir: '/x/' + id, role: 'design', files: [{ rel: 'index.html' }], messages: [] }),
       listProjects: async () => [], saveSettings: async () => true, detectEngine: async () => ({ ok: true }),
       listFiles: async () => [{ rel: 'index.html', size: 1, mtime: 1 }], checkFile: async () => ({ issues: [], n: 0, badN: 0, ok: true }),
       readFile: async () => ({ text: '' }), readFigma: async () => ({ changes: [], files: {} }),
@@ -812,6 +814,44 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
   await wait(200);
   const showOff = await page.evaluate(() => document.querySelector('.wk-body').classList.contains('canvas'));
   ok('退出展示模式：对话区回来', () => assert.strictEqual(showOff, false));
+
+  /* 🔴 吉吉 2026-09-18 报的 bug：「我点了流程里面一些节点，但 UW 客户端此时在首页，
+     那就不会跳转过去」。原来这里一句 `if (!S.project) return` 就把指令吞了 ——
+     屏幕上什么都不发生，也没有任何提示。**「点了没反应」比「报个错」糟得多。** */
+  await page.evaluate(() => { setView('home'); });
+  await wait(150);
+  const atHome = await page.evaluate(() => ({ view: S.view, proj: !!S.project }));
+  await page.evaluate(() => { const h = window.__onFlowGoto; if (h) h({ id: 'p', rel: 'index.html', state: 'guest' }); });
+  await wait(400);
+  const jumped = await page.evaluate(() => ({ view: S.view, id: S.project && S.project.id, rel: S.previewFile, st: FLOW.state }));
+  ok('🔴 主窗口停在首页时点流程里的节点：它自己把项目打开再跳过去（不是一声不吭地什么都不做）', () => {
+    assert.strictEqual(atHome.proj, false, '前提没摆好：本来就该是「首页、没开项目」');
+    assert.strictEqual(jumped.view, 'work', '还停在 ' + jumped.view);
+    assert.strictEqual(jumped.id, 'p');
+    assert.strictEqual(jumped.rel, 'index.html');
+    assert.strictEqual(jumped.st, 'guest');
+  });
+  /* 开着**别的**项目时也要切过去——只判「有没有开项目」会漏掉这一半 */
+  await page.evaluate(() => { S.project = { id: 'other', name: '别的项目', files: [] }; S.previewFile = null; });
+  await page.evaluate(() => { const h = window.__onFlowGoto; if (h) h({ id: 'p', rel: 'detail.html', state: 'error' }); });
+  await wait(400);
+  const swapped = await page.evaluate(() => ({ id: S.project && S.project.id, rel: S.previewFile }));
+  ok('🔴 主窗口开着别的项目时点流程里的节点：切到控制台那个项目（只判「有没有开项目」会漏掉这一半）', () => {
+    assert.strictEqual(swapped.id, 'p', '还停在 ' + swapped.id);
+    assert.strictEqual(swapped.rel, 'detail.html');
+  });
+
+  /* 🔴 版本号：吉吉 2026-09-18「每次更新完，同事也不知道自己是什么版本」。
+     同事报「这个功能我这儿没有」时，第一件要问的就是版本号。
+     值必须来自 boot（主进程的 app.getVersion()），写死在页面里的迟早会忘了改。 */
+  const ver = await page.evaluate(() => {
+    const el = document.getElementById('appVer');
+    return { txt: el ? el.textContent.trim() : null, shown: !!(el && el.offsetParent !== null) };
+  });
+  ok('🔴 侧边栏一直显示版本号，值取自主进程不是写死的', () => {
+    assert.strictEqual(ver.txt, 'v0.1.25', '显示的是「' + ver.txt + '」（mock 的 boot 给的是 0.1.25）');
+    assert.strictEqual(ver.shown, true, '元素在但没显示出来');
+  });
 
   /* 🔴 这条是回归门，不是功能门。2026-09-17 加流程控制台时栽过：
      顶层一句 `uw.onFlowClosed(...)` 在桥上没这个方法时抛异常，它**后面**所有 const 全留在 TDZ，

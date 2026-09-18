@@ -28,6 +28,10 @@ async function boot() {
   S.caps = S.boot.caps; S.settings = S.boot.settings; S.engine = S.boot.engine;
   S.role = S.settings.role || 'design';
   if (!roleOf(S.role)) S.role = S.caps.roles[0].id;   // 设置里存的角色已经删了（2026-09-16 去掉前端）就退回第一个，别让首页整块画不出来
+  /* 🔴 版本号要一直在屏幕上。吉吉 2026-09-18：「每次更新完，同事也不知道自己是什么版本」——
+     同事报「这个功能我这儿没有」时，第一件要问的就是版本号；问不出来就得靠猜。
+     值取自主进程的 app.getVersion()，不是写死在页面里的（写死必然有一天忘了改）。 */
+  if ($('#appVer')) $('#appVer').textContent = S.boot.version ? 'v' + S.boot.version : '';
   renderEngine(); renderRoleSeg(); renderScenes(); renderAbilities(); renderHomeModel(); renderProjects(S.boot.projects);
   uw.onRunEvent(({ id, ev }) => onRunEvent(id, ev));
   uw.onFilesChanged(({ id }) => { if (S.project && S.project.id === id) refreshFiles(true); });
@@ -1410,7 +1414,18 @@ function flowReport() {
 }
 if (uw.onFlowGoto) uw.onFlowGoto(async msg => {
   if (msg.show != null) { setCanvasOnly(!!msg.show); if (msg.show && ED.on) setEdit(false); return; }   // 展示模式：把画布腾干净
-  if (!msg.rel || !S.project) return;
+  if (!msg.rel) return;
+  /* 🔴 主窗口可能停在首页、或者开着别的项目。原来这里一句 `if (!S.project) return` 就把指令吞了，
+     屏幕上什么都不会发生、也没有任何提示 —— 吉吉 2026-09-18 报的就是这个
+     （「我点了流程里的节点，但 UW 此时在首页，那就不会跳转过去」）。
+     控制台一直知道自己是从哪个项目开出来的，现在它把 id 一起发过来，这边照着把项目打开就行。
+     → 判据：**「用户点了没反应」比「报个错」糟得多** —— 后者至少告诉人发生了什么。 */
+  if (msg.id != null && (!S.project || String(S.project.id) !== String(msg.id))) {
+    await openProject(msg.id);
+    if (!S.project || String(S.project.id) !== String(msg.id)) { toast('那个项目打不开了，跳不过去'); return; }
+    setTab('preview');                 // 可能停在设计稿那页，流程图点过来是要看页面的
+  }
+  if (!S.project) return;
   FLOW.state = msg.state || 'default';
   if (msg.on) FLOW.ons = msg.on.slice();
   if (msg.rel !== S.previewFile) {

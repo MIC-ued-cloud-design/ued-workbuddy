@@ -103,7 +103,7 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   });
   await wait(150);
   const g1 = await page.evaluate(() => window.__goto.slice(-1)[0]);
-  ok('对照表：点一个格子 = 去那一页的那个态（指令里带上当前叠加开关）', () => assert.deepStrictEqual(g1, { rel: 'index.html', state: 'guest', on: [] }));
+  ok('对照表：点一个格子 = 去那一页的那个态（指令里带上当前叠加开关）', () => assert.deepStrictEqual(g1, { id: 'p', rel: 'index.html', state: 'guest', on: [] }));
   const atMark = await page.evaluate(() => !!document.querySelector('table.grid .cell.at'));
   ok('对照表：当前在哪一格，那一格高亮（两个窗口说的必须是同一件事）', () => assert.strictEqual(atMark, true));
 
@@ -154,7 +154,7 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   await page.evaluate(() => { window.__goto = []; document.querySelector('.tile[data-state="empty"]').click(); });
   await wait(200);
   const wg = await page.evaluate(() => window.__goto.slice(-1)[0]);
-  ok('铺开：点一张 = 去主窗口沉浸看那一态', () => assert.deepStrictEqual(wg, { rel: 'index.html', state: 'empty', on: [] }));
+  ok('铺开：点一张 = 去主窗口沉浸看那一态', () => assert.deepStrictEqual(wg, { id: 'p', rel: 'index.html', state: 'empty', on: [] }));
 
   await page.click('#wallMode button[data-m="pages"]'); await wait(1600);
   const wp = await page.evaluate(() => ({ n: document.querySelectorAll('.tile').length, sel: document.getElementById('wallPage').hidden }));
@@ -405,7 +405,7 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   await page.evaluate(() => { window.__goto = []; document.querySelector('.sc-steps li[data-step="1"]').click(); });
   await wait(150);
   const g2 = await page.evaluate(() => window.__goto.slice(-1)[0]);
-  ok('剧本：点某一步 = 直接去那一步', () => assert.deepStrictEqual(g2, { rel: 'detail.html', state: 'default', on: [] }));
+  ok('剧本：点某一步 = 直接去那一步', () => assert.deepStrictEqual(g2, { id: 'p', rel: 'detail.html', state: 'default', on: [] }));
 
   /* ── 展示模式 ────────────────────────── */
   /* 上面点过剧本第 2 步，S.play 已经停在那儿——进展示模式会正确地从那儿接着走。
@@ -425,18 +425,87 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   ok('展示模式：下一步 = 走到第 1 步，页面跟着跳，屏上写这一步在干什么', () => {
     assert.strictEqual(p1.at, '1 / 3');
     assert.strictEqual(p1.note, '搜 led');
-    assert.deepStrictEqual(p1.goto, { rel: 'index.html', state: 'default', on: [] });
+    assert.deepStrictEqual(p1.goto, { id: 'p', rel: 'index.html', state: 'default', on: [] });
   });
   await page.click('#plNext'); await page.click('#plNext'); await wait(250);
   const p3 = await page.evaluate(() => ({ at: document.getElementById('plAt').textContent.trim(), next: document.getElementById('plNext').disabled, goto: window.__goto.slice(-1)[0] }));
   ok('展示模式：走到最后一步，下一步变灰（别让人点空）', () => {
     assert.strictEqual(p3.at, '3 / 3');
     assert.strictEqual(p3.next, true);
-    assert.deepStrictEqual(p3.goto, { rel: 'inquiry.html', state: 'guest', on: [] });
+    assert.deepStrictEqual(p3.goto, { id: 'p', rel: 'inquiry.html', state: 'guest', on: [] });
   });
   await page.keyboard.press('ArrowLeft'); await wait(200);
   const p2 = await page.evaluate(() => document.getElementById('plAt').textContent.trim());
   ok('展示模式：方向键也能翻（演示时手不用离开键盘）', () => assert.strictEqual(p2, '2 / 3'));
+
+  /* ── 自动走（吉吉 2026-09-18「开了自动化后，AI 能自动带我体验全部流程」）────────── */
+  /* 把节奏调到测试能等得起的档：往 select 里塞一个临时 option，不动产品代码。
+     这条顺带验了「速度档真的改了节奏」—— 选了没用是这类控件最常见的坏法。 */
+  /* 🔴 先把前提摆明：上面几条门走到了第 1 条剧本的第 2 步。
+     不声明前提就写「自动走应该走 >=4 步」，红的时候分不清是功能坏了还是前提变了 ——
+     第一版就是这么红的（它只走了 2 步，而那 2 步完全正确）。 */
+  await page.click('#plPrev'); await wait(150);          // 退到 1/3，从这条剧本的头上开始
+  await page.evaluate(() => {
+    window.__goto = [];
+    const sel = document.getElementById('plSpeed');
+    sel.insertAdjacentHTML('beforeend', '<option value="150">t</option>');
+    sel.value = '150'; sel.dispatchEvent(new Event('change'));
+  });
+  await page.click('#plAuto'); await wait(2600);
+  const au = await page.evaluate(() => ({
+    label: document.getElementById('plAuto').textContent.trim(),
+    on: document.getElementById('plAuto').classList.contains('on'),
+    tail: document.getElementById('plAutoAt').textContent.trim(),
+    at: document.getElementById('plAt').textContent.trim(),
+    rels: window.__goto.map(g => g.rel),
+    last: (g => g && { rel: g.rel, state: g.state })(window.__goto.filter(x => x.rel).slice(-1)[0]),
+    ids: [...new Set(window.__goto.map(g => g.id))],
+  }));
+  ok('🔴 自动走：开了之后自己一步步往下走，不用人点', () => {
+    assert.ok(au.rels.length >= 3, '只走了 ' + au.rels.length + ' 步：' + JSON.stringify(au.rels));
+  });
+  ok('🔴 自动走：一条剧本走完接下一条（「全部流程」＝所有剧本，不是当前这条）', () => {
+    /* 🔴 用**落到哪儿**判，不用走了几步判：步数会跟着前提变（从第几步开的自动），
+       而「最后停在第二条剧本上」是这件事本身的指纹，前提怎么变它都成立。
+       第一条剧本是 index→detail→inquiry，第二条只有 index·empty ——
+       落在 index.html·empty 上，才说明它接着走了第二条。 */
+    assert.deepStrictEqual(au.last, { rel: 'index.html', state: 'empty' },
+      '没接上第二条剧本，停在了 ' + JSON.stringify(au.last) + '；整条路径：' + JSON.stringify(au.rels));
+    assert.strictEqual(au.tail, '全部走完了', '走完了却没说一声：「' + au.tail + '」');
+    assert.strictEqual(au.on, false, '全部走完之后按钮还停在「自动走中」');
+    assert.strictEqual(au.label, '▶ 自动走');
+  });
+  ok('🔴 自动走：每一步的指令照样带项目 id（自动走也可能从首页开始）', () => {
+    assert.deepStrictEqual(au.ids, ['p'], JSON.stringify(au.ids));
+  });
+
+  /* 人一动手就停：自动走时点一下「上一步」，之后页面不许再自己翻 */
+  await page.evaluate(() => { window.__goto = []; });
+  await page.click('#plAuto'); await wait(400);
+  await page.click('#plPrev');
+  const n1 = await page.evaluate(() => window.__goto.length);
+  await wait(1200);
+  const stop = await page.evaluate(() => ({ n: window.__goto.length, on: document.getElementById('plAuto').classList.contains('on') }));
+  ok('🔴 自动走：人一动手就停（他要停下来看这一屏，自动走会在他看的时候把页面翻掉）', () => {
+    assert.strictEqual(stop.on, false, '点了「上一步」之后自动还开着');
+    assert.strictEqual(stop.n, n1, `停不下来：点完是 ${n1} 条指令，1.2 秒后变成 ${stop.n} 条`);
+  });
+  /* 剧本那一屏也能直接开自动（不用先进展示模式再点一次） */
+  await page.keyboard.press('Escape'); await wait(150);
+  await page.click('#tabs button[data-v="script"]'); await wait(200);
+  await page.evaluate(() => { window.__goto = []; });
+  await page.click('.sc [data-autoplay]'); await wait(900);
+  const sa = await page.evaluate(() => ({
+    player: !document.getElementById('player').hidden,
+    on: document.getElementById('plAuto').classList.contains('on'),
+    n: window.__goto.filter(g => g.rel).length,
+  }));
+  ok('🔴 剧本那一屏点「自动走」＝直接进展示模式并开始走', () => {
+    assert.strictEqual(sa.player, true, '没进展示模式');
+    assert.ok(sa.on || sa.n >= 2, `自动没开起来（on=${sa.on} 走了 ${sa.n} 步）`);
+  });
+  await page.evaluate(() => { document.getElementById('plAuto').classList.contains('on') && document.getElementById('plAuto').click(); });
+  await page.keyboard.press('Escape'); await wait(150);
   await page.keyboard.press('Escape'); await wait(200);
   const off = await page.evaluate(() => ({ hidden: document.getElementById('player').hidden, calls: window.__goto.filter(c => c.show === false) }));
   ok('展示模式：Esc 退出，并让主窗口把对话区放回来', () => { assert.strictEqual(off.hidden, true); assert.strictEqual(off.calls.length, 1); });

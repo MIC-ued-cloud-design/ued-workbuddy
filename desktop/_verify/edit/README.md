@@ -9,7 +9,7 @@
 |---|---|---|
 | **什么都不用装**，clone 完直接跑 | htmlmap 43 · kb-url 4 · engine 8 · flow 36 | **91** |
 | `cd desktop && npm i` | ＋ updater 29 · win 11 · flow-iso 19（`npx electron` 跑） | **59** |
-| `cd desktop/restore-tools/online-reach && npm i` | ＋ font 51 · probe 54 · scope 15 · states 12 · ui 129 · flow-ui 51 · flow-walk 13 | **325** |
+| `cd desktop/restore-tools/online-reach && npm i` | ＋ font 51 · probe 54 · scope 15 · states 12 · ui 132 · flow-ui 56 · flow-walk 13 | **333** |
 
 第三档只装 `puppeteer-core`，**不下载 Chromium** —— 它用的是本机已装的 Google Chrome
 （`/Applications/Google Chrome.app/…`）。没装 Chrome 的机器跑不了这一档。
@@ -34,7 +34,7 @@ node _verify/edit/ui.e2e.js         # 界面：真 renderer + mock 掉 uw 桥（
 ```
 
 改 `main/htmlmap.js`、`main/edit-probe.js`、`main/components.js` 或 `renderer/app.js` 的「编辑层」一节，
-🔴 **十四套一套都不许漏**（htmlmap 43 / kb-url 4 / updater 29 / engine 8 / win 11 / **font** 51 / probe 54 / scope 15 / states 12 / ui 129 / **flow** 36 / **flow-ui** 51 / **flow-walk** 13 / **flow-iso** 19 ＝ **475**）。
+🔴 **十四套一套都不许漏**（htmlmap 43 / kb-url 4 / updater 29 / engine 8 / win 11 / **font** 51 / probe 54 / scope 15 / states 12 / ui 132 / **flow** 36 / **flow-ui** 56 / **flow-walk** 13 / **flow-iso** 19 ＝ **483**）。
 改了 `main/flow.js`、`main/flow-doc.js`、`main/flow-walk.js`、`renderer/flow.*` 或 `renderer/app.js` 的「流程控制台」一节，后四套必跑。
 🧹 **发版会顺手清 dist**（`build/clean-dist.sh`，2026-09-18 加·起因是攒到了 19G）。
 🔴 它**只删「GitHub 上已经有的那些版本」的本地包** —— 没发布过的开发包，本地这一份就是最后一份，

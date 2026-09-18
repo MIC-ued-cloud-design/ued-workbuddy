@@ -42,9 +42,6 @@ button{cursor:pointer;background:none;border:0;padding:0;font:inherit;color:inhe
 .body{flex:1;min-height:0;overflow:auto;background:var(--white)}
 .view{padding:12px}
 .tip{font-size:11px;color:var(--ink-3);margin:10px 2px 0;line-height:1.7;flex:0 0 auto}
-/* 说明收成一行：这块地方每省一行，图就能大一截 */
-.tip-t{font-size:10px;color:var(--accent);padding:0 4px;margin-left:2px}
-.tip-more{display:block;margin-top:4px}
 .tip i{font-style:normal;display:inline-block;vertical-align:middle}
 .tip i.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin:0 3px}
 .tip i.gap{width:5px;height:5px;border-radius:50%;background:var(--line);margin:0 4px}
@@ -109,6 +106,11 @@ svg.mconn{position:absolute;left:0;top:0;pointer-events:none;z-index:0;overflow:
 .mcard.at .mcard-shot{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-fill)}
 /* 抽屉/浮层的卡用虚线框区分：它跟页面不是同一类东西（一个是一份文件，一个是盖在上面的一层） */
 .mcard.v .mcard-shot{border-style:dashed}
+/* 自动走那一条：跟手动那排分开，人一眼看得出「这排是我点的，那排是它自己走的」 */
+.pl-auto{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)}
+.pl-auto .sel{padding:3px 22px 3px 8px;font-size:11px}
+.pl-auto #plAutoAt{font-size:11px;color:var(--ink-3)}
+#plAuto.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .mtag{font-size:10px;line-height:1.4;padding:1px 6px;border-radius:var(--r-pill);align-self:flex-start}
 .mtag.warn{background:#FFF6E5;color:#8A5A00}
 .mtag.bad{background:#FFEDEC;color:var(--bad)}

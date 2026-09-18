@@ -19,7 +19,10 @@ const S = { id: null, data: null, view: 'grid', at: { rel: '', state: '', on: []
   wall: { mode: 'states', rel: '', zoom: 26, html: new Map(), narrow: null },
   /* 流程图上一次算出来的布局（形状 + 边 + 每屏在第几列 + 底部带子多高）。
      存着是为了窗口变大小时只重解缩放、不重建 DOM。 */
-  map: null };
+  map: null,
+  /* 自动走：开了之后自己一步步往下走，一条剧本走完接下一条。
+     `t` 是当前那个定时器 —— 每次只许有一个，不然点两下就会两条线各走各的、步子互相抢。 */
+  auto: { on: false, ms: 4000, t: null } };
 
 /* 这个项目一共声明了哪些叠加开关（按 key 去重，跨页合并） */
 function allOverlays(d) {
@@ -767,7 +770,7 @@ function renderScript(d) {
   let h = '';
   d.scripts.forEach((sc, si) => {
     h += `<div class="sc"><div class="sc-h"><span class="n">${esc(sc.name)}</span>
-      <span><span class="p" style="margin-right:8px">${sc.steps.length} 步</span><button class="btn sm primary" data-play="${si}">从头走一遍</button></span></div><ul class="sc-steps">`;
+      <span><span class="p" style="margin-right:8px">${sc.steps.length} 步</span><button class="btn sm" data-autoplay="${si}" title="进展示模式，从这条开始自己一步步走，走完接下一条">▶ 自动走</button><button class="btn sm primary" style="margin-left:6px" data-play="${si}">从头走一遍</button></span></div><ul class="sc-steps">`;
     sc.steps.forEach((st, i) => {
       const at = S.play && S.play.si === si && S.play.i === i;
       h += `<li class="${at ? 'at' : ''}" data-play="${si}" data-step="${i}"><span class="i">${i + 1}</span>
@@ -807,7 +810,11 @@ function renderGate(d) {
 function goto(rel, state) {
   if (!rel) return;
   S.at = { rel, state: state || 'default', on: [...S.on] };
-  uw.flowGoto({ rel, state: S.at.state, on: [...S.on] });
+  /* 🔴 带上项目 id。吉吉 2026-09-18 报的 bug：主窗口停在首页时点控制台的节点，什么都不会发生 ——
+     主窗口那边一句 `if (!S.project) return` 就把它吞了，连个提示都没有。
+     控制台本来就是从某个项目开出来的，它一直知道是哪个项目，那就该把这件事说出来，
+     让主窗口自己去把项目打开。**别让接收方去猜发送方早就知道的事。** */
+  uw.flowGoto({ id: S.id, rel, state: S.at.state, on: [...S.on] });
   render();
   if (S.show) renderPlayer();
 }
@@ -815,6 +822,7 @@ function goto(rel, state) {
 /* ── 展示模式 ─────────────────────────── */
 function setShow(on) {
   S.show = !!on;
+  if (!S.show) setAuto(false);        // 退出展示还在后台自己翻页＝人已经在别处了，页面却还在跳
   $('#player').hidden = !S.show;
   $('#btnShow').classList.toggle('on', S.show);
   uw.flowGoto({ show: S.show });                 // 主窗口那边进 / 出「只看画布」
@@ -828,6 +836,52 @@ function playStep(si, i) {
   goto(st.rel, st.state);
   if (!S.show) render();
 }
+/* ── 自动走 ───────────────────────────
+   吉吉 2026-09-18：「剧本功能我希望能加个自动化的开关，开了自动化后，
+   AI 能自动带我体验全部流程」。
+   🔴 「全部流程」＝**所有剧本**，不是当前这一条：一条走完自动接下一条，
+      全部走完才停。只走当前这条的话，有三条主线的项目人还得回来点两次。 */
+
+/* 每一步停多久：不是固定值。说明写得长的那步，固定 4 秒根本来不及读完 ——
+   人会一边看一边被翻页，那比走得慢难受得多。所以按说明长度加时间，封顶 2.5 倍。 */
+function stepMs(st) {
+  const n = String((st && st.note) || '').length;
+  return Math.round(Math.min(S.auto.ms * 2.5, S.auto.ms + n * 90));
+}
+function curStep() {
+  const d = S.data, p = S.play;
+  if (!d || !p || p.i < 0) return null;
+  const sc = d.scripts[p.si];
+  return sc ? sc.steps[p.i] : null;
+}
+function autoArm() {
+  clearTimeout(S.auto.t);
+  S.auto.t = setTimeout(autoNext, stepMs(curStep()));
+}
+function autoNext() {
+  const d = S.data;
+  if (!d || !d.scripts.length) return setAuto(false);
+  const p = S.play || { si: 0, i: -1 };
+  const sc = d.scripts[p.si];
+  if (!sc) return setAuto(false);
+  if (p.i < sc.steps.length - 1) playStep(p.si, p.i + 1);
+  else if (p.si < d.scripts.length - 1) playStep(p.si + 1, 0);        // 这条走完，接下一条
+  else { setAuto(false); $('#plAutoAt').textContent = '全部走完了'; return; }
+  autoArm();
+}
+function setAuto(on) {
+  S.auto.on = !!on;
+  clearTimeout(S.auto.t); S.auto.t = null;
+  const b = $('#plAuto');
+  if (b) { b.classList.toggle('on', S.auto.on); b.textContent = S.auto.on ? '⏸ 暂停' : '▶ 自动走'; }
+  if (S.auto.on) {
+    if (!S.play) S.play = { si: 0, i: -1 };
+    if (S.play.i < 0) playStep(S.play.si, 0);      // 还没开始就先走第一步，别让人等一个空拍
+    autoArm();
+  }
+  renderPlayer();
+}
+
 function renderPlayer() {
   const d = S.data;
   if (!d || !d.scripts.length) {
@@ -841,6 +895,8 @@ function renderPlayer() {
   $('#plNote').textContent = p.i < 0 ? '点「下一步」开始' : (sc.steps[p.i].note || sc.steps[p.i].rel);
   $('#plPrev').disabled = p.i <= 0;
   $('#plNext').disabled = p.i >= sc.steps.length - 1;
+  if ($('#plAutoAt')) $('#plAutoAt').textContent =
+    S.auto.on ? `自动走中 · 第 ${p.si + 1}/${d.scripts.length} 条主线` : '';
 }
 
 /* ── 事件 ─────────────────────────────── */
@@ -860,7 +916,7 @@ $('#onsBar').addEventListener('click', e => {
   const b = e.target.closest('button[data-on]'); if (!b) return;
   const k = b.dataset.on;
   if (S.on.has(k)) S.on.delete(k); else S.on.add(k);
-  if (S.at.rel) uw.flowGoto({ rel: S.at.rel, state: S.at.state || 'default', on: [...S.on] });
+  if (S.at.rel) uw.flowGoto({ id: S.id, rel: S.at.rel, state: S.at.state || 'default', on: [...S.on] });
   render();
 });
 $('#wallPage').onchange = e => { S.wall.rel = e.target.value; render(); };
@@ -894,12 +950,23 @@ $('#btnWalk').onclick = async () => {
   $('#projSub').textContent = `已导出 ${r.file}（${Math.round(r.bytes / 1024)}KB，${r.pages} 页）` + (r.bad ? `　⚠️ 还有 ${r.bad} 条硬伤，对方会点到` : '');
 };
 $('#plExit').onclick = () => setShow(false);
-$('#plPrev').onclick = () => S.play && playStep(S.play.si, S.play.i - 1);
-$('#plNext').onclick = () => S.play && playStep(S.play.si, S.play.i + 1);
+/* 🔴 人一动手就停自动：他要停下来看这一屏，而自动走会在他看的时候把页面翻掉。
+   「人接管了就别再自己动」——这条比「保持自动状态」重要。 */
+$('#plPrev').onclick = () => { setAuto(false); if (S.play) playStep(S.play.si, S.play.i - 1); };
+/* 🔴 手动「下一步」只在这一条剧本里走，走到末尾就停 —— 跨条是**自动走**才有的行为。
+   两条剧本是两个独立场景（「买家从搜索到发询盘」和「出错的样子」），
+   人手动走完一条本来就该停下来。顺手把手动也改成跨条，是把他没要的东西塞进来。 */
+$('#plNext').onclick = () => { setAuto(false); if (S.play) playStep(S.play.si, S.play.i + 1); };
+$('#plAuto').onclick = () => setAuto(!S.auto.on);
+$('#plSpeed').onchange = e => { S.auto.ms = +e.target.value; if (S.auto.on) autoArm(); };
 document.querySelector('.body').addEventListener('click', e => {
+  /* 剧本那一屏直接开自动：进展示模式 ＋ 从这条的第一步开始自己走 */
+  const auto = e.target.closest('[data-autoplay]');
+  if (auto) { S.play = { si: +auto.dataset.autoplay, i: -1 }; setShow(true); setAuto(true); return; }
   const play = e.target.closest('[data-play]');
   if (play) {
     const si = +play.dataset.play;
+    setAuto(false);                    // 人自己点了某一步＝他要看这一步，别再自己往下翻
     if (play.dataset.step != null) playStep(si, +play.dataset.step);
     else { S.play = { si, i: 0 }; playStep(si, 0); }
     return;
@@ -907,18 +974,6 @@ document.querySelector('.body').addEventListener('click', e => {
   const g = e.target.closest('[data-rel]');
   if (g) goto(g.dataset.rel, g.dataset.state);
 });
-/* 说明展开/收起。收起时它只占一行，图就能多分到 37px 高 —— 这不是抠细节，
-   4 屏摆两行的时候，37px 高会变成每张缩略图大 18px。 */
-$('#mapTipT').onclick = () => {
-  const more = $('#mapTip .tip-more'), t = $('#mapTipT');
-  more.hidden = !more.hidden;
-  t.textContent = more.hidden ? '怎么读 ▾' : '收起 ▴';
-  if (S.view === 'map' && S.data && S.map) {
-    $('#mapWrap').style.paddingBottom = S.map.band + 'px';
-    fitMap(S.map.plan, S.map.edges, S.map.colOf, S.map.band);
-  }
-};
-
 /* 🔴 窗口一变大小，「撑满」就得重算 —— 不重算的话把窗口拉大，图还是原来那么小，
    看着像卡住了。只有流程图是按窗口反算尺寸的，别的视图不用重画。
    走 fitMap 不走 render：后者会重建 DOM，每张缩略图重装一遍页面，拉窗口时一路闪。 */
@@ -937,8 +992,9 @@ window.addEventListener('resize', () => {
 /* 展示的时候用方向键翻页，省得每次去点按钮 */
 window.addEventListener('keydown', e => {
   if (!S.show || !S.play) return;
-  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); playStep(S.play.si, S.play.i + 1); }
-  if (e.key === 'ArrowLeft') { e.preventDefault(); playStep(S.play.si, S.play.i - 1); }
+  /* 跟点按钮一样：人一动手就停自动，别在他看的时候把页面翻掉 */
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); setAuto(false); playStep(S.play.si, S.play.i + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); setAuto(false); playStep(S.play.si, S.play.i - 1); }
   if (e.key === 'Escape') setShow(false);
 });
 
