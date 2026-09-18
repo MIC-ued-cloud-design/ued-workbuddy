@@ -25,6 +25,10 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
     if (window.parent !== window) return;   // 只给顶层 renderer 装桥
     window.__ops = []; window.__undo = []; window.__sent = []; window.__undoResp = { ok: true }; window.__imports = []; window.__blobs = [];
     window.__flow = []; window.__flowAt = []; window.__flowOpen = false;
+    window.__clog = { ok: true, current: '0.1.25', list: [
+      { version: '0.1.26', at: '2026-09-18T00:00:00Z', notes: '这一版改了什么', current: false },
+      { version: '0.1.25', at: '2026-09-17T00:00:00Z', notes: '上一版', current: true },
+    ] };
     const noop = () => () => {};
     window.uw = {
       boot: async () => ({ version: '0.1.25', caps, settings: { role: 'design', model: '', permissionMode: 'acceptEdits', workspaceDir: '/x', handoffRepoDir: '/x/r', frontendName: '' }, engine: { ok: true, version: '2.0.0' }, projects: [], packDir: '/x/packs/feique' }),
@@ -41,6 +45,8 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
       flowAt: async (m) => { window.__flowAt.push(m); return { ok: true }; },
       /* 控制台点节点时，主窗口可能停在首页 —— 那时候它要自己把项目打开，所以桥上得有这个 */
       openProject: async (id) => ({ id, name: '测试项目', dir: '/x/' + id, role: 'design', files: [{ rel: 'index.html' }], messages: [] }),
+      /* 更新日志：默认给两条，测试里再改成失败态验另一半 */
+      updateLog: async () => window.__clog,
       listProjects: async () => [], saveSettings: async () => true, detectEngine: async () => ({ ok: true }),
       listFiles: async () => [{ rel: 'index.html', size: 1, mtime: 1 }], checkFile: async () => ({ issues: [], n: 0, badN: 0, ok: true }),
       readFile: async () => ({ text: '' }), readFigma: async () => ({ changes: [], files: {} }),
@@ -635,7 +641,7 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
     assert.ok(/&lt;img&gt;|<img>/.test(fillUnder.t) || /img/.test(fillUnder.t), fillUnder.t);
     assert.strictEqual(fillUnder.go, '9', '「选中它」要指向底下那张图的编号，不是选中的这层');
     assert.ok(fillUnder.pv, '没有缩略图＝还是看不见那张图');
-    assert.ok(!fillUnder.alt, '改的不是选中的这层，alt 那行别在这儿给（要改点「选中它」）');
+    assert.ok(!fillUnder.alt, '改的不是选中的这层，alt那行别在这儿给（要改点「选中它」）');
   });
   const fillInner = await page.evaluate(PX => {
     const d = document.createElement('div');
@@ -679,11 +685,11 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
       协议相对: previewAbs('//cdn/a.png'), 空的: previewAbs('') };
     S.previewFile = keep; S.project = kp; return r;
   });
-  ok('previewAbs：相对路径换成预览态绝对地址，项目名和目录都按 URL 规矩编码', () => {
+  ok('previewAbs：相对路径换成预览态绝对地址，项目名和目录都按URL规矩编码', () => {
     assert.strictEqual(pabs.同级, 'uwproj://p/%E6%88%91%E7%9A%84%20%E9%A1%B9%E7%9B%AE%2FA/pages/images/a.png');
     assert.strictEqual(pabs.上一级, 'uwproj://p/%E6%88%91%E7%9A%84%20%E9%A1%B9%E7%9B%AE%2FA/images/b.png');
   });
-  ok('previewAbs：已经是绝对地址 / 线上地址 / 协议相对 / 空的，一律不碰（返回 null）', () => {
+  ok('previewAbs：已经是绝对地址 / 线上地址 / 协议相对 / 空的，一律不碰（返回null）', () => {
     assert.strictEqual(pabs.已经是绝对的, null); assert.strictEqual(pabs.线上的, null);
     assert.strictEqual(pabs.协议相对, null); assert.strictEqual(pabs.空的, null);
   });
@@ -767,8 +773,8 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
   ok('点「流程」：请主进程开控制台窗口，按钮进高亮态', () => { assert.deepStrictEqual(opened.calls, ['open']); assert.strictEqual(opened.on, true); });
   /* 🔴 只验 class 加上了没用：app.css 里本来根本没有 .btn.sm.on 这条规则，
      class 加得好好的、屏幕上一点变化都没有（2026-09-17 真机截图才看出来）。要验算出来的样子。 */
-  ok('「流程」按钮的高亮真的画出来了（验计算样式，不是验 class 加上没）', () => {
-    assert.notStrictEqual(opened.bg, 'rgba(0, 0, 0, 0)', '背景还是透明的，说明 .btn.sm.on 这条样式不存在');
+  ok('「流程」按钮的高亮真的画出来了（验计算样式，不是验class加上没）', () => {
+    assert.notStrictEqual(opened.bg, 'rgba(0, 0, 0, 0)', '背景还是透明的，说明 .btn.sm.on这条样式不存在');
     assert.strictEqual(opened.color, 'rgb(0, 113, 227)', '文字没变成强调蓝：' + opened.color);
   });
 
@@ -813,7 +819,11 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
   await page.evaluate(() => { const h = window.__onFlowGoto; if (h) h({ show: false }); });
   await wait(200);
   const showOff = await page.evaluate(() => document.querySelector('.wk-body').classList.contains('canvas'));
+  const offMsgs = await page.evaluate(() => window.__probeMsgs.slice());
   ok('退出展示模式：对话区回来', () => assert.strictEqual(showOff, false));
+  ok('🔴 退出展示模式：演示光标也撤掉（不撤的话屏幕上会一直停着一个假鼠标）', () => {
+    assert.ok(offMsgs.some(m => m && m.__uwEditCmd === 'cursorOff'), JSON.stringify(offMsgs.slice(-4)));
+  });
 
   /* 🔴 吉吉 2026-09-18 报的 bug：「我点了流程里面一些节点，但 UW 客户端此时在首页，
      那就不会跳转过去」。原来这里一句 `if (!S.project) return` 就把指令吞了 ——
@@ -849,9 +859,42 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
     return { txt: el ? el.textContent.trim() : null, shown: !!(el && el.offsetParent !== null) };
   });
   ok('🔴 侧边栏一直显示版本号，值取自主进程不是写死的', () => {
-    assert.strictEqual(ver.txt, 'v0.1.25', '显示的是「' + ver.txt + '」（mock 的 boot 给的是 0.1.25）');
+    assert.strictEqual(ver.txt, 'v0.1.25', '显示的是「' + ver.txt + '」（mock的boot给的是0.1.25）');
     assert.strictEqual(ver.shown, true, '元素在但没显示出来');
   });
+
+  /* 🔴 更新日志（吉吉 2026-09-18「设置旁边我觉得可以加个版本更新日志」）。
+     内容来自 GitHub 上那几条 release —— 也就是发版时写给同事看的那段说明本身，
+     不另维护一份 CHANGELOG（两个源迟早对不上，而且对不上时没人看得出来）。 */
+  await page.click('#btnChangelog'); await wait(300);
+  const clog = await page.evaluate(() => ({
+    open: !document.getElementById('modalChangelog').hidden,
+    vs: [...document.querySelectorAll('#clogBody .clog-h .v')].map(x => x.textContent.trim()),
+    now: [...document.querySelectorAll('#clogBody .clog-v')].filter(b => b.querySelector('.now')).map(b => b.querySelector('.v').textContent.trim()),
+    notes: [...document.querySelectorAll('#clogBody .clog-n')].map(x => x.textContent.trim()),
+  }));
+  ok('更新日志：一版一块，按版本从新到旧排，说明就是发版时写的那段', () => {
+    assert.strictEqual(clog.open, true, '面板没打开');
+    assert.deepStrictEqual(clog.vs, ['v0.1.26', 'v0.1.25'], JSON.stringify(clog.vs));
+    assert.deepStrictEqual(clog.notes, ['这一版改了什么', '上一版'], JSON.stringify(clog.notes));
+  });
+  ok('更新日志：自己现在用的那一版标着「当前」（同事报问题时第一个要对的就是它）', () => {
+    assert.deepStrictEqual(clog.now, ['v0.1.25'], '标了当前的是 ' + JSON.stringify(clog.now));
+  });
+  /* 取不到时给人话 ＋ 一条自己能走的路。公司网络掐 GitHub 是常事，
+     那时候丢一句「失败」等于把人晾在那儿。 */
+  await page.evaluate(() => { document.getElementById('clogClose').click(); window.__clog = { ok: false, current: '0.1.25', error: '连不上' }; });
+  await page.click('#btnChangelog'); await wait(300);
+  const clogErr = await page.evaluate(() => ({
+    txt: document.getElementById('clogBody').textContent.replace(/\s+/g, ' ').trim(),
+    link: !!document.getElementById('clogOpen'),
+  }));
+  ok('更新日志取不到时说人话，并给一条自己能走的路（不是只丢一句失败）', () => {
+    assert.ok(/连不上/.test(clogErr.txt), clogErr.txt);
+    assert.ok(/0\.1\.25/.test(clogErr.txt), '没告诉人他现在是哪一版：' + clogErr.txt);
+    assert.strictEqual(clogErr.link, true, '没给去发布页看那条路');
+  });
+  await page.evaluate(() => document.getElementById('clogClose').click());
 
   /* 🔴 这条是回归门，不是功能门。2026-09-17 加流程控制台时栽过：
      顶层一句 `uw.onFlowClosed(...)` 在桥上没这个方法时抛异常，它**后面**所有 const 全留在 TDZ，
@@ -869,7 +912,7 @@ const PAGE = 'file://' + path.join(require('os').tmpdir(), 'uw-ui-page.html');
   await page2.goto('file://' + path.join(DESK, 'renderer', 'index.html'), { waitUntil: 'domcontentloaded' });
   await wait(600);
   const survived = await page2.evaluate(() => { try { setEdit(false); return 'ok'; } catch (e) { return e.message; } });
-  ok('桥上少了 flow 那几个方法时，渲染层照常起得来（顶层抛一次会让它后面所有 const 留在 TDZ）', () => {
+  ok('桥上少了flow那几个方法时，渲染层照常起得来（顶层抛一次会让它后面所有const留在TDZ）', () => {
     assert.strictEqual(survived, 'ok', '渲染层被一句顶层异常打断了：' + survived + ' ／ ' + err2.join(' | '));
   });
   await page2.close();

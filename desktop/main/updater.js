@@ -259,4 +259,30 @@ function appBundlePath() {
   return k > 0 ? exe.slice(0, k + 4) : null;
 }
 
-module.exports = { check, download, cancelDownload, install, pickLatest, cmpVer, installScript, installScriptWin, appBundlePath, updatesDir, withTimeout, ASSET, REPO, TAG_PREFIX, STALL_MS, CHECK_MS };
+/* 更新日志：把 GitHub 上那几条 release 原样取回来。
+   🔴 日志不另写一份 —— 发版时写给同事看的那段 notes 就是日志本身。
+   另维护一份 CHANGELOG 等于两个源，迟早对不上（而且对不上的时候没人看得出来）。 */
+async function log() {
+  try {
+    const rels = await fetchJson(API);
+    const cur = app.getVersion();
+    const out = [];
+    for (const r of (Array.isArray(rels) ? rels : [])) {
+      if (r.draft) continue;
+      const v = String(r.tag_name || '').replace(TAG_PREFIX, '');
+      if (!parseVer(v)) continue;
+      out.push({
+        version: v,
+        at: r.published_at || r.created_at || '',
+        notes: String(r.body || '').trim(),
+        current: cmpVer(v, cur) === 0,
+      });
+    }
+    out.sort((a, b) => -cmpVer(a.version, b.version));
+    return { ok: true, current: cur, list: out };
+  } catch (e) {
+    return { ok: false, current: app.getVersion(), error: e.message };
+  }
+}
+
+module.exports = { check, log, download, cancelDownload, install, pickLatest, cmpVer, installScript, installScriptWin, appBundlePath, updatesDir, withTimeout, ASSET, REPO, TAG_PREFIX, STALL_MS, CHECK_MS };

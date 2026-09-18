@@ -977,6 +977,35 @@ async function doHandoff() {
 }
 
 /* ── 设置 ─────────────────────────────────────────── */
+/* ── 更新日志 ──────────────────────────────
+   吉吉 2026-09-18：「设置旁边我觉得可以加个版本更新日志」。
+   🔴 日志的内容就是**发版时写给同事看的那段说明**，直接从 GitHub 的 release 取。
+      另写一份 CHANGELOG 等于两个维护源，迟早对不上 —— 而且对不上的时候没人看得出来。 */
+$('#btnChangelog').onclick = openChangelog;
+$('#clogClose').onclick = () => hide('#modalChangelog');
+async function openChangelog() {
+  show('#modalChangelog');
+  $('#clogBody').innerHTML = '<div class="clog-empty">正在取…</div>';
+  if (!uw.updateLog) { $('#clogBody').innerHTML = '<div class="clog-empty">这一版还没有这个功能，更新之后就有了。</div>'; return; }
+  const r = await uw.updateLog();
+  if (!r.ok) {
+    /* 🔴 取不到就说人话 + 给一条自己能走的路，别只丢一句「失败」。
+       连不上多半是网络（公司网络掐 GitHub 是常事），不是应用坏了。 */
+    $('#clogBody').innerHTML = `<div class="clog-empty">取不到更新日志（${esc(r.error || '连不上')}）。<br>
+      多半是这会儿连不上 GitHub。你现在用的是 <b>v${esc(r.current || '')}</b>，<br>
+      也可以直接去看：<a href="#" id="clogOpen">发布页</a>。</div>`;
+    const a = $('#clogOpen'); if (a) a.onclick = e => { e.preventDefault(); uw.openExternal && uw.openExternal('https://github.com/MIC-ued-cloud-design/ued-workbuddy/releases'); };
+    return;
+  }
+  if (!r.list.length) { $('#clogBody').innerHTML = '<div class="clog-empty">还没有发布过版本。</div>'; return; }
+  $('#clogBody').innerHTML = r.list.map(v => `<div class="clog-v">
+    <div class="clog-h"><span class="v">v${esc(v.version)}</span>
+      <span class="d">${esc(v.at ? new Date(v.at).toLocaleDateString('zh-CN') : '')}</span>
+      ${v.current ? '<span class="now">当前</span>' : ''}</div>
+    <div class="clog-n">${esc(v.notes || '（这一版没写说明）')}</div>
+  </div>`).join('');
+}
+
 $('#btnSettings').onclick = openSettings; $('#enginePill').onclick = openSettings;
 function openSettings() {
   renderEngineBox();
@@ -1357,6 +1386,8 @@ window.addEventListener('message', e => {
   const cur = curFrame(), pend = PV.pending;
   if (pend && e.source === pend.contentWindow && d.__uwEdit === 'ready') { PV.pending = null; clearTimeout(PV.timer); swapFrames(); }   // 装好了，整帧换上台
   else if (!cur || e.source !== cur.contentWindow) return;
+  /* 演示光标走完了 —— 收到才继续换页，这样「点一下」和「页面变了」的先后是对的 */
+  if (d.__uwEdit === 'cursor') { const f = CURSOR; CURSOR = null; if (f) f(); return; }
   switch (d.__uwEdit) {
     case 'ready':
       ED.ready = true;
@@ -1412,8 +1443,27 @@ function flowReport() {
   if (!FLOW.on || !S.project || !uw.flowAt) return;
   uw.flowAt({ rel: S.previewFile || '', state: FLOW.state, on: FLOW.ons, name: S.project.name || '' });
 }
+/* ── 演示光标 ─────────────────────────────
+   吉吉 2026-09-18：「剧本模式在展示操作的时候，应该配个鼠标移动的效果，让我看到他怎么点击操作，
+   要不然没有什么实感」＋「让用户能感知到模拟操作的路径」。
+   🔴 演完再换页，不是一起来：先看见光标走到那个按钮上、点一下，页面才变 ——
+      这个先后顺序就是「实感」本身。反过来（页面先变、光标后到）看着像页面自己跳的。
+   🔴 探针不回也不能卡住：页面可能还没装好、选择器可能找不到。所以留了超时兜底。 */
+let CURSOR = null;
+function cursorDemo(sel, ms) {
+  if (!sel || !uw.flowGoto) return Promise.resolve();
+  return new Promise(res => {
+    const done = () => { clearTimeout(t); CURSOR = null; res(); };
+    CURSOR = done;
+    const t = setTimeout(done, ms + 900);      // 兜底：探针没回话也得往下走
+    probe({ __uwEditCmd: 'cursor', sel, ms });
+  });
+}
+
 if (uw.onFlowGoto) uw.onFlowGoto(async msg => {
-  if (msg.show != null) { setCanvasOnly(!!msg.show); if (msg.show && ED.on) setEdit(false); return; }   // 展示模式：把画布腾干净
+  /* 退出展示要把演示光标撤掉 —— 不撤的话它会一直停在页面上，
+     而人已经回到自己改稿的状态了，那时候屏幕上多一个假鼠标很吓人。 */
+  if (msg.show != null) { setCanvasOnly(!!msg.show); if (msg.show && ED.on) setEdit(false); if (!msg.show) probe({ __uwEditCmd: 'cursorOff' }); return; }
   if (!msg.rel) return;
   /* 🔴 主窗口可能停在首页、或者开着别的项目。原来这里一句 `if (!S.project) return` 就把指令吞了，
      屏幕上什么都不会发生、也没有任何提示 —— 吉吉 2026-09-18 报的就是这个
@@ -1426,6 +1476,9 @@ if (uw.onFlowGoto) uw.onFlowGoto(async msg => {
     setTab('preview');                 // 可能停在设计稿那页，流程图点过来是要看页面的
   }
   if (!S.project) return;
+  /* 🔴 光标演示要发生在**旧页面**上：点的是这一页上的那个链接/按钮，点完才跳走。
+     所以放在换 previewFile 之前 —— 换完再演就演到新页面上去了，那是错的。 */
+  if (msg.via) await cursorDemo(msg.via, msg.viaMs || 600);
   FLOW.state = msg.state || 'default';
   if (msg.on) FLOW.ons = msg.on.slice();
   if (msg.rel !== S.previewFile) {

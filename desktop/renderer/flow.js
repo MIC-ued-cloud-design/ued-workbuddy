@@ -22,7 +22,7 @@ const S = { id: null, data: null, view: 'grid', at: { rel: '', state: '', on: []
   map: null,
   /* 自动走：开了之后自己一步步往下走，一条剧本走完接下一条。
      `t` 是当前那个定时器 —— 每次只许有一个，不然点两下就会两条线各走各的、步子互相抢。 */
-  auto: { on: false, ms: 4000, t: null } };
+  auto: { on: false, ms: 2000, t: null } };      // 2 秒一屏＝正常人点页面的速度（吉吉 2026-09-18 定）
 
 /* 这个项目一共声明了哪些叠加开关（按 key 去重，跨页合并） */
 function allOverlays(d) {
@@ -807,14 +807,41 @@ function renderGate(d) {
 }
 
 /* ── 去某一页的某个态 ─────────────────────── */
+/* 这一步是「点了哪儿」来的 —— 演示光标要照着它走。
+   两种来源都是真值，不是人手连的：
+     去另一页  → 当前页 <a href> 里指向它的那条
+     开抽屉    → 那个视图 @视图 声明的入口选择器
+   🔴 找不到就返回空，让主窗口直接换页，别演到一个错的元素上去
+      —— 演错比不演糟：人会以为那个按钮就是入口。 */
+function viaSel(toRel, toState) {
+  const d = S.data; if (!d || !S.at.rel) return '';
+  const p = d.pages.find(x => x.rel === S.at.rel);
+  if (!p) return '';
+  if (toRel === S.at.rel) {
+    const v = (p.views || []).find(v => toState && String(toState).indexOf(v.key + '-') === 0);
+    return v ? (v.sel || '') : '';
+  }
+  const l = (p.links || []).find(l => l.ok && l.to === toRel);
+  if (!l) return '';
+  /* sel 只有 'a'（那条链接没类名）时太泛，会点到页面上第一个链接去 —— 改用 href 认 */
+  return l.sel && l.sel !== 'a' ? l.sel : 'a[href*="' + String(toRel).split('/').pop() + '"]';
+}
+
 function goto(rel, state) {
   if (!rel) return;
+  /* 🔴 只在展示模式下演光标：那是「给人看」的时候。
+     日常点节点是自己在查稿，演一遍只会让每次点击都慢半秒。 */
+  const via = S.show ? viaSel(rel, state) : '';
   S.at = { rel, state: state || 'default', on: [...S.on] };
   /* 🔴 带上项目 id。吉吉 2026-09-18 报的 bug：主窗口停在首页时点控制台的节点，什么都不会发生 ——
      主窗口那边一句 `if (!S.project) return` 就把它吞了，连个提示都没有。
      控制台本来就是从某个项目开出来的，它一直知道是哪个项目，那就该把这件事说出来，
      让主窗口自己去把项目打开。**别让接收方去猜发送方早就知道的事。** */
-  uw.flowGoto({ id: S.id, rel, state: S.at.state, on: [...S.on] });
+  /* 🔴 没东西可演就不带这两个字段，别发 via:'' —— 指令的形状要跟「这次要不要演」一致，
+     不然每个读指令的人都得先判断那个空串是什么意思。 */
+  const msg = { id: S.id, rel, state: S.at.state, on: [...S.on] };
+  if (via) { msg.via = via; msg.viaMs = 600; }
+  uw.flowGoto(msg);
   render();
   if (S.show) renderPlayer();
 }
@@ -842,21 +869,17 @@ function playStep(si, i) {
    🔴 「全部流程」＝**所有剧本**，不是当前这一条：一条走完自动接下一条，
       全部走完才停。只走当前这条的话，有三条主线的项目人还得回来点两次。 */
 
-/* 每一步停多久：不是固定值。说明写得长的那步，固定 4 秒根本来不及读完 ——
-   人会一边看一边被翻页，那比走得慢难受得多。所以按说明长度加时间，封顶 2.5 倍。 */
-function stepMs(st) {
-  const n = String((st && st.note) || '').length;
-  return Math.round(Math.min(S.auto.ms * 2.5, S.auto.ms + n * 90));
-}
-function curStep() {
-  const d = S.data, p = S.play;
-  if (!d || !p || p.i < 0) return null;
-  const sc = d.scripts[p.si];
-  return sc ? sc.steps[p.i] : null;
-}
+/* 每一步停多久：就是那一档的值，不看说明长短。
+   🔴 第一版是「按说明长度加时间、封顶 2.5 倍」，吉吉当场说「太慢了，太卡顿了」。
+      我那个设计是照着**读说明**想的（怕长说明来不及读完），可他要的是
+      「**正常人操作页面的速度** —— 正常人是快速点击、操作，大概 2 秒一个页面场景」。
+      这是两件事：读文档的节奏是「等我读完」，演示的节奏是「像有人在用」。
+      按说明长短变速，快慢还会一步一变 —— 那正是他说的「卡顿」。
+   → 判据：**做演示类功能，节奏要对齐「被演示的那个行为本身」，不是对齐旁白。** */
+function stepMs() { return S.auto.ms; }
 function autoArm() {
   clearTimeout(S.auto.t);
-  S.auto.t = setTimeout(autoNext, stepMs(curStep()));
+  S.auto.t = setTimeout(autoNext, stepMs());
 }
 function autoNext() {
   const d = S.data;

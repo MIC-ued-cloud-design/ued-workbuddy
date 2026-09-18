@@ -9,7 +9,7 @@
 |---|---|---|
 | **什么都不用装**，clone 完直接跑 | htmlmap 43 · kb-url 4 · engine 8 · flow 36 | **91** |
 | `cd desktop && npm i` | ＋ updater 29 · win 11 · flow-iso 19（`npx electron` 跑） | **59** |
-| `cd desktop/restore-tools/online-reach && npm i` | ＋ font 51 · probe 54 · scope 15 · states 12 · ui 132 · flow-ui 56 · flow-walk 13 | **333** |
+| `cd desktop/restore-tools/online-reach && npm i` | ＋ font 51 · probe 60 · scope 15 · states 12 · ui 136 · flow-ui 58 · flow-walk 13 | **351** |
 
 第三档只装 `puppeteer-core`，**不下载 Chromium** —— 它用的是本机已装的 Google Chrome
 （`/Applications/Google Chrome.app/…`）。没装 Chrome 的机器跑不了这一档。
@@ -34,8 +34,13 @@ node _verify/edit/ui.e2e.js         # 界面：真 renderer + mock 掉 uw 桥（
 ```
 
 改 `main/htmlmap.js`、`main/edit-probe.js`、`main/components.js` 或 `renderer/app.js` 的「编辑层」一节，
-🔴 **十四套一套都不许漏**（htmlmap 43 / kb-url 4 / updater 29 / engine 8 / win 11 / **font** 51 / probe 54 / scope 15 / states 12 / ui 132 / **flow** 36 / **flow-ui** 56 / **flow-walk** 13 / **flow-iso** 19 ＝ **483**）。
+🔴 **十四套一套都不许漏**（htmlmap 43 / kb-url 4 / updater 29 / engine 8 / win 11 / **font** 51 / probe 60 / scope 15 / states 12 / ui 136 / **flow** 36 / **flow-ui** 58 / **flow-walk** 13 / **flow-iso** 19 ＝ **495**）。
 改了 `main/flow.js`、`main/flow-doc.js`、`main/flow-walk.js`、`renderer/flow.*` 或 `renderer/app.js` 的「流程控制台」一节，后四套必跑。
+🖱️ **演示光标那几条门验的是「路径」不是「终点」**（2026-09-18 立）：让光标**闪现**到目标，
+「停在目标中心」那条照样全绿 —— 而屏幕上人看到的还是「页面自己变了」，正是吉吉说的「没有实感」。
+所以中途要采一次样：那一刻它必须既不在起点也不在终点。**这条门当场抓到了真 bug**
+（同一帧里连着设起点和终点，浏览器会合并成一次，transition 压根不触发；要下一帧再设目标值）。
+
 🧹 **发版会顺手清 dist**（`build/clean-dist.sh`，2026-09-18 加·起因是攒到了 19G）。
 🔴 它**只删「GitHub 上已经有的那些版本」的本地包** —— 没发布过的开发包，本地这一份就是最后一份，
 机器不替人做那个决定，只打印出来让人自己删。**清理和销毁最后一份，在命令行上长得一模一样**

@@ -26,7 +26,7 @@ fs.writeFileSync(path.join(base, 'inquiry.html'), pg('询盘表单', 'body.state
   '<input name="qty"><a class="btn" href="index.html">回</a>'));
 fs.writeFileSync(path.join(base, 'orphan.html'), pg('没人跳得到的页', '', '<a href="index.html">回</a>'));
 fs.writeFileSync(path.join(base, 'index.说明.md'), '# 搜索结果页\n\n## 状态\n| 状态 | 类名 | 什么时候 |\n|---|---|---|\n| 一条都没有 | state-empty | 搜索词没命中 |\n| 未登录 | state-guest | 没登录就搜 |\n\n## 为什么\n价格用 visibility 不用 display，卡片高度才不塌。');
-fs.writeFileSync(path.join(base, '剧本.md'), '## 买家从搜索到发询盘\n1. index.html · default · 搜 led\n2. detail.html · default · 点进第一个\n3. inquiry.html · guest · 没登录就发\n\n## 出错的样子\n1. index.html · empty · 搜了个没货的词\n');
+fs.writeFileSync(path.join(base, '剧本.md'), '## 买家从搜索到发询盘\n1. index.html · default · 搜 led\n2. detail.html · default · 点进第一个\n3. inquiry.html · guest · 没登录就点了发询盘，这一步的说明故意写得很长，是为了让「按说明长度加时间」那种做法在门里真的量得出来——判据错和判据对，说明一样短的时候长得一模一样\n\n## 出错的样子\n1. index.html · empty · 搜了个没货的词\n');
 const DATA = { ok: true, ...flow.scan(base) };
 const walk = require(DESK + '/main/flow-walk.js');
 const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync(path.join(base, p.rel), 'utf8'), p.rel) }));
@@ -49,7 +49,7 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
     window.__D = DATA; window.__P = PAGES;
     window.uw = {
       flowScan: async () => { window.__scans++; return window.__D; },
-      flowGoto: async (m) => { window.__goto.push(m); return { ok: true }; },
+      flowGoto: async (m) => { window.__goto.push(m); (window.__gotoT = window.__gotoT || []).push(Date.now()); return { ok: true }; },
       flowWalk: async () => { window.__walk++; return window.__walkResp; },
       flowHtml: async ({ rels }) => ({ ok: true, pages: window.__P.filter(p => rels.includes(p.rel)) }),
       flowResize: async (m) => { window.__resize.push(m); return { ok: true }; },
@@ -425,14 +425,27 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   ok('展示模式：下一步 = 走到第 1 步，页面跟着跳，屏上写这一步在干什么', () => {
     assert.strictEqual(p1.at, '1 / 3');
     assert.strictEqual(p1.note, '搜 led');
-    assert.deepStrictEqual(p1.goto, { id: 'p', rel: 'index.html', state: 'default', on: [] });
+    /* 展示模式下指令会多带 via（演示光标要点哪儿），单独验，这里只比其余部分 */
+    const { via, viaMs, ...rest } = p1.goto;
+    assert.deepStrictEqual(rest, { id: 'p', rel: 'index.html', state: 'default', on: [] });
   });
   await page.click('#plNext'); await page.click('#plNext'); await wait(250);
   const p3 = await page.evaluate(() => ({ at: document.getElementById('plAt').textContent.trim(), next: document.getElementById('plNext').disabled, goto: window.__goto.slice(-1)[0] }));
   ok('展示模式：走到最后一步，下一步变灰（别让人点空）', () => {
     assert.strictEqual(p3.at, '3 / 3');
     assert.strictEqual(p3.next, true);
-    assert.deepStrictEqual(p3.goto, { id: 'p', rel: 'inquiry.html', state: 'guest', on: [] });
+    const { via, viaMs, ...rest } = p3.goto;
+    assert.deepStrictEqual(rest, { id: 'p', rel: 'inquiry.html', state: 'guest', on: [] });
+  });
+  /* 🔴 演示光标（吉吉 2026-09-18「应该配个鼠标移动的效果，让我看到他怎么点击操作」
+     ＋「让用户能感知到模拟操作的路径」）。
+     控制台要告诉主窗口**这一步是点了哪儿**，主窗口才演得出来。
+     两种来源都是真值：去另一页＝当前页 <a href> 里指向它的那条；开抽屉＝@视图 的入口选择器。 */
+  ok('🔴 展示模式下，跳转指令带上「这一步点的是哪个元素」（没有它就演不出路径）', () => {
+    assert.ok(p3.goto.via, '没带 via：' + JSON.stringify(p3.goto));
+    /* fixture 里 detail.html 上去 inquiry 的那条链接是 <a class="btn inq-btn"> */
+    assert.ok(/inq-btn|inquiry/.test(p3.goto.via), '认错了元素：' + p3.goto.via);
+    assert.ok(p3.goto.viaMs > 0, 'viaMs=' + p3.goto.viaMs);
   });
   await page.keyboard.press('ArrowLeft'); await wait(200);
   const p2 = await page.evaluate(() => document.getElementById('plAt').textContent.trim());
@@ -446,12 +459,18 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
      第一版就是这么红的（它只走了 2 步，而那 2 步完全正确）。 */
   await page.click('#plPrev'); await wait(150);          // 退到 1/3，从这条剧本的头上开始
   await page.evaluate(() => {
-    window.__goto = [];
+    window.__goto = []; window.__gotoT = [];      // 🔴 时间戳也要清：不清的话量到的是整场测试的间隔，不是自动走的
     const sel = document.getElementById('plSpeed');
-    sel.insertAdjacentHTML('beforeend', '<option value="150">t</option>');
-    sel.value = '150'; sel.dispatchEvent(new Event('change'));
+    /* 🔴 600 不是随手填的：第一版填 150，结果**缺陷版也全绿** ——
+       按字数加时间那一版有个 2.5 倍封顶，150ms 下每一步都撞上封顶、反而变得一样齐。
+       测试参数把要测的那个差别抹掉了，门就是假的。600 才让长说明那步真的甩开。 */
+    sel.insertAdjacentHTML('beforeend', '<option value="600">t</option>');
+    sel.value = '600'; sel.dispatchEvent(new Event('change'));
   });
-  await page.click('#plAuto'); await wait(2600);
+  /* 等 5.5 秒不是保守：**缺陷版**（按字数加时间）每步要 1.5 秒，四步就 4.5 秒。
+     等短了它会红在「样本不够」上 —— 红的理由不对，下次有人看到只会以为是测试没跑够。
+     门要红在它真正要守的那件事上。正常版 600ms 一步，1.8 秒就走完了，多等无害。 */
+  await page.click('#plAuto'); await wait(5500);
   const au = await page.evaluate(() => ({
     label: document.getElementById('plAuto').textContent.trim(),
     on: document.getElementById('plAuto').classList.contains('on'),
@@ -477,6 +496,19 @@ const PAGES = DATA.pages.map(p => ({ rel: p.rel, html: walk.prep(fs.readFileSync
   });
   ok('🔴 自动走：每一步的指令照样带项目 id（自动走也可能从首页开始）', () => {
     assert.deepStrictEqual(au.ids, ['p'], JSON.stringify(au.ids));
+  });
+  /* 🔴 节奏必须是匀的。第一版按说明长短加时间（每字 90ms），于是「搜 led」和
+     「没登录就发」两步的停留差出一大截 —— 吉吉的原话是「太卡顿了」。
+     他要的是「正常人操作页面的速度」，正常人不会因为旁白长就多站一会儿。
+     这条门量的是相邻两步的真实间隔：同一档下不许因为说明长短而变。 */
+  const gaps = await page.evaluate(() => {
+    const t = window.__gotoT || [];
+    return t.slice(1).map((x, i) => x - t[i]);
+  });
+  ok('🔴 自动走：每一屏停的时间是匀的，不随说明长短变（长短不一＝他说的「卡顿」）', () => {
+    assert.ok(gaps.length >= 2, '只量到 ' + gaps.length + ' 个间隔，样本不够');
+    const span = Math.max(...gaps) - Math.min(...gaps);
+    assert.ok(span < 120, `间隔忽长忽短，差了 ${span}ms：${JSON.stringify(gaps)}`);
   });
 
   /* 人一动手就停：自动走时点一下「上一步」，之后页面不许再自己翻 */

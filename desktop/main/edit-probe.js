@@ -659,6 +659,9 @@
          这一条是「控制台住在页面外面」的技术前提——页面自己不需要任何切态代码，
          交付给前端的就是干干净净的 HTML，那些 state-* 类正好是他要用的真实状态类。 */
       case 'state': setState(d.key, d.on); break;
+      /* 演示用的假光标：把「这一步是点了哪儿」演出来。绝不写文件（跟 data-uw-i 同一条铁律）。 */
+      case 'cursor': cursorTo(d.sel, d.ms || 600); break;
+      case 'cursorOff': cursorOff(); break;
     }
   });
   /* 换态：互斥的主状态 state-*（一次一个）＋ 正交的叠加开关 on-*（可以同时挂几个）。
@@ -679,6 +682,77 @@
     post({ __uwEdit: 'state', key: key || '', on: list });
     draw();
   }
+  /* ── 演示光标 ──────────────────────────────
+     吉吉 2026-09-18：「剧本模式在展示操作的时候，应该配个鼠标移动的效果，
+     让我看到他怎么点击操作，要不然没有什么实感」＋「让用户能感知到模拟操作的路径」。
+     🔴 关键是**路径**不是终点：直接让光标闪现到目标，人看到的还是「页面自己变了」。
+        要看见它从哪儿走到哪儿，才知道刚才那一下点的是哪个东西。
+     🔴 这个元素绝不许进源码（跟 data-uw-i 同一条铁律）—— 它只活在预览的 DOM 里，
+        编辑操作走的是 htmlmap 对源文件动刀，不读 DOM，所以碰不到它。 */
+  var CUR = null, CURX = -1, CURY = -1;
+  function cursorEl() {
+    if (CUR && CUR.parentNode) return CUR;
+    var w = document.createElement('div');
+    w.setAttribute('data-uw-cursor', '1');
+    w.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;z-index:2147483646;pointer-events:none;' +
+      'transition:transform .6s cubic-bezier(.33,.9,.3,1);will-change:transform;';
+    w.innerHTML =
+      '<svg width="22" height="30" viewBox="0 0 22 30" style="position:absolute;left:-2px;top:-2px;' +
+      'filter:drop-shadow(0 2px 5px rgba(0,0,0,.35))"><path d="M2 2 L2 22 L7.5 17 L11 25.5 L14.5 24 L11 15.8 L18 15.2 Z" ' +
+      'fill="#fff" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/></svg>' +
+      '<i data-ring style="position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;' +
+      'border:2px solid #0071E3;opacity:0;transform:scale(.3)"></i>';
+    (document.body || document.documentElement).appendChild(w);
+    CUR = w;
+    return w;
+  }
+  function cursorOff() { if (CUR && CUR.parentNode) CUR.parentNode.removeChild(CUR); CUR = null; CURX = CURY = -1; }
+  function ring() {
+    var el = cursorEl(), r = el.querySelector('[data-ring]');
+    if (!r) return;
+    r.style.transition = 'none'; r.style.opacity = '.9'; r.style.transform = 'scale(.3)';
+    /* 强制回流，否则两次赋值会被合并成一次，动效整个不出现 */
+    void r.offsetWidth;
+    r.style.transition = 'transform .42s ease-out, opacity .42s ease-out';
+    r.style.opacity = '0'; r.style.transform = 'scale(1.5)';
+  }
+  function cursorTo(sel, ms) {
+    var t = null;
+    try { t = sel ? document.querySelector(sel) : null; } catch (x) {}
+    if (!t) { post({ __uwEdit: 'cursor', ok: false, why: 'nosel' }); return; }   // 找不到就不演，别演到一个错的地方去
+    var wait = 0;
+    var r0 = t.getBoundingClientRect();
+    /* 目标在视口外时先滚过去 —— 不滚的话光标会移到屏幕外，人只看见它飞走了 */
+    if (r0.bottom < 40 || r0.top > (window.innerHeight || 0) - 40) {
+      try { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); wait = 340; } catch (x) { try { t.scrollIntoView(); } catch (y) {} }
+    }
+    setTimeout(function () {
+      var r = t.getBoundingClientRect();
+      var x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+      var el = cursorEl();
+      /* 第一次出现：从目标的左下方一段距离起步，让它「走」过来而不是凭空长在那儿 */
+      if (CURX < 0) {
+        CURX = Math.max(12, x - 160); CURY = Math.min((window.innerHeight || 600) - 12, y + 120);
+        el.style.transition = 'none';
+        el.style.transform = 'translate(' + CURX + 'px,' + CURY + 'px)';
+        void el.offsetWidth;
+      }
+      /* 🔴 目标值必须**下一帧**再设。同一帧里连着设起点和终点，浏览器会把两次合并成一次，
+         transition 压根不触发 —— 屏幕上就是「闪现」，而闪现的最终位置跟走过去是一样的，
+         只验终点的门照样全绿（2026-09-18 实测：300ms 采样时它已经在终点了）。
+         `void offsetWidth` 那一下回流救不了新建元素这种情形，rAF 才稳。 */
+      requestAnimationFrame(function () {
+        el.style.transition = 'transform ' + ms + 'ms cubic-bezier(.33,.9,.3,1)';
+        el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+        CURX = x; CURY = y;
+        setTimeout(function () {
+          ring();
+          post({ __uwEdit: 'cursor', ok: true, x: x, y: y });
+        }, ms);
+      });
+    }, wait);
+  }
+
   function curState() {
     var b = document.body, out = '';
     if (b) (b.className || '').split(/\s+/).forEach(function (c) { if (c.indexOf('state-') === 0) out = c.slice(6); });

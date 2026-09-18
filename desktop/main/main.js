@@ -772,6 +772,7 @@ ipcMain.handle('kb:feique', () => { try { return { ok: true, ...kb.feique(PACK_D
 
 /* ── 更新：查 / 下 / 换（见 updater.js）。装之前渲染层会确认没有会话在跑；这里再兜一道 ── */
 ipcMain.handle('update:check', () => updater.check());
+ipcMain.handle('update:log', () => updater.log());
 ipcMain.handle('update:download', async (_e, { url, size }) => {
   try { const file = await updater.download(url, size, p => win && win.webContents.send('update:progress', p)); return { ok: true, file }; }
   catch (e) { return { ok: false, error: e.message }; }

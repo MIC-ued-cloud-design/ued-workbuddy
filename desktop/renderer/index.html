@@ -22,6 +22,7 @@
   </nav>
   <div class="sb-foot">
     <button id="enginePill" class="pill"><span class="dot"></span><span id="engineText">正在找Claude Code…</span></button>
+    <button id="btnChangelog" class="nav"><i class="ic ic-file"></i>更新日志</button>
     <button id="btnSettings" class="nav"><i class="ic ic-gear"></i>设置</button>
   </div>
 </aside>
@@ -252,6 +253,15 @@
       <label class="f"><span>按多宽写</span><div class="f-row"><select id="tfWidth" class="sel"></select><span class="muted">画布宽度按这个断点来</span></div></label>
     </div>
     <div class="modal-f"><button class="btn" data-close="modalToFigma">取消</button><button id="tfGo" class="btn pri">开始回写</button></div>
+  </div>
+</div>
+
+<!-- 更新日志：内容就是发版时写给同事看的那段说明，不另维护一份 -->
+<div id="modalChangelog" class="mask" hidden>
+  <div class="modal">
+    <div class="modal-h"><div class="modal-t">更新日志</div><div class="modal-d">每一版改了什么。你现在用的那一版标着「当前」。</div></div>
+    <div class="modal-b"><div id="clogBody" class="clog"></div></div>
+    <div class="modal-f"><button id="clogClose" class="btn">关掉</button></div>
   </div>
 </div>
 

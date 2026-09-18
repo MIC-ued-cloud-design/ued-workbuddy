@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('uw', {
   iconIdentify: call('kb:iconIdentify'),
   iconSvg: call('kb:iconSvg'),
   checkUpdate: call('update:check'),
+  updateLog: call('update:log'),
   downloadUpdate: call('update:download'),
   installUpdate: call('update:install'),
   cancelUpdate: call('update:cancel'),

@@ -292,25 +292,25 @@ const OX = 20, OY = 20;
 
   await clear(); await page.evaluate(i => window.cmd({ __uwEditCmd: 'select', i: +i }), await idOf('#narrow'));
   await new Promise(x => setTimeout(x, 100)); const nSel = await last('sel');
-  ok('窄图也要认出来（40×40 摆在 60×60 里＝44%）：真头像就是被 max-width 限成这样的，阈值卡 0.5 会漏', () => {
-    const N = nSel.info.innerFill; assert.ok(N, '窄图漏了——VO 那个头像量出来是 41×54/60×60＝61%，再窄一点就是这条');
+  ok('窄图也要认出来（40×40摆在60×60里＝44%）：真头像就是被max-width限成这样的，阈值卡0.5会漏', () => {
+    const N = nSel.info.innerFill; assert.ok(N, '窄图漏了——VO那个头像量出来是41×54/60×60＝61%，再窄一点就是这条');
     assert.strictEqual(N.tag, 'img');
   });
 
   await clear(); await page.evaluate(i => window.cmd({ __uwEditCmd: 'select', i: +i }), await idOf('#cssz'));
   await new Promise(x => setTimeout(x, 100)); const czSel = await last('sel');
-  ok('样式表在管尺寸的图（max-width/max-height）：标出 cssSized，换图时就不会把旧图的渲染尺寸写死成 inline', () => {
+  ok('样式表在管尺寸的图（max-width/max-height）：标出cssSized，换图时就不会把旧图的渲染尺寸写死成inline', () => {
     assert.strictEqual(czSel.info.fill.cssSized, true);
-    assert.strictEqual(picSel.info.fill.cssSized, false, '没有 CSS 约束的图仍要写死，不然新图会按原始尺寸把布局撑乱');
+    assert.strictEqual(picSel.info.fill.cssSized, false, '没有CSS约束的图仍要写死，不然新图会按原始尺寸把布局撑乱');
   });
 
   let br = await rectOf('#big'); await clear(); await page.mouse.click(OX + br.x + 20, OY + br.y + 55); await new Promise(x => setTimeout(x, 100));
   const bigSel = await last('sel');
-  ok('小角标不算「这一层的图」（16×16 摆在 200×80 里）：innerFill 为 null', () => { assert.strictEqual(bigSel.info.tag, 'div'); assert.strictEqual(bigSel.info.innerFill, null); });
+  ok('小角标不算「这一层的图」（16×16摆在200×80里）：innerFill为null', () => { assert.strictEqual(bigSel.info.tag, 'div'); assert.strictEqual(bigSel.info.innerFill, null); });
 
   let sbr = await rectOf('#smallbtn'); await clear(); await page.mouse.click(center(sbr).x, center(sbr).y); await new Promise(x => setTimeout(x, 100));
   const sbSel = await last('sel');
-  ok('底下整页的大图不算「这个小按钮的图」（面积差 25 倍）：innerFill 为 null', () => { assert.strictEqual(sbSel.info.innerFill, null); });
+  ok('底下整页的大图不算「这个小按钮的图」（面积差25倍）：innerFill为null', () => { assert.strictEqual(sbSel.info.innerFill, null); });
 
   ok('自己就有图的元素：不再往里往下找（免得面板同时冒出两张图）', () => assert.strictEqual(picSel.info.innerFill, null));
 
@@ -360,6 +360,57 @@ const OX = 20, OY = 20;
   await page.evaluate(() => window.cmd({ __uwEditCmd: 'off' })); await new Promise(x => setTimeout(x, 40));
   const offState = await frame().evaluate(() => ({ sel: document.getElementById('__uwEditRoot').shadowRoot.querySelector('.sel').style.display, st: !!document.querySelector('style[data-uw-ui]') }));
   ok('off：选框收起、页面级样式移除', () => { assert.strictEqual(offState.sel, 'none'); assert.strictEqual(offState.st, false); });
+
+  /* ── 演示光标（吉吉 2026-09-18「配个鼠标移动的效果，让我看到他怎么点击操作」
+         ＋「让用户能感知到模拟操作的路径」）──────────────────────────
+     🔴 这一节验的是**路径**，不是终点。让光标闪现到目标，最终位置一样是对的，
+        但人看到的还是「页面自己变了」—— 那正是他说的「没有实感」。
+        所以中途要采一次样：那一刻它必须**既不在起点也不在终点**。 */
+  await load();
+  const tx = () => frame().evaluate(() => {
+    const c = document.querySelector('[data-uw-cursor]');
+    if (!c) return null;
+    const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(getComputedStyle(c).transform === 'none' ? c.style.transform : '');
+    const r = c.getBoundingClientRect();
+    return { x: Math.round(r.left), y: Math.round(r.top), styled: !!m };
+  });
+  await page.evaluate(() => window.cmd({ __uwEditCmd: 'cursor', sel: 'a.btn', ms: 700 }));
+  await new Promise(x => setTimeout(x, 60));
+  const c0 = await tx();
+  await new Promise(x => setTimeout(x, 300));
+  const cMid = await tx();
+  await new Promise(x => setTimeout(x, 600));
+  const cEnd = await tx();
+  const target = await frame().evaluate(() => { const r = document.querySelector('a.btn').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; });
+  ok('演示光标：真的出现在页面里（没有它，「怎么点的」就只能靠猜）', () => {
+    assert.ok(c0, '页面里没有 [data-uw-cursor]');
+  });
+  ok('🔴 演示光标：走完停在目标元素的中心（差6px以内）', () => {
+    assert.ok(Math.abs(cEnd.x - target.x) <= 6 && Math.abs(cEnd.y - target.y) <= 6,
+      `停在${cEnd.x},${cEnd.y}，目标中心${target.x},${target.y}`);
+  });
+  ok('🔴 演示光标：中途真的在路上（闪现到终点也能通过「停在目标」那条，所以必须单独量这一条）', () => {
+    const moved = Math.abs(cMid.x - c0.x) + Math.abs(cMid.y - c0.y);
+    const left = Math.abs(cEnd.x - cMid.x) + Math.abs(cEnd.y - cMid.y);
+    assert.ok(moved > 8, `300ms时还没动：起点${c0.x},${c0.y}中途${cMid.x},${cMid.y}`);
+    assert.ok(left > 8, `300ms时已经到终点了＝闪现不是移动：中途${cMid.x},${cMid.y}终点${cEnd.x},${cEnd.y}`);
+  });
+  /* 选择器找不到时不许乱演 —— 演到一个错的元素上，人会以为那就是入口 */
+  const before = await tx();
+  await page.evaluate(() => window.cmd({ __uwEditCmd: 'cursor', sel: '.没有这个东西', ms: 200 }));
+  await new Promise(x => setTimeout(x, 400));
+  const after = await tx();
+  ok('🔴 演示光标：选择器找不到就不动（演到错的元素上，人会以为那就是入口）', () => {
+    assert.deepStrictEqual({ x: after.x, y: after.y }, { x: before.x, y: before.y });
+  });
+  /* 🔴 它绝不许进源码 —— 跟 data-uw-i 同一条铁律。 */
+  const srcHasCursor = /data-uw-cursor/.test(src);
+  ok('🔴 演示光标只活在预览的DOM里，一个字都没进源码（跟data-uw-i同一条铁律）', () => {
+    assert.strictEqual(srcHasCursor, false, '源码里出现了data-uw-cursor');
+  });
+  await page.evaluate(() => window.cmd({ __uwEditCmd: 'cursorOff' })); await new Promise(x => setTimeout(x, 60));
+  const gone = await tx();
+  ok('演示光标：撤得掉（展示完了不该留在页面上）', () => assert.strictEqual(gone, null));
 
   ok('全程没有页面报错', () => assert.deepStrictEqual(errors, []));
   console.log(`\n${pass}项通过`);
